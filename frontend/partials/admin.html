@@ -1,0 +1,733 @@
+<section id="admin-section">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+        <button type="button" id="back-to-dashboard-from-admin"
+            class="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 transition px-3 py-1.5 rounded-lg hover:bg-blue-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver al Dashboard
+        </button>
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Panel de Administración</h2>
+            <p class="text-sm text-gray-400">Gestión centralizada del sistema</p>
+        </div>
+    </div>
+
+    <div class="flex gap-6 items-start">
+
+        <!-- ── Sidebar ── -->
+        <aside class="w-56 shrink-0 bg-white rounded-2xl shadow border border-gray-100 overflow-hidden sticky top-6">
+            <div class="p-4 border-b bg-gray-50">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Administración</p>
+            </div>
+            <nav class="p-2 flex flex-col gap-1">
+                <button type="button" data-tab="users"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50 active-tab">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 text-slate-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </span>
+                    <span>Usuarios</span>
+                    <span id="admin-user-count" class="ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                </button>
+                <button type="button" data-tab="products"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-50 text-green-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                    </span>
+                    <span>Productos</span>
+                    <span id="admin-product-count" class="ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                </button>
+                <button type="button" data-tab="parts"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </span>
+                    <span>Repuestos</span>
+                    <span id="admin-parts-count" class="ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                </button>
+
+                <button type="button" data-tab="stock"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </span>
+                    <span>Stock</span>
+                </button>
+
+                <button type="button" data-tab="tags"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-50 text-green-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    </span>
+                    <span>Etiquetas</span>
+                </button>
+
+                <button type="button" data-tab="plantillas"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-cyan-50 text-cyan-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </span>
+                    <span>Plantillas</span>
+                </button>
+
+                <button type="button" data-tab="estados"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-violet-50 text-violet-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    </span>
+                    <span>Estados</span>
+                </button>
+
+                <button type="button" data-tab="plantillas-presupuesto"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M12 7h.01M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z"/></svg>
+                    </span>
+                    <span>Plantillas Presupu.</span>
+                </button>
+
+                <button type="button" data-tab="finanzas"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-50 text-teal-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                    <span>Finanzas</span>
+                </button>
+
+                <button type="button" data-tab="seguridad"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-50 text-red-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </span>
+                    <span>Seguridad / Login</span>
+                </button>
+
+                <div class="my-1 border-t border-gray-100"></div>
+
+                <button type="button" data-tab="export"
+                    class="admin-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 tab-icon">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </span>
+                    <span>Exportar</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- ── Main panel ── -->
+        <div class="flex-1 min-w-0">
+
+            <!-- USERS TAB -->
+            <div id="admin-tab-users" class="admin-tab-content">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Gestión de Usuarios</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Roles, permisos y estado de acceso</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="admin-new-user-btn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                                + Nuevo Usuario
+                            </button>
+                            <select id="admin-user-filter-rol" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="">Todos los roles</option>
+                                <option value="cliente">Clientes</option>
+                                <option value="tecnico">Técnicos</option>
+                                <option value="administrador">Administradores</option>
+                            </select>
+                            <select id="admin-user-filter-activo" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="">Todos</option>
+                                <option value="true">Habilitados</option>
+                                <option value="false">Deshabilitados</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs uppercase text-gray-400 border-b bg-gray-50">
+                                    <th class="px-5 py-3">Usuario</th>
+                                    <th class="px-5 py-3">Nombre completo</th>
+                                    <th class="px-5 py-3">Email</th>
+                                    <th class="px-5 py-3">Tipo</th>
+                                    <th class="px-5 py-3">Rol</th>
+                                    <th class="px-5 py-3 text-center">Estado</th>
+                                    <th class="px-5 py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-user-list-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRODUCTS TAB -->
+            <div id="admin-tab-products" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Catálogo de Productos</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Productos habilitados para crear tickets RMA</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="text" id="admin-product-search"
+                                class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-green-500 w-48 bg-white"
+                                placeholder="Buscar producto...">
+                            <select id="admin-product-filter-cat" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                            <button type="button" id="admin-new-product-btn"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                                + Nuevo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category summary pills -->
+                    <div id="admin-product-cats" class="flex flex-wrap gap-2 px-5 py-3 border-b bg-gray-50/50"></div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs uppercase text-gray-400 border-b bg-gray-50">
+                                    <th class="px-5 py-3">Marca / Modelo</th>
+                                    <th class="px-5 py-3">Categoría</th>
+                                    <th class="px-5 py-3">Nº Parte</th>
+                                    <th class="px-5 py-3 text-center">Garantía</th>
+                                    <th class="px-5 py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-product-list-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PARTS TAB -->
+            <div id="admin-tab-parts" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Inventario de Repuestos</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Stock, precios y proveedores</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="text" id="admin-parts-search"
+                                class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 w-48 bg-white"
+                                placeholder="Buscar repuesto...">
+                            <button type="button" id="admin-new-part-btn"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                                + Nuevo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stock alerts -->
+                    <div id="admin-parts-alerts" class="hidden px-5 py-3 border-b bg-amber-50 text-amber-700 text-xs font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                        <span id="admin-parts-alert-msg"></span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs uppercase text-gray-400 border-b bg-gray-50">
+                                    <th class="px-5 py-3">Código</th>
+                                    <th class="px-5 py-3">Nombre</th>
+                                    <th class="px-5 py-3">Proveedor</th>
+                                    <th class="px-5 py-3 text-center">Stock</th>
+                                    <th class="px-5 py-3 text-right">Precio</th>
+                                    <th class="px-5 py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-parts-list-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STOCK TAB -->
+            <div id="admin-tab-stock" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Historial de Stock</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Consumos y reposiciones con saldo acumulado</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select id="admin-stock-filter-cat" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                            <select id="admin-stock-filter-part" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                                <option value="">Todos los repuestos</option>
+                            </select>
+                            <button type="button" id="admin-stock-refresh-btn"
+                                class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50 transition text-gray-600">↻ Actualizar</button>
+                            <button type="button" id="admin-reposicion-btn"
+                                class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">+ Reponer Stock</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs uppercase text-gray-400 border-b bg-gray-50">
+                                    <th class="px-4 py-3">Fecha</th>
+                                    <th class="px-4 py-3">Repuesto</th>
+                                    <th class="px-4 py-3">Ticket RMA</th>
+                                    <th class="px-4 py-3">Tipo</th>
+                                    <th class="px-4 py-3 text-center">Cant.</th>
+                                    <th class="px-4 py-3 text-center">Stock result.</th>
+                                    <th class="px-4 py-3">Nota</th>
+                                    <th class="px-4 py-3">Operador</th>
+                                    <th class="px-4 py-3 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-stock-list-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAGS TAB -->
+            <div id="admin-tab-tags" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Gestión de Etiquetas</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Administrá las etiquetas disponibles para clasificar tickets</p>
+                        </div>
+                        <button type="button" id="admin-new-tag-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                            + Nueva Etiqueta
+                        </button>
+                    </div>
+
+                    <!-- New/Edit tag inline form -->
+                    <div id="tag-form-container" class="hidden px-5 py-4 bg-green-50 border-b border-green-100">
+                        <div class="flex items-end gap-3">
+                            <input type="hidden" id="tag-form-id">
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                                <input type="text" id="tag-form-nombre" placeholder="Ej: Garantía, DOA, Urgente..."
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color</label>
+                                <input type="color" id="tag-form-color" value="#3b82f6"
+                                    class="h-9 w-14 border rounded-lg cursor-pointer p-1">
+                            </div>
+                            <button type="button" id="tag-form-save"
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition">Guardar</button>
+                            <button type="button" id="tag-form-cancel"
+                                class="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div id="tags-list-container" class="p-5">
+                        <div id="admin-tags-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLANTILLAS TAB -->
+            <div id="admin-tab-plantillas" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Plantillas de Diagnóstico</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Textos predefinidos que aparecen como acceso rápido al escribir un diagnóstico</p>
+                        </div>
+                        <button type="button" id="admin-new-plantilla-btn"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                            + Nueva Plantilla
+                        </button>
+                    </div>
+
+                    <!-- Inline form -->
+                    <div id="plantilla-form-container" class="hidden px-5 py-4 bg-cyan-50 border-b border-cyan-100">
+                        <input type="hidden" id="plantilla-form-id">
+                        <div class="space-y-3">
+                            <div class="flex gap-3">
+                                <div class="flex-1">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del botón</label>
+                                    <input type="text" id="plantilla-form-nombre" placeholder="Ej: No enciende, Batería..."
+                                        class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-cyan-500">
+                                </div>
+                                <div class="w-20">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Orden</label>
+                                    <input type="number" id="plantilla-form-orden" value="0" min="0"
+                                        class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-cyan-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Texto de la plantilla</label>
+                                <textarea id="plantilla-form-texto" rows="3" placeholder="Texto que se insertará en el campo de diagnóstico..."
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-cyan-500"></textarea>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="plantilla-form-save"
+                                    class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-bold hover:bg-cyan-700 transition">Guardar</button>
+                                <button type="button" id="plantilla-form-cancel"
+                                    class="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="admin-plantillas-list" class="divide-y divide-gray-50"></div>
+                </div>
+            </div>
+
+            <!-- ESTADOS TAB -->
+            <div id="admin-tab-estados" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Estados de Ticket</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Configurá los estados del flujo de trabajo. Los cambios se reflejan en todos los selectores.</p>
+                        </div>
+                        <button type="button" id="admin-new-estado-btn"
+                            class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                            + Nuevo Estado
+                        </button>
+                    </div>
+
+                    <!-- Inline form -->
+                    <div id="estado-form-container" class="hidden px-5 py-4 bg-violet-50 border-b border-violet-100">
+                        <input type="hidden" id="estado-form-id">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Valor interno</label>
+                                <input type="text" id="estado-form-valor" placeholder="Ej: En pruebas"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                                <p class="text-[10px] text-gray-400 mt-1">Se guarda en la DB. No cambiar si ya hay tickets con este estado.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Etiqueta visible</label>
+                                <input type="text" id="estado-form-etiqueta" placeholder="Lo que ve el usuario"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color del badge</label>
+                                <input type="color" id="estado-form-color" value="#6b7280"
+                                    class="h-9 w-full border rounded-lg cursor-pointer p-1">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Orden</label>
+                                <input type="number" id="estado-form-orden" value="0" min="0"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-6 mt-3">
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" id="estado-form-activo" checked class="rounded">
+                                <span class="font-semibold text-gray-700">Activo</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" id="estado-form-final" class="rounded">
+                                <span class="font-semibold text-gray-700">Estado final</span>
+                                <span class="text-[10px] text-gray-400">(cierra el ticket)</span>
+                            </label>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button type="button" id="estado-form-save"
+                                class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-700 transition">Guardar</button>
+                            <button type="button" id="estado-form-cancel"
+                                class="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <div id="admin-estados-list" class="divide-y divide-gray-50"></div>
+                </div>
+            </div>
+
+            <!-- EXPORT TAB -->
+            <div id="admin-tab-export" class="admin-tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Tickets</h4>
+                                <p class="text-xs text-gray-400 mb-3">RMA, estado, producto, técnico y fechas</p>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="api.downloadExport('tickets','csv').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">CSV</button>
+                                    <button type="button" onclick="api.downloadExport('tickets','xlsx').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow transition">Excel (.xlsx)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Usuarios</h4>
+                                <p class="text-xs text-gray-400 mb-3">Roles, tipo y estado de cuenta</p>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="api.downloadExport('users','csv').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">CSV</button>
+                                    <button type="button" onclick="api.downloadExport('users','xlsx').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow transition">Excel (.xlsx)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Productos</h4>
+                                <p class="text-xs text-gray-400 mb-3">Catálogo con garantía y nº parte</p>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="api.downloadExport('products','csv').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">CSV</button>
+                                    <button type="button" onclick="api.downloadExport('products','xlsx').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow transition">Excel (.xlsx)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Repuestos</h4>
+                                <p class="text-xs text-gray-400 mb-3">Stock, precios y proveedores</p>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="api.downloadExport('parts','csv').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">CSV</button>
+                                    <button type="button" onclick="api.downloadExport('parts','xlsx').catch(e=>toast.error(e.message))"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow transition">Excel (.xlsx)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Seguridad / Rate limit ── -->
+            <div id="admin-tab-seguridad" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Seguridad del Login</h2>
+                            <p class="text-sm text-gray-500 mt-0.5">Configurá el rate limit para proteger el sistema contra ataques de fuerza bruta.</p>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Config cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="rate-limit-config-cards">
+                            <!-- Loaded dynamically -->
+                        </div>
+
+                        <!-- Attempted IPs -->
+                        <div class="border border-gray-100 rounded-xl p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-gray-700 text-sm uppercase tracking-widest">IPs con intentos fallidos recientes</h3>
+                                <button type="button" id="clear-all-attempts-btn"
+                                    class="text-xs text-red-500 hover:text-red-700 font-semibold border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 transition">
+                                    Limpiar todos
+                                </button>
+                            </div>
+                            <div id="login-attempts-list" class="space-y-2 text-sm">
+                                <p class="text-gray-400 italic">Cargando...</p>
+                            </div>
+                            <button type="button" id="refresh-attempts-btn"
+                                class="mt-4 text-xs text-blue-500 hover:text-blue-700 font-semibold">↻ Actualizar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLANTILLAS PRESUPUESTO TAB -->
+            <div id="admin-tab-plantillas-presupuesto" class="admin-tab-content hidden">
+
+                <!-- Category filter bar -->
+                <div class="bg-white rounded-2xl shadow border border-gray-100 p-4 mb-4 flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase mr-1">Categoría:</span>
+                    <div id="pp-cat-filter-pills" class="flex flex-wrap gap-2"></div>
+                    <button type="button" id="manage-pp-cats-btn"
+                        class="ml-auto text-xs font-semibold text-indigo-500 hover:text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition">
+                        ⚙ Gestionar categorías
+                    </button>
+                </div>
+
+                <!-- List -->
+                <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Plantillas de Presupuesto</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Ítems predefinidos para agilizar la creación de presupuestos</p>
+                        </div>
+                        <button type="button" id="new-plantilla-pres-btn"
+                            class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition">
+                            + Nueva Plantilla
+                        </button>
+                    </div>
+                    <div id="plantillas-pres-list" class="divide-y divide-gray-100 min-h-16"></div>
+                </div>
+            </div>
+
+            <!-- FINANZAS TAB -->
+            <div id="admin-tab-finanzas" class="admin-tab-content hidden">
+                <div class="space-y-6">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Ingresos Totales</p>
+                            <p id="fin-ingreso-total" class="text-2xl font-black text-blue-600">—</p>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Ganancia Total</p>
+                            <p id="fin-ganancia-total" class="text-2xl font-black text-emerald-600">—</p>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Costo Total</p>
+                            <p id="fin-costo-total" class="text-2xl font-black text-rose-500">—</p>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Margen Promedio</p>
+                            <p id="fin-margen" class="text-2xl font-black text-teal-600">—</p>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Ganancia prom. por ticket</p>
+                            <p id="fin-ganancia-prom" class="text-2xl font-black text-indigo-600">—</p>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Costo prom. por reparación</p>
+                            <p id="fin-costo-prom" class="text-2xl font-black text-amber-600">—</p>
+                        </div>
+                    </div>
+
+                    <!-- Monthly chart -->
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-gray-800">Evolución mensual</h3>
+                            <span id="fin-tickets-count" class="text-xs text-gray-400"></span>
+                        </div>
+                        <div id="fin-chart-container" class="overflow-x-auto">
+                            <div id="fin-chart" class="min-h-40"></div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly breakdown table -->
+                    <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+                        <div class="p-5 border-b bg-gray-50">
+                            <h3 class="font-bold text-gray-800">Detalle por mes</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-bold">Mes</th>
+                                        <th class="px-4 py-3 text-right font-bold">Ingresos</th>
+                                        <th class="px-4 py-3 text-right font-bold">Costos</th>
+                                        <th class="px-4 py-3 text-right font-bold">Ganancia</th>
+                                        <th class="px-4 py-3 text-right font-bold">Margen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fin-monthly-table" class="divide-y divide-gray-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── Modal: Nueva / Editar Plantilla de Presupuesto ── -->
+    <div id="pp-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/50" id="pp-modal-overlay"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+            <div class="flex items-center justify-between px-6 py-4 border-b">
+                <h3 class="text-base font-bold text-gray-800" id="pp-modal-title">Nueva plantilla</h3>
+                <button type="button" id="close-pp-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre *</label>
+                    <input type="text" id="pp-nombre" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej: Cambio de pantalla">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción (aparece en el ítem) *</label>
+                    <input type="text" id="pp-descripcion" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Descripción detallada del ítem">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Costo interno ($)</label>
+                        <input type="number" id="pp-costo" step="1" min="0" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio al cliente ($)</label>
+                        <input type="number" id="pp-precio" step="1" min="0" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="0">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
+                        <select id="pp-categoria" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Orden</label>
+                        <input type="number" id="pp-orden" min="0" step="1" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="0">
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="pp-edit-id" value="">
+            <div class="px-6 py-4 border-t flex gap-3">
+                <button type="button" id="cancel-pp-modal-btn"
+                    class="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition">Cancelar</button>
+                <button type="button" id="save-plantilla-pres-btn"
+                    class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: Gestionar Categorías de Plantillas ── -->
+    <div id="pp-cats-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/50" id="pp-cats-modal-overlay"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+            <div class="flex items-center justify-between px-6 py-4 border-b">
+                <h3 class="text-base font-bold text-gray-800">Categorías de Plantillas</h3>
+                <button type="button" id="close-pp-cats-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div id="pp-cats-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+                <div class="border-t pt-4 flex gap-2">
+                    <input type="text" id="pp-new-cat-input" class="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nueva categoría...">
+                    <button type="button" id="add-pp-cat-btn"
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition">
+                        Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .admin-tab-btn.active-tab {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        .admin-tab-btn.active-tab .tab-icon {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+    </style>
+
+</section>

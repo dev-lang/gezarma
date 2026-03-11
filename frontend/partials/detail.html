@@ -1,0 +1,513 @@
+<section id="detail-section">
+    <button type="button" id="back-to-list" class="flex items-center text-blue-600 hover:text-blue-800 mb-6 transition">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Volver al listado
+    </button>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left: Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white p-8 rounded-xl shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800" id="detail-rma-id"></h2>
+                        <p class="text-lg text-gray-600 mt-1" id="detail-product"></p>
+                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                            <span id="detail-creator-badge" class="hidden px-2.5 py-1 rounded-full text-xs font-semibold"></span>
+                            <span id="detail-clone-badge" class="hidden text-xs text-gray-400 italic"></span>
+                        </div>
+                        <div id="detail-tags" class="flex flex-wrap gap-2 mt-3" data-editable="false"></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <!-- Favourite star: admin/tech only -->
+                        <button type="button" id="fav-btn"
+                            class="hidden text-2xl leading-none transition hover:scale-110 focus:outline-none"
+                            title="Marcar como favorito">☆</button>
+                        <span id="detail-status-badge" class="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider"></span>
+                    </div>
+                </div>
+
+                <!-- Two-tab: Datos del Ticket / Datos del Cliente -->
+                <div class="flex border-b mb-5 space-x-5 text-sm">
+                    <button type="button" id="tab-ticket-data"
+                        class="pb-2 border-b-2 border-blue-600 font-bold text-blue-600">
+                        📋 Datos del Ticket
+                    </button>
+                    <button type="button" id="tab-client-data"
+                        class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        👤 Datos del Cliente
+                    </button>
+                </div>
+
+                <!-- Tab 1: Ticket data -->
+                <div id="ticket-data-panel">
+                    <div class="grid grid-cols-2 gap-y-4 text-sm border-t pt-6">
+                        <div><p class="text-gray-500 font-medium">Nº Serie</p><p id="detail-serial" class="font-semibold"></p></div>
+                        <div><p class="text-gray-500 font-medium">Compra</p><p id="detail-compra" class="font-semibold"></p></div>
+                        <div><p class="text-gray-500 font-medium">Prioridad</p><p id="detail-priority" class="font-semibold"></p></div>
+                        <div><p class="text-gray-500 font-medium">Técnico</p><p id="detail-tecnico" class="font-semibold"></p></div>
+                    </div>
+                    <div class="mt-8">
+                        <h3 class="font-bold text-gray-800 mb-2">Descripción del Problema</h3>
+                        <div id="detail-description-wrap" class="group relative">
+                            <div class="bg-gray-50 p-4 rounded-lg text-gray-700 leading-relaxed" id="detail-description"></div>
+                            <button type="button" id="edit-description-btn"
+                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 hover:text-blue-700 font-semibold hidden"
+                                title="Editar descripción">✎ Editar</button>
+                            <div id="edit-description-form" class="hidden mt-2">
+                                <textarea id="edit-description-input"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" rows="4"></textarea>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" id="save-description-btn"
+                                        class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition">Guardar</button>
+                                    <button type="button" id="cancel-description-btn"
+                                        class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50 transition">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="detail-shipping-container" class="mt-6 bg-blue-50 border border-blue-100 p-4 rounded-lg hidden">
+                        <h3 class="text-blue-800 font-bold text-xs uppercase mb-2">Información de Envío</h3>
+                        <p class="text-sm">Transporte: <span id="detail-shipping-company" class="font-bold text-blue-900"></span></p>
+                        <p class="text-sm">Nº Tracking: <span id="detail-tracking" class="font-bold text-blue-900"></span></p>
+                    </div>
+                    <div id="detail-parts-container" class="mt-6 bg-gray-50 border border-gray-100 p-4 rounded-lg hidden">
+                        <h3 class="text-gray-600 font-bold text-xs uppercase mb-2">Repuestos Utilizados <span id="parts-edit-hint" class="hidden text-[10px] font-normal text-indigo-400 normal-case">— usá +/− para ajustar o ✕ para quitar</span></h3>
+                        <div id="detail-parts-list" class="text-sm space-y-1"></div>
+                    </div>
+                    <div id="detail-related-container" class="mt-4 hidden">
+                        <div class="flex items-center justify-between bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                <span class="text-xs font-semibold text-indigo-700">Ticket relacionado:</span>
+                                <button type="button" id="related-ticket-link" class="text-xs font-mono font-bold text-indigo-600 hover:underline"></button>
+                            </div>
+                            <button type="button" id="unlink-related-btn" class="text-xs text-red-400 hover:text-red-600 font-semibold transition hidden">Desasociar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Client data -->
+                <div id="client-data-panel" class="hidden">
+                    <div class="space-y-3 pt-4">
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                            <span class="text-xl">👤</span>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Nombre</p>
+                                <p id="client-nombre" class="font-semibold text-gray-800 text-sm">—</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                            <span class="text-xl">✉️</span>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Email</p>
+                                <p id="client-email" class="font-semibold text-gray-800 text-sm">—</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                            <span class="text-xl">📞</span>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Teléfono</p>
+                                <p id="client-telefono" class="font-semibold text-gray-800 text-sm">—</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                            <span class="text-xl">🏷️</span>
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Tipo de usuario</p>
+                                <p id="client-rol" class="font-semibold text-gray-800 text-sm">—</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments / History -->
+            <div class="bg-white p-8 rounded-xl shadow border border-gray-100">
+                <div class="flex border-b mb-6 space-x-6">
+                    <button type="button" id="tab-comments" class="pb-2 border-b-2 border-blue-600 font-bold text-blue-600">Comentarios</button>
+                    <button type="button" id="tab-history" class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Historial</button>
+                </div>
+
+                <div id="comments-container">
+                    <div id="comment-list" class="space-y-4 mb-8"></div>
+                    <div class="mt-6 border-t pt-6 space-y-3">
+                        <textarea id="new-comment" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" rows="3" placeholder="Escribe un comentario..."></textarea>
+
+                        <!-- Nota interna toggle (tech/admin only) -->
+                        <div id="internal-note-row" class="hidden items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <div class="relative">
+                                    <input type="checkbox" id="is-internal-toggle" class="sr-only peer">
+                                    <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-violet-500 transition-colors"></div>
+                                    <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600 peer-checked:text-violet-700">🔒 Nota interna</span>
+                            </label>
+                            <span class="text-xs text-gray-400">(solo visible para técnicos y administradores)</span>
+                        </div>
+
+                        <button type="button" id="add-comment-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Enviar</button>
+                    </div>
+                </div>
+
+                <div id="history-container" class="hidden">
+                    <div id="history-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Sidebar -->
+        <div class="space-y-6">
+            <!-- Card unificada: Gestión + Edición de campos -->
+            <div id="mgmt-card" class="bg-white p-6 rounded-xl shadow border border-gray-100 hidden">
+                <h3 class="font-bold text-gray-800 mb-4 uppercase text-xs tracking-widest">Gestión de Ticket</h3>
+                <div class="space-y-4">
+
+                    <!-- ── Sección: Estado y técnico ── -->
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Cambiar Estado</label>
+                        <select id="update-status" class="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="En revisión">En revisión</option>
+                            <option value="Aprobado para RMA">Aprobado para RMA</option>
+                            <option value="Equipo recibido">Equipo recibido</option>
+                            <option value="En diagnóstico">En diagnóstico</option>
+                            <option value="En reparación">En reparación</option>
+                            <option value="Esperando repuestos">Esperando repuestos</option>
+                            <option value="Reparado">Reparado</option>
+                            <option value="Enviado al cliente">Enviado al cliente</option>
+                            <option value="Cerrado">Cerrado</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div id="assign-tech-container" class="hidden">
+                        <label class="block text-sm font-semibold mb-1">Asignar Técnico</label>
+                        <select id="assign-tech" class="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
+                    <div class="pt-2 border-t">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase">Etiquetar Ticket</label>
+                        <select id="update-tags" class="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccione etiqueta...</option>
+                        </select>
+                    </div>
+                    <div class="pt-2 border-t">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase">Repuesto Utilizado</label>
+                        <div class="flex gap-2">
+                            <select id="update-part" class="flex-1 px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+                                <option value="">Ninguno / Sin repuestos</option>
+                            </select>
+                            <input type="number" id="update-part-qty" value="1" min="1" class="w-16 px-3 py-2 border rounded-md text-sm outline-none">
+                        </div>
+                    </div>
+                    <div id="shipping-info-fields" class="hidden space-y-3 pt-2 border-t">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Transporte</label>
+                            <input type="text" id="update-shipping-company" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="Ej: Andreani, OCA...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Nº Tracking</label>
+                            <input type="text" id="update-tracking" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="Código de seguimiento">
+                        </div>
+                    </div>
+
+                    <!-- Diagnóstico con plantillas -->
+                    <div class="pt-2 border-t">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Diagnóstico / Resolución</label>
+                        <div class="flex flex-wrap gap-1 mb-2" id="diag-templates-container">
+                            <span class="text-[10px] text-gray-400 font-semibold uppercase mr-1 self-center">Plantillas:</span>
+                        </div>
+                        <textarea id="update-diagnostic" class="w-full px-3 py-2 border rounded-md text-sm" rows="3" placeholder="Detalle técnico de la reparación..."></textarea>
+                    </div>
+
+                    <button type="button" id="save-mgmt-btn" class="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-gray-900 transition">Actualizar Ticket</button>
+                    <button type="button" id="print-pdf-btn" class="w-full mt-2 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition">🖨 Imprimir / Guardar PDF</button>
+                    <button type="button" id="clone-ticket-btn" class="w-full mt-2 border border-indigo-300 text-indigo-700 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition">⎘ Clonar Ticket</button>
+
+                    <!-- ── Sección colapsable: Editar campos del ticket ── -->
+                    <div class="pt-3 border-t">
+                        <button type="button" id="toggle-edit-fields-btn"
+                            class="w-full flex items-center justify-between text-left py-1">
+                            <span class="font-bold text-gray-700 uppercase text-xs tracking-widest">✏️ Editar Campos del Ticket</span>
+                            <svg id="edit-fields-chevron" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="edit-fields-body" class="hidden mt-3 space-y-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-[10px] text-gray-400">Los campos muestran los valores actuales del ticket. Solo modificá lo que quieras cambiar.</p>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Descripción</label>
+                                <textarea id="ef-descripcion" class="w-full px-3 py-2 border rounded-md text-sm mt-1 bg-white" rows="3"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Nº de Serie</label>
+                                <input type="text" id="ef-numero_serie" class="w-full px-3 py-2 border rounded-md text-sm mt-1 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Prioridad</label>
+                                <select id="ef-prioridad" class="w-full px-3 py-2 border rounded-md text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="Baja">Baja</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Alta">Alta</option>
+                                    <option value="Urgente">Urgente</option>
+                                </select>
+                            </div>
+                            <!-- Tags management -->
+                            <div class="pt-2 border-t border-gray-200">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Etiquetas</label>
+                                <div id="ef-tags-container" class="flex flex-wrap gap-1 mb-2"></div>
+                                <select id="ef-add-tag" class="w-full px-3 py-2 border rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Agregar etiqueta...</option>
+                                </select>
+                            </div>
+                            <button type="button" id="save-edit-fields-btn"
+                                class="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
+                                Guardar cambios de campos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- edit-fields-card alias (hidden, mantiene compatibilidad JS) -->
+            <div id="edit-fields-card" class="hidden"></div>
+
+            <!-- ── Presupuesto Card ─────────────────────────────────────────── -->
+            <div id="presupuesto-card" class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-800 uppercase text-xs tracking-widest">Presupuesto</h3>
+                    <span id="presupuesto-estado-badge" class="hidden px-2.5 py-0.5 rounded-full text-xs font-bold uppercase"></span>
+                </div>
+
+                <!-- No presupuesto state -->
+                <div id="presupuesto-empty" class="text-center py-4">
+                    <p class="text-sm text-gray-400 mb-3">Este ticket no tiene presupuesto aún.</p>
+                    <button type="button" id="create-presupuesto-btn"
+                        class="hidden w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition">
+                        + Crear Presupuesto
+                    </button>
+                </div>
+
+                <!-- Presupuesto summary (read) -->
+                <div id="presupuesto-summary" class="hidden space-y-2">
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-gray-50 rounded-lg p-2">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Costo</p>
+                            <p id="presupuesto-costo" class="text-sm font-bold text-gray-700"></p>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-2">
+                            <p class="text-[10px] text-blue-400 uppercase font-bold">Precio</p>
+                            <p id="presupuesto-precio" class="text-sm font-bold text-blue-700"></p>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-2">
+                            <p class="text-[10px] text-emerald-400 uppercase font-bold">Ganancia</p>
+                            <p id="presupuesto-ganancia" class="text-sm font-bold text-emerald-700"></p>
+                        </div>
+                    </div>
+                    <div id="presupuesto-items-list" class="text-xs space-y-1 mt-2 max-h-40 overflow-y-auto"></div>
+                    <p id="presupuesto-notas-display" class="text-xs text-gray-400 italic hidden"></p>
+
+                    <!-- Action buttons by role/state -->
+                    <div id="presupuesto-actions" class="flex flex-col gap-1.5 pt-2 border-t border-gray-100">
+                        <button type="button" id="edit-presupuesto-btn"
+                            class="hidden w-full bg-blue-600 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition">
+                            ✎ Editar
+                        </button>
+                        <button type="button" id="send-presupuesto-btn"
+                            class="hidden w-full bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition">
+                            📤 Enviar al cliente
+                        </button>
+                        <div id="client-presupuesto-actions" class="hidden flex gap-1.5">
+                            <button type="button" id="approve-presupuesto-btn"
+                                class="flex-1 bg-emerald-600 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 transition">
+                                ✓ Aprobar
+                            </button>
+                            <button type="button" id="reject-presupuesto-btn"
+                                class="flex-1 bg-red-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 transition">
+                                ✕ Rechazar
+                            </button>
+                        </div>
+                        <button type="button" id="view-versions-btn"
+                            class="hidden w-full border border-gray-200 text-gray-500 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-50 transition">
+                            📋 Ver historial de versiones
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presupuesto modal (create/edit) -->
+            <div id="presupuesto-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+                <div class="absolute inset-0 bg-black/50" id="presupuesto-modal-overlay"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col mx-4">
+                    <div class="flex items-center justify-between px-6 py-4 border-b">
+                        <h2 class="text-lg font-bold text-gray-800" id="presupuesto-modal-title">Crear Presupuesto</h2>
+                        <button type="button" id="close-presupuesto-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-6 space-y-4">
+                        <!-- Template picker -->
+                        <div id="template-picker-wrap">
+                            <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Agregar desde plantilla</label>
+                            <div id="template-pills" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Items table -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Ítems del presupuesto</label>
+                                <button type="button" id="add-item-row-btn"
+                                    class="text-xs text-blue-600 font-bold hover:underline">+ Agregar ítem</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-gray-50 text-gray-500 uppercase">
+                                        <tr>
+                                            <th class="px-2 py-2 text-left font-bold">Descripción</th>
+                                            <th class="px-2 py-2 text-right font-bold w-16">Cant.</th>
+                                            <th class="px-2 py-2 text-right font-bold w-24">Costo c/u</th>
+                                            <th class="px-2 py-2 text-right font-bold w-24">Precio c/u</th>
+                                            <th class="px-2 py-2 text-right font-bold w-20">Total $</th>
+                                            <th class="w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="presupuesto-items-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="bg-gray-50 rounded-lg p-3 text-xs grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-gray-400 font-bold uppercase">Costo Total</p>
+                                <p id="modal-costo-total" class="text-gray-700 font-bold text-base">$0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-blue-400 font-bold uppercase">Precio Total</p>
+                                <p id="modal-precio-total" class="text-blue-700 font-bold text-base">$0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-emerald-400 font-bold uppercase">Ganancia</p>
+                                <p id="modal-ganancia" class="text-emerald-700 font-bold text-base">$0.00</p>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notas</label>
+                            <textarea id="presupuesto-notas" rows="2"
+                                class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="Notas internas o para el cliente..."></textarea>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 border-t flex gap-3">
+                        <button type="button" id="cancel-presupuesto-btn"
+                            class="flex-1 border border-gray-300 text-gray-600 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="button" id="save-presupuesto-btn"
+                            class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
+                            Guardar Presupuesto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Versiones modal -->
+            <div id="versiones-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+                <div class="absolute inset-0 bg-black/50" id="versiones-modal-overlay"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col mx-4">
+                    <div class="flex items-center justify-between px-6 py-4 border-b">
+                        <h2 class="text-lg font-bold text-gray-800">Historial de Versiones</h2>
+                        <button type="button" id="close-versiones-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div id="versiones-list" class="overflow-y-auto flex-1 p-6 space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Acción rápida cliente (no mgmt) -->
+            <div id="client-pdf-btn-wrap" class="hidden">
+                <button type="button" id="client-print-pdf-btn" class="w-full border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition bg-white">🖨 Guardar como PDF</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-1 uppercase text-xs tracking-widest">Archivos Adjuntos</h3>
+                <!-- Storage bar -->
+                <div id="attachment-storage-bar" class="mb-3 hidden">
+                    <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+                        <span>Espacio usado</span>
+                        <span id="attachment-storage-label">0 / 10 MB</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div id="attachment-storage-fill" class="h-1.5 rounded-full bg-blue-500 transition-all" style="width:0%"></div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1">Formatos aceptados: PDF, TXT, JPG, PNG</p>
+                </div>
+                <div id="attachment-list" class="text-sm space-y-2 mb-4"></div>
+                <div class="mt-4 border-t pt-4">
+                    <input type="file" id="attachment-file" class="hidden" accept=".pdf,.txt,.jpg,.jpeg,.png" multiple>
+                    <button type="button" id="upload-btn"
+                        class="w-full border-2 border-dashed border-gray-300 text-gray-500 py-3 rounded-lg text-sm hover:border-blue-400 hover:text-blue-500 transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        Seleccionar archivos
+                    </button>
+                </div>
+            </div>
+
+    <!-- ── Upload Preview Modal ──────────────────────────────────────────── -->
+    <div id="upload-preview-modal"
+        class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b">
+                <h3 class="font-bold text-gray-800">Vista previa — Archivos a subir</h3>
+                <button type="button" id="upload-preview-close"
+                    class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <div class="px-6 py-4">
+                <div id="upload-preview-list" class="space-y-2 mb-4 max-h-52 overflow-y-auto"></div>
+                <!-- Storage info -->
+                <div class="bg-gray-50 rounded-xl p-3 text-sm space-y-1.5 border border-gray-100">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Total a subir</span>
+                        <span id="preview-total-size" class="font-bold">—</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500 text-xs">
+                        <span>Espacio usado actualmente</span>
+                        <span id="preview-used-size">—</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500 text-xs">
+                        <span>Límite por ticket</span>
+                        <span>10 MB</span>
+                    </div>
+                    <div class="h-px bg-gray-200 my-1"></div>
+                    <div class="flex justify-between font-semibold text-xs">
+                        <span>Disponible tras subida</span>
+                        <span id="preview-remaining-size" class="text-blue-600">—</span>
+                    </div>
+                </div>
+                <div id="upload-preview-error" class="hidden mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+            </div>
+            <div class="px-6 pb-5 flex gap-3">
+                <button type="button" id="upload-preview-cancel"
+                    class="flex-1 border border-gray-300 text-gray-600 rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="button" id="upload-preview-confirm"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-sm font-bold shadow transition flex items-center justify-center gap-2">
+                    <span id="upload-preview-confirm-label">Subir archivos</span>
+                    <span id="upload-preview-spinner" class="hidden">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+
+    <!-- PDF hidden print area -->
+    <div id="pdf-print-area" class="hidden"></div>
+</section>

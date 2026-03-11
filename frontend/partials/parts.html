@@ -1,0 +1,37 @@
+<section id="parts-section">
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <button type="button" id="back-to-dashboard-from-parts" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Volver
+            </button>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Gestión de Repuestos</h2>
+                <p class="text-gray-500 text-sm">Inventario y stock de componentes</p>
+            </div>
+        </div>
+        <button type="button" id="new-part-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-semibold shadow transition">
+            + Nuevo Repuesto
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+        <div class="p-6 overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b text-xs uppercase text-gray-500">
+                        <th class="py-3 pr-6">Código</th>
+                        <th class="py-3 pr-6">Nombre</th>
+                        <th class="py-3 pr-6">Proveedor</th>
+                        <th class="py-3 pr-6 text-center">Stock</th>
+                        <th class="py-3 pr-6 text-right">Precio</th>
+                        <th class="py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="parts-list-body"></tbody>
+            </table>
+        </div>
+    </div>
+</section>

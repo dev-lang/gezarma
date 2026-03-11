@@ -1,0 +1,363 @@
+<!-- New Ticket Modal -->
+<div id="ticket-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Nueva Solicitud de RMA</h2>
+                <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="ticket-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold mb-1">Producto</label>
+                    <select id="tk-producto-id" class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Seleccione un producto...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Número de Serie</label>
+                    <input type="text" id="tk-serie" class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Fecha de Compra</label>
+                    <input type="date" id="tk-compra" class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Prioridad</label>
+                    <select id="tk-prioridad" class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Baja">Baja</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold mb-1">Descripción del Problema</label>
+                    <textarea id="tk-descripcion" class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Detalle la falla presentada..." required></textarea>
+                </div>
+                <div class="md:col-span-2 flex justify-end space-x-4">
+                    <button type="button" id="cancel-ticket" class="px-6 py-2 text-gray-500 font-semibold hover:text-gray-700 transition">Cancelar</button>
+                    <button type="submit" id="ticket-form-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition transform hover:-translate-y-0.5">Crear Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Parts Form Modal -->
+<div id="parts-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+        <div class="flex justify-between items-center mb-6">
+            <h3 id="part-form-title" class="text-xl font-bold">Nuevo Repuesto</h3>
+            <button type="button" id="close-part-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        <form id="part-form" class="space-y-4">
+            <input type="hidden" id="part-form-id">
+            <div>
+                <label class="block text-sm font-semibold mb-1">Nombre</label>
+                <input type="text" id="part-form-nombre" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Código</label>
+                <input type="text" id="part-form-codigo" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Proveedor</label>
+                <input type="text" id="part-form-proveedor" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Categoría</label>
+                <input type="text" id="part-form-categoria" list="part-categoria-list"
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Ej: Pantallas, Baterías, Placas...">
+                <datalist id="part-categoria-list">
+                    <option value="Pantallas">
+                    <option value="Baterías">
+                    <option value="Placas madre">
+                    <option value="Teclados">
+                    <option value="Discos">
+                    <option value="Cables">
+                    <option value="Accesorios">
+                    <option value="General">
+                </datalist>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Stock inicial</label>
+                    <input type="number" id="part-form-stock" min="0" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Precio ($)</label>
+                    <input type="number" id="part-form-precio" min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                </div>
+            </div>
+            <button type="submit" id="part-form-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow transition">Guardar Repuesto</button>
+        </form>
+    </div>
+</div>
+
+<!-- New User Modal (admin) -->
+<div id="new-user-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+        <div class="flex justify-between items-center px-7 pt-6 pb-4 border-b">
+            <h3 class="text-xl font-bold text-gray-800">Crear Nuevo Usuario</h3>
+            <button type="button" id="close-new-user-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        <form id="new-user-form" class="px-7 py-5 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Usuario <span class="text-red-500">*</span></label>
+                    <input type="text" id="nu-username" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="sin espacios" required autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Contraseña <span class="text-red-500">*</span></label>
+                    <input type="password" id="nu-password" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="mín. 6 caracteres" required autocomplete="new-password">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Nombre completo <span class="text-red-500">*</span></label>
+                <input type="text" id="nu-nombre" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nombre y apellido" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Email <span class="text-red-500">*</span></label>
+                <input type="email" id="nu-email" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="correo@ejemplo.com" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Rol</label>
+                    <select id="nu-rol" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="cliente">Cliente</option>
+                        <option value="tecnico">Técnico</option>
+                        <option value="administrador">Administrador</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Tipo</label>
+                    <select id="nu-tipo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="persona">Persona</option>
+                        <option value="empresa">Empresa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="cancel-new-user" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
+                <button type="submit" id="create-user-btn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Crear Usuario</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirm Dialog Modal -->
+<div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] hidden">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm mx-4">
+        <div class="text-center">
+            <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h3 id="confirm-title" class="text-lg font-bold text-gray-900 mb-2">¿Estás seguro?</h3>
+            <p id="confirm-message" class="text-gray-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
+            <div class="flex space-x-3">
+                <button type="button" id="confirm-cancel-btn" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
+                <button type="button" id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Edit Modal -->
+<div id="user-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[92vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white px-8 pt-6 pb-4 border-b flex justify-between items-center z-10">
+            <h3 class="text-xl font-bold text-gray-800">Editar Usuario</h3>
+            <button type="button" id="close-user-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+
+        <div class="px-8 pb-8 pt-4 space-y-6">
+            <!-- User info header -->
+            <div id="user-edit-info" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0" id="user-edit-avatar"></div>
+                <div>
+                    <p class="font-semibold text-gray-800" id="user-edit-username"></p>
+                    <p class="text-sm text-gray-500" id="user-edit-email-display"></p>
+                </div>
+            </div>
+
+            <!-- Profile fields -->
+            <div class="space-y-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Datos del perfil</p>
+                <input type="hidden" id="user-edit-id">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Nombre completo</label>
+                    <input type="text" id="user-edit-nombre"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="Nombre y apellido">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Email</label>
+                    <input type="email" id="user-edit-email"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="correo@ejemplo.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Teléfono <span class="text-xs text-gray-400 font-normal">(opcional)</span></label>
+                    <input type="tel" id="user-edit-telefono"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="+54 11 1234-5678">
+                </div>
+            </div>
+
+            <!-- Reset password -->
+            <div class="border rounded-xl p-4 bg-amber-50 border-amber-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-amber-800">Blanquear contraseña</p>
+                        <p class="text-xs text-amber-600 mt-0.5">Genera una contraseña temporal. El usuario deberá cambiarla al ingresar.</p>
+                    </div>
+                    <button type="button" id="reset-pw-btn"
+                        class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                        Resetear clave
+                    </button>
+                </div>
+                <!-- Temp password display (shown after reset) -->
+                <div id="temp-pw-display" class="hidden mt-3 p-3 bg-white rounded-lg border border-amber-300">
+                    <p class="text-xs text-gray-500 mb-1">Contraseña temporal generada:</p>
+                    <div class="flex items-center gap-2">
+                        <code id="temp-pw-value" class="flex-1 font-mono text-sm font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border select-all"></code>
+                        <button type="button" id="copy-temp-pw"
+                            class="text-xs px-2 py-1 border rounded hover:bg-gray-50 transition text-gray-600">Copiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role selector -->
+            <form id="user-edit-form">
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rol del sistema</p>
+                    <div class="grid grid-cols-3 gap-2" id="rol-selector">
+                        <label class="flex flex-col items-center gap-1 p-3 border-2 rounded-lg cursor-pointer transition hover:border-blue-400 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            <span class="text-xs font-semibold">Cliente</span>
+                            <input type="radio" name="user-rol" value="cliente" class="sr-only">
+                        </label>
+                        <label class="flex flex-col items-center gap-1 p-3 border-2 rounded-lg cursor-pointer transition hover:border-purple-400 has-[:checked]:border-purple-600 has-[:checked]:bg-purple-50">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                            <span class="text-xs font-semibold">Técnico</span>
+                            <input type="radio" name="user-rol" value="tecnico" class="sr-only">
+                        </label>
+                        <label class="flex flex-col items-center gap-1 p-3 border-2 rounded-lg cursor-pointer transition hover:border-red-400 has-[:checked]:border-red-600 has-[:checked]:bg-red-50">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            <span class="text-xs font-semibold">Admin</span>
+                            <input type="radio" name="user-rol" value="administrador" class="sr-only">
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-400" id="rol-description"></p>
+                </div>
+
+                <div class="pt-4 border-t mt-4">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Estado de la cuenta</p>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700" id="activo-label">Cuenta habilitada</p>
+                            <p class="text-xs text-gray-400" id="activo-sublabel">El usuario puede iniciar sesión</p>
+                        </div>
+                        <button type="button" id="toggle-activo-btn"
+                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                            role="switch" aria-checked="true">
+                            <span id="toggle-activo-knob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform translate-x-6"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancel-user-edit" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" id="save-user-btn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Product Form Modal -->
+<div id="product-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 id="product-form-title" class="text-xl font-bold text-gray-800">Nuevo Producto</h3>
+            <button type="button" id="close-product-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+        <form id="product-form" class="space-y-4">
+            <input type="hidden" id="product-form-id">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Marca</label>
+                    <input type="text" id="product-form-marca" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Ej: ASUS, Samsung">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Modelo</label>
+                    <input type="text" id="product-form-modelo" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Ej: X515, Galaxy S24">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Categoría</label>
+                    <input type="text" id="product-form-categoria" list="categoria-list" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Ej: Notebooks">
+                    <datalist id="categoria-list">
+                        <option value="Notebooks">
+                        <option value="Periféricos">
+                        <option value="Monitores">
+                        <option value="Servidores">
+                        <option value="Componentes">
+                        <option value="Impresoras">
+                        <option value="Redes">
+                        <option value="Smartphones">
+                        <option value="Tablets">
+                    </datalist>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Garantía (meses)</label>
+                    <input type="number" id="product-form-garantia" min="1" max="120" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required value="12">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1">Número de Parte <span class="text-gray-400 font-normal">(opcional)</span></label>
+                <input type="text" id="product-form-nroparte" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono" placeholder="SKU o código interno">
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="cancel-product-form" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
+                <button type="submit" id="product-form-btn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+    <!-- Reposición de Stock -->
+    <div id="reposicion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-bold text-gray-800">Reponer Stock</h3>
+                <button type="button" id="close-reposicion-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Repuesto</label>
+                    <select id="reposicion-part-id" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Cantidad a ingresar</label>
+                    <input type="number" id="reposicion-cantidad" min="1" value="1"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Nota (opcional)</label>
+                    <input type="text" id="reposicion-nota" placeholder="Ej: Compra factura #1234"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button type="button" id="cancel-reposicion" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
+                <button type="button" id="confirm-reposicion-btn" class="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg font-semibold hover:bg-rose-700 transition">Ingresar Stock</button>
+            </div>
+        </div>
+    </div>

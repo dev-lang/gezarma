@@ -1,0 +1,609 @@
+/**
+ * components.js — Pure render functions for all UI elements.
+ * Each function takes data and returns an HTML string.
+ * No side effects, no DOM access — easy to test and reuse.
+ */
+const components = (() => {
+
+    // ── Status helpers ──────────────────────────────────────────────────────
+    function statusClass(status) {
+        const map = {
+            'Nuevo':            'bg-blue-100 text-blue-700',
+            'En revisión':      'bg-amber-100 text-amber-700',
+            'Aprobado para RMA':'bg-green-100 text-green-700',
+            'Equipo recibido':  'bg-indigo-100 text-indigo-700',
+            'En diagnóstico':   'bg-cyan-100 text-cyan-700',
+            'En reparación':    'bg-purple-100 text-purple-700',
+            'Esperando repuestos': 'bg-orange-100 text-orange-700',
+            'Reparado':         'bg-teal-100 text-teal-700',
+            'Enviado al cliente':'bg-sky-100 text-sky-700',
+            'Cerrado':          'bg-gray-100 text-gray-700',
+            'Cancelado':        'bg-red-100 text-red-700',
+        };
+        return map[status] || 'bg-gray-100 text-gray-700';
+    }
+
+    function slaBadge(deadline, estado) {
+        // Don't show SLA badge on new tickets — the 24h clock is internal,
+        // not meaningful to display until the team has picked up the ticket.
+        if (!deadline || estado === 'Nuevo') return '';
+        const diff = new Date(deadline) - new Date();
+        if (diff < 0)
+            return '<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded ml-2 font-bold">VENCIDO</span>';
+        if (diff < 86_400_000)
+            return '<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded ml-2 font-bold">POR VENCER</span>';
+        return '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2 font-bold">EN TIEMPO</span>';
+    }
+
+    function priorityBadge(prioridad) {
+        const map = {
+            'Urgente': 'bg-red-600 text-white',
+            'Alta':    'bg-orange-500 text-white',
+            'Normal':  'bg-gray-200 text-gray-700',
+            'Media':   'bg-gray-200 text-gray-700',
+            'Baja':    'bg-gray-100 text-gray-500',
+        };
+        const cls = map[prioridad] || 'bg-gray-100 text-gray-500';
+        return `<span class="text-[10px] ${cls} px-2 py-0.5 rounded font-bold uppercase">${prioridad}</span>`;
+    }
+
+    // ── Ticket table row ─────────────────────────────────────────────────────
+    function ticketRow(t) {
+        const warrantyBadge = t.en_garantia
+            ? '<span class="text-green-600 font-bold">[GARANTÍA]</span>'
+            : '<span class="text-red-500 font-bold">[FUERA GARANTÍA]</span>';
+
+        return `
+        <tr class="hover:bg-gray-50 transition border-b" data-ticket-id="${t.id}">
+            <td class="px-6 py-4">
+                <div class="font-bold text-blue-600">#${t.id} ${slaBadge(t.deadline_sla, t.estado)}</div>
+                <div class="text-xs text-gray-400 font-mono">${t.numero_rma}</div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="text-sm font-semibold">${t.producto || 'Producto Genérico'}</div>
+                <div class="text-xs text-gray-400">SN: ${t.numero_serie} ${warrantyBadge}</div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="${statusClass(t.estado)} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                    ${t.estado}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-xs text-gray-500">
+                ${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}
+                <div class="mt-0.5">${priorityBadge(t.prioridad)}</div>
+            </td>
+            <td class="px-6 py-4 text-right">
+                <button onclick="app.viewTicket(${t.id})"
+                    class="text-blue-600 hover:text-blue-800 font-bold text-sm">Ver Detalle</button>
+            </td>
+        </tr>`;
+    }
+
+    // ── Ticket table empty state ─────────────────────────────────────────────
+    function ticketEmptyState(filtered = false) {
+        return `
+        <tr>
+            <td colspan="5" class="px-6 py-16 text-center">
+                <div class="flex flex-col items-center gap-3 text-gray-400">
+                    <svg class="w-16 h-16 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="font-semibold text-gray-500 text-lg">
+                        ${filtered ? 'Sin resultados para ese filtro' : 'Aún no hay tickets'}
+                    </p>
+                    <p class="text-sm text-gray-400">
+                        ${filtered ? 'Probá con otro estado o limpiá el filtro.' : 'Cuando se cree una solicitud de RMA aparecerá aquí.'}
+                    </p>
+                </div>
+            </td>
+        </tr>`;
+    }
+
+    // ── Stats card ───────────────────────────────────────────────────────────
+    function statCard({ label, value, color, icon }) {
+        const colors = {
+            blue:   'border-blue-600',
+            amber:  'border-amber-500',
+            indigo: 'border-indigo-500',
+            green:  'border-green-600',
+            red:    'border-red-500',
+        };
+        const icons = {
+            ticket: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>`,
+            new:    `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>`,
+            wrench: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>`,
+            check:  `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>`,
+        };
+        return `
+        <div class="bg-white p-6 rounded-xl shadow border-l-4 ${colors[color] || colors.blue}">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">${label}</p>
+                    <p class="text-3xl font-black text-gray-800 mt-1">${value}</p>
+                </div>
+                ${icon ? `<svg class="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[icon] || ''}</svg>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // ── Comment ──────────────────────────────────────────────────────────────
+    function comment(c) {
+        const isDiag    = c.comentario.startsWith('DIAGNÓSTICO TÉCNICO:');
+        const isInternal = c.is_internal === true;
+
+        let wrapCls, headerCls, badge = '';
+        if (isInternal) {
+            wrapCls   = 'bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-700';
+            headerCls = 'text-violet-800 dark:text-violet-300';
+            badge     = `<span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-200">Nota interna</span>`;
+        } else if (isDiag) {
+            wrapCls   = 'bg-amber-50 border-amber-200';
+            headerCls = 'text-amber-800';
+        } else {
+            wrapCls   = 'bg-gray-50 border-gray-100';
+            headerCls = 'text-blue-800';
+        }
+
+        const icon = isInternal ? '🔒 ' : isDiag ? '🔧 ' : '';
+        return `
+        <div class="p-4 rounded-lg border ${wrapCls}">
+            <div class="flex justify-between items-start mb-2">
+                <span class="font-bold text-sm flex items-center flex-wrap gap-1 ${headerCls}">
+                    ${icon}${c.usuario_nombre || 'Usuario #' + c.usuario_id}${badge}
+                </span>
+                <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString('es-AR')}</span>
+            </div>
+            <p class="text-sm leading-relaxed ${isInternal ? 'text-violet-900 dark:text-violet-200 italic' : 'text-gray-700'}">${c.comentario}</p>
+        </div>`;
+    }
+
+    function stockMovRow(m, isLast = false) {
+        const isConsumo = m.tipo === 'consumo';
+        const cls   = isConsumo ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
+        const sign  = isConsumo ? '−' : '+';
+        const fecha = new Date(m.fecha).toLocaleString('es-AR');
+        const ticketLink = m.ticket_rma
+            ? `<span class="font-mono text-blue-600 text-xs">${m.ticket_rma}</span>`
+            : '<span class="text-gray-300 text-xs">—</span>';
+        const repuesto = m.repuesto_nombre
+            ? `<span class="font-medium text-gray-700 text-xs">${m.repuesto_nombre}</span>`
+            : '<span class="text-gray-300 text-xs">—</span>';
+        const tipoCls  = isConsumo
+            ? 'bg-red-50 text-red-700 border border-red-200'
+            : 'bg-green-50 text-green-700 border border-green-200';
+        const actions = isLast
+            ? `<td class="px-4 py-2.5 text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <button type="button" class="stock-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold" data-id="${m.id}" data-nota="${(m.nota||'').replace(/"/g,'&quot;')}">Editar</button>
+                    <button type="button" class="stock-del-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-id="${m.id}">Eliminar</button>
+                </div>
+               </td>`
+            : `<td class="px-4 py-2.5 text-center text-gray-200 text-xs">—</td>`;
+        return `<tr class="hover:bg-gray-50 transition text-sm">
+            <td class="px-4 py-2.5 text-gray-400 text-xs whitespace-nowrap">${fecha}</td>
+            <td class="px-4 py-2.5">${repuesto}</td>
+            <td class="px-4 py-2.5">${ticketLink}</td>
+            <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoCls}">${isConsumo ? 'Consumo' : 'Reposición'}</span></td>
+            <td class="px-4 py-2.5 ${cls} text-center">${sign}${Math.abs(m.cantidad)}</td>
+            <td class="px-4 py-2.5 text-center text-gray-600 font-semibold">${m.stock_nuevo}</td>
+            <td class="px-4 py-2.5 text-gray-400 text-xs max-w-xs truncate">${m.nota || '—'}</td>
+            <td class="px-4 py-2.5 text-gray-400 text-xs">${m.usuario_nombre || '—'}</td>
+            ${actions}
+        </tr>`;
+    }
+
+    function tagCard(tag) {
+        return `
+        <div class="flex items-center justify-between p-3 rounded-xl border-2 gap-2 group" style="border-color:${tag.color}20; background:${tag.color}10;">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background:${tag.color}"></span>
+                <span class="font-semibold text-sm text-gray-800">${tag.nombre}</span>
+            </div>
+            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                <button type="button" class="tag-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
+                    data-id="${tag.id}" data-nombre="${tag.nombre}" data-color="${tag.color}">Editar</button>
+                <button type="button" class="tag-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
+                    data-id="${tag.id}" data-nombre="${tag.nombre}">Eliminar</button>
+            </div>
+        </div>`;
+    }
+
+    function creatorBadge(rol) {
+        const map = {
+            cliente:       { label: 'Cliente',       cls: 'bg-blue-100 text-blue-700 border border-blue-200' },
+            tecnico:       { label: 'Técnico',        cls: 'bg-purple-100 text-purple-700 border border-purple-200' },
+            administrador: { label: 'Administrador',  cls: 'bg-red-100 text-red-700 border border-red-200' },
+        };
+        const { label, cls } = map[rol] || { label: rol, cls: 'bg-gray-100 text-gray-600 border border-gray-200' };
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${cls}">${label}</span>`;
+    }
+
+    function commentEmptyState() {
+        return `
+        <div class="flex flex-col items-center py-10 text-gray-300">
+            <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <p class="text-sm">No hay comentarios aún.</p>
+        </div>`;
+    }
+
+    // ── History entry ────────────────────────────────────────────────────────
+    // ── Feature 6: user badge ────────────────────────────────────────────────
+    function userBadge(rol, nombre) {
+        const map = {
+            administrador: { bg: "bg-red-100", text: "text-red-700", label: "Admin" },
+            tecnico:       { bg: "bg-purple-100", text: "text-purple-700", label: "Técnico" },
+            cliente:       { bg: "bg-slate-100", text: "text-slate-600", label: "Cliente" },
+        };
+        const s = map[rol] || { bg: "bg-gray-100", text: "text-gray-600", label: rol };
+        return `<span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${s.bg} ${s.text}">${s.label}</span>`;
+    }
+
+    // ── Feature 9: rich historial entries ────────────────────────────────────
+    const EVENTO_ICON = {
+        cambio_estado:    { icon: "🔄", color: "blue" },
+        comentario:       { icon: "💬", color: "gray" },
+        nota_interna:     { icon: "🔒", color: "violet" },
+        tag_agregado:     { icon: "🏷", color: "green" },
+        tag_eliminado:    { icon: "🗑", color: "red" },
+        tag_editado:      { icon: "✏️", color: "amber" },
+        repuesto_agregado:{ icon: "🔧", color: "indigo" },
+        campo_editado:    { icon: "📝", color: "amber" },
+        tecnico_asignado: { icon: "👤", color: "blue" },
+        ticket_clonado:   { icon: "📋", color: "teal" },
+        ticket_relacionado:{ icon:"🔗", color: "teal" },
+        ticket_desasociado:{ icon:"🔓", color: "gray" },
+    };
+
+    function historyEntry(h) {
+        const ev      = EVENTO_ICON[h.tipo_evento] || { icon: "•", color: "gray" };
+        const fecha   = new Date(h.fecha).toLocaleString("es-AR");
+        const usuario = h.usuario_nombre || "Sistema";
+        let body = "";
+        if (h.tipo_evento === "cambio_estado" && h.estado_anterior && h.estado_nuevo) {
+            body = `<span class="text-gray-400">${h.estado_anterior}</span> → <strong>${h.estado_nuevo}</strong>`;
+        } else if (h.tipo_evento === "campo_editado" && h.campo) {
+            const campo = { descripcion:"Descripción", numero_serie:"Nº Serie", prioridad:"Prioridad", diagnostico:"Diagnóstico" }[h.campo] || h.campo;
+            body = `<strong>${campo}</strong> cambiado`;
+            if (h.valor_anterior && h.valor_nuevo) {
+                const ant = h.valor_anterior.length > 40 ? h.valor_anterior.slice(0,40)+"…" : h.valor_anterior;
+                const nuevo = h.valor_nuevo.length > 40 ? h.valor_nuevo.slice(0,40)+"…" : h.valor_nuevo;
+                body += `<br><span class="text-xs text-gray-400">Antes: ${ant}</span>`;
+                body += `<br><span class="text-xs text-gray-700">Ahora: ${nuevo}</span>`;
+            }
+        } else {
+            body = h.detalle || "";
+        }
+        return `<div class="flex gap-3 text-sm">
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full bg-${ev.color}-50 border-2 border-${ev.color}-200 flex items-center justify-center text-base shrink-0">${ev.icon}</div>
+                <div class="flex-1 w-px bg-gray-200 my-1"></div>
+            </div>
+            <div class="pb-4 flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-700">${usuario}</span>
+                    <span class="text-gray-400 text-xs">${fecha}</span>
+                </div>
+                <div class="text-gray-600 mt-0.5 leading-relaxed">${body}</div>
+            </div>
+        </div>`;
+    }
+
+
+    function attachmentItem(a, ticketId, userRole) {
+        const ext = (a.nombre_archivo || '').split('.').pop().toLowerCase();
+        const iconMap = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', txt: '📃' };
+        const icon = iconMap[ext] || '📎';
+
+        // Human-readable size
+        const bytes = a.tamanio || 0;
+        const sizeStr = bytes >= 1024 * 1024
+            ? (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+            : bytes >= 1024
+                ? Math.round(bytes / 1024) + ' KB'
+                : bytes + ' B';
+
+        // MIME label
+        const mimeLabel = (a.mime_type || '').replace('image/', '').replace('application/', '').replace('text/', '') || ext.toUpperCase();
+
+        const canDelete = userRole === 'administrador' || userRole === 'tecnico';
+        const token = localStorage.getItem('token');
+        const downloadUrl = `/tickets/${ticketId}/attachments/${a.id}/download?token=${encodeURIComponent(token)}`;
+
+        return `
+        <div class="flex items-center justify-between gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-100 group"
+             data-adj-id="${a.id}">
+            <span class="text-lg shrink-0">${icon}</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-blue-900 truncate">${a.nombre_archivo}</p>
+                <p class="text-[10px] text-blue-400">${mimeLabel.toUpperCase()} · ${sizeStr}</p>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+                <a href="${downloadUrl}" target="_blank" download="${a.nombre_archivo}"
+                   class="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100 transition"
+                   title="Descargar">⬇ Descargar</a>
+                ${canDelete ? `
+                <button type="button"
+                    class="adj-delete-btn text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100"
+                    data-adj-id="${a.id}" title="Eliminar">✕</button>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // ── Part row (in management table) ───────────────────────────────────────
+    function partRow(p) {
+        const stockCls = p.stock <= 0
+            ? 'bg-red-100 text-red-700'
+            : p.stock <= 3
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-green-100 text-green-700';
+        const partJson = JSON.stringify(p).replace(/'/g, "\\'");
+        return `
+        <tr class="border-b hover:bg-gray-50 transition">
+            <td class="py-3 pr-4 font-mono text-xs text-gray-500">${p.codigo}</td>
+            <td class="py-3 pr-4 font-semibold">${p.nombre}</td>
+            <td class="py-3 pr-4 text-gray-500 text-sm">${p.proveedor}</td>
+            <td class="py-3 pr-4 text-center">
+                <span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock}</span>
+            </td>
+            <td class="py-3 pr-4 text-right font-mono text-sm">$${p.precio.toFixed(2)}</td>
+            <td class="py-3 text-right space-x-2">
+                <button onclick="ui.openEditPartForm(${p.id})"
+                    class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
+                <button onclick="app.deletePart(${p.id})"
+                    class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>
+            </td>
+        </tr>`;
+    }
+
+    // ── User row ─────────────────────────────────────────────────────────────
+    function userRow(u) {
+        const rolColors = { administrador: 'bg-red-100 text-red-700', tecnico: 'bg-purple-100 text-purple-700', cliente: 'bg-gray-100 text-gray-600' };
+        const rolCls = rolColors[u.rol] || 'bg-gray-100 text-gray-600';
+        const activoCls = u.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400';
+        const activoLabel = u.activo ? 'Habilitado' : 'Deshabilitado';
+        const isProtected = u.username === 'admin';
+        return `
+        <tr class="border-b hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
+            <td class="px-6 py-3 font-semibold">${u.username}</td>
+            <td class="px-6 py-3 text-gray-600">${u.nombre || '—'}</td>
+            <td class="px-6 py-3 text-gray-500 text-xs">${u.email}</td>
+            <td class="px-6 py-3">
+                <span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolCls}">${u.rol}</span>
+            </td>
+            <td class="px-6 py-3 text-center">
+                <span class="px-2 py-0.5 rounded text-xs font-bold ${activoCls}">${activoLabel}</span>
+            </td>
+            <td class="px-6 py-3 text-right space-x-3">
+                ${!isProtected ? `<button onclick="ui.openUserEditModal(${JSON.stringify(u).replace(/"/g,'&quot;')})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>` : ''}
+                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>` : '<span class="text-xs text-gray-300">Admin principal</span>'}
+            </td>
+        </tr>`;
+    }
+
+    // ── Product row ───────────────────────────────────────────────────────────
+    function productRow(p) {
+        const garantiaLabel = p.periodo_garantia_meses >= 12
+            ? `${p.periodo_garantia_meses / 12} año${p.periodo_garantia_meses > 12 ? 's' : ''}`
+            : `${p.periodo_garantia_meses} mes${p.periodo_garantia_meses > 1 ? 'es' : ''}`;
+        return `
+        <tr class="border-b hover:bg-gray-50 transition">
+            <td class="px-6 py-3">
+                <div class="font-semibold text-gray-800">${p.marca}</div>
+                <div class="text-xs text-gray-500">${p.modelo}</div>
+            </td>
+            <td class="px-6 py-3">
+                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">${p.categoria}</span>
+            </td>
+            <td class="px-6 py-3 font-mono text-xs text-gray-400">${p.numero_parte || '—'}</td>
+            <td class="px-6 py-3 text-center">
+                <span class="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-semibold">${garantiaLabel}</span>
+            </td>
+            <td class="px-6 py-3 text-right space-x-3">
+                <button onclick="ui.openEditProductForm(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
+                <button onclick="app.deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>
+            </td>
+        </tr>`;
+    }
+
+    // ── Product category card ─────────────────────────────────────────────────
+    function productCategoryCard(categoria, count) {
+        return `
+        <div class="bg-white p-4 rounded-xl shadow border border-gray-100 cursor-pointer hover:border-blue-300 transition"
+            onclick="document.getElementById('product-filter-categoria').value='${categoria}'; ui.filterProducts()">
+            <p class="text-xs font-bold text-gray-400 uppercase">${categoria}</p>
+            <p class="text-2xl font-black text-gray-800 mt-1">${count}</p>
+            <p class="text-xs text-gray-400">producto${count !== 1 ? 's' : ''}</p>
+        </div>`;
+    }
+
+    // ── Search result row ─────────────────────────────────────────────────────
+    function searchResultRow(t) {
+        return `
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow hover:border-blue-200 transition cursor-pointer p-5 flex items-start justify-between gap-4"
+            onclick="app.viewTicket(${t.id})">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-1 flex-wrap">
+                    <span class="font-bold text-blue-600 text-sm">${t.numero_rma}</span>
+                    <span class="${statusClass(t.estado)} px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">${t.estado}</span>
+                    ${priorityBadge(t.prioridad)}
+                    ${slaBadge(t.deadline_sla, t.estado)}
+                </div>
+                <p class="font-semibold text-gray-800">${t.producto || 'Producto no especificado'}</p>
+                <p class="text-xs text-gray-400 mt-1">Serie: <span class="font-mono">${t.numero_serie}</span> · Ticket #${t.id}</p>
+                ${t.descripcion ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${t.descripcion}</p>` : ''}
+            </div>
+            <div class="text-right shrink-0">
+                <p class="text-xs text-gray-400">${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p>
+                ${t.tecnico_nombre ? `<p class="text-xs text-gray-500 mt-1">👷 ${t.tecnico_nombre}</p>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // ── Ticket parts list (in detail view) ──────────────────────────────────
+    function partUsed(p, editable = false) {
+        if (!editable) {
+            return `
+            <div class="flex justify-between items-center py-1">
+                <span class="text-sm">${p.nombre}
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold ml-1">x${p.cantidad}</span>
+                </span>
+                <span class="font-mono text-gray-400 text-xs">${p.codigo}</span>
+            </div>`;
+        }
+        return `
+        <div class="flex items-center justify-between py-1.5 gap-2 group" data-part-id="${p.id}">
+            <span class="text-sm flex-1 truncate">${p.nombre}
+                <span class="font-mono text-gray-400 text-xs ml-1">${p.codigo}</span>
+            </span>
+            <div class="flex items-center gap-1 shrink-0">
+                <button type="button"
+                    class="part-qty-dec w-6 h-6 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 text-xs font-bold flex items-center justify-center"
+                    data-part-id="${p.id}" title="Reducir cantidad">−</button>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold min-w-[28px] text-center part-qty-label">${p.cantidad}</span>
+                <button type="button"
+                    class="part-qty-inc w-6 h-6 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 text-xs font-bold flex items-center justify-center"
+                    data-part-id="${p.id}" title="Aumentar cantidad">+</button>
+                <button type="button"
+                    class="part-remove ml-1 w-6 h-6 rounded text-red-400 hover:text-red-600 hover:bg-red-50 text-xs font-bold flex items-center justify-center border border-transparent hover:border-red-200 transition"
+                    data-part-id="${p.id}" title="Quitar repuesto">✕</button>
+            </div>
+        </div>`;
+    }
+
+    // ── Tag badge ────────────────────────────────────────────────────────────
+    function tagBadge(tag, removable = false) {
+        const color  = tag.color || '#3b82f6';
+        const bg     = color + '20';
+        const border = color + '60';
+        const rm = removable
+            ? `<button type="button" class="tag-remove-btn ml-1 font-bold leading-none hover:opacity-70"
+                data-nombre="${tag.nombre}" title="Quitar etiqueta">×</button>`
+            : '';
+        return `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold"
+            style="background:${bg};color:${color};border:1px solid ${border}">
+            ${tag.nombre}${rm}
+        </span>`;
+    }
+
+    function plantillaBtn(p) {
+        return `<button type="button" class="diag-template px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 hover:bg-cyan-100 hover:text-cyan-700 text-gray-600 transition"
+            data-text="${p.texto.replace(/"/g,'&quot;')}">${p.nombre}</button>`;
+    }
+
+    function plantillaRow(p) {
+        return `<div class="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 group">
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-800">${p.nombre}</p>
+                <p class="text-xs text-gray-400 mt-1 line-clamp-2">${p.texto}</p>
+            </div>
+            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition">
+                <button type="button" class="plantilla-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
+                    data-id="${p.id}" data-nombre="${p.nombre}" data-orden="${p.orden}"
+                    data-texto="${p.texto.replace(/"/g,'&quot;')}">Editar</button>
+                <button type="button" class="plantilla-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
+                    data-id="${p.id}" data-nombre="${p.nombre}">Eliminar</button>
+            </div>
+        </div>`;
+    }
+
+    function estadoRow(s) {
+        const badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+            style="background:${s.color}">${s.etiqueta}</span>`;
+        const activoBadge = s.activo
+            ? '<span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Activo</span>'
+            : '<span class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Inactivo</span>';
+        const finalBadge = s.es_final
+            ? '<span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Final</span>'
+            : '';
+        return `<div class="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 group">
+            <span class="w-6 text-center text-xs text-gray-300 font-mono">${s.orden}</span>
+            <div class="flex-1 flex items-center gap-3">
+                ${badge}
+                <span class="text-xs text-gray-400 font-mono">${s.valor !== s.etiqueta ? '← ' + s.valor : ''}</span>
+                <div class="flex gap-1">${activoBadge}${finalBadge}</div>
+            </div>
+            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition">
+                <button type="button" class="estado-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
+                    data-id="${s.id}" data-valor="${s.valor}" data-etiqueta="${s.etiqueta}"
+                    data-color="${s.color}" data-orden="${s.orden}"
+                    data-activo="${s.activo}" data-final="${s.es_final}">Editar</button>
+                <button type="button" class="estado-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
+                    data-id="${s.id}" data-etiqueta="${s.etiqueta}">Eliminar</button>
+            </div>
+        </div>`;
+    }
+
+    // Public API
+    // ── Admin panel rows ─────────────────────────────────────────────────────
+    function adminUserRow(u) {
+        const rolColors = { administrador: 'bg-red-100 text-red-700', tecnico: 'bg-purple-100 text-purple-700', cliente: 'bg-slate-100 text-slate-600' };
+        const activoCls = u.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400';
+        const isProtected = u.username === 'admin';
+        return `
+        <tr class="hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
+            <td class="px-5 py-3 font-mono text-xs font-bold text-gray-700">${u.username}</td>
+            <td class="px-5 py-3 text-gray-700">${u.nombre || '—'}</td>
+            <td class="px-5 py-3 text-gray-400 text-xs">${u.email}</td>
+            <td class="px-5 py-3"><span class="text-xs text-gray-400 capitalize">${u.tipo_cliente || 'persona'}</span></td>
+            <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolColors[u.rol] || 'bg-gray-100 text-gray-600'}">${u.rol}</span></td>
+            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${activoCls}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+            <td class="px-5 py-3 text-right space-x-3">
+                ${!isProtected ? `<button onclick="ui.openUserEditModal(${JSON.stringify(u).replace(/"/g,'&quot;')})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>` : ''}
+                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>` : '<span class="text-xs text-gray-300">Principal</span>'}
+            </td>
+        </tr>`;
+    }
+
+    function adminProductRow(p) {
+        const g = p.periodo_garantia_meses >= 12
+            ? `${p.periodo_garantia_meses/12}a` : `${p.periodo_garantia_meses}m`;
+        return `
+        <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3">
+                <span class="font-semibold text-gray-800">${p.marca}</span>
+                <span class="text-gray-400 ml-1">${p.modelo}</span>
+            </td>
+            <td class="px-5 py-3"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">${p.categoria}</span></td>
+            <td class="px-5 py-3 font-mono text-xs text-gray-400">${p.numero_parte || '—'}</td>
+            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-semibold">${g}</span></td>
+            <td class="px-5 py-3 text-right space-x-3">
+                <button onclick="ui.openAdminEditProduct(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
+                <button onclick="app.deleteProduct(${p.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>
+            </td>
+        </tr>`;
+    }
+
+    function adminPartRow(p) {
+        const stockCls = p.stock === 0 ? 'bg-red-100 text-red-700' : p.stock <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700';
+        return `
+        <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3 font-mono text-xs font-bold text-gray-600">${p.codigo}</td>
+            <td class="px-5 py-3 font-medium text-gray-800">${p.nombre}</td>
+            <td class="px-5 py-3 text-gray-500 text-xs">${p.proveedor}</td>
+            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span></td>
+            <td class="px-5 py-3 text-right font-semibold text-gray-700">$${p.precio.toFixed(2)}</td>
+            <td class="px-5 py-3 text-right space-x-3">
+                <button onclick="ui.openAdminEditPart(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
+                <button onclick="app.deletePart(${p.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>
+            </td>
+        </tr>`;
+    }
+
+    return {
+        statusClass, slaBadge, priorityBadge,
+        ticketRow, ticketEmptyState,
+        statCard,
+        comment, commentEmptyState, stockMovRow, tagCard, creatorBadge, historyEntry,
+        attachmentItem,
+        partRow, partUsed,
+        userRow,
+        productRow, productCategoryCard,
+        searchResultRow,
+        adminUserRow, adminProductRow, adminPartRow,
+        tagBadge, plantillaBtn, plantillaRow, estadoRow,
+    };
+})();

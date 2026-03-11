@@ -1,0 +1,36 @@
+<section id="search-section">
+    <div class="flex items-center gap-4 mb-8">
+        <button type="button" id="back-to-dashboard-from-search" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Volver
+        </button>
+        <div class="flex-1">
+            <div class="relative">
+                <input type="text" id="search-page-input"
+                    class="w-full px-5 py-3 pl-12 text-base border-2 rounded-xl outline-none focus:border-blue-500 transition bg-white shadow-sm"
+                    placeholder="Buscar por RMA, serie, producto, descripción o comentario...">
+                <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters bar -->
+    <div class="flex flex-wrap gap-3 mb-6 items-center">
+        <span class="text-xs font-bold text-gray-400 uppercase">Filtrar:</span>
+        <button type="button" data-filter="estado" data-value="" class="search-filter-btn active px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-blue-600 text-white border-blue-600">Todos</button>
+        <button type="button" data-filter="estado" data-value="Nuevo" class="search-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-gray-600 hover:border-blue-400">Nuevo</button>
+        <button type="button" data-filter="estado" data-value="En revisión" class="search-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-gray-600 hover:border-blue-400">En revisión</button>
+        <button type="button" data-filter="estado" data-value="En reparación" class="search-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-gray-600 hover:border-blue-400">En reparación</button>
+        <button type="button" data-filter="estado" data-value="Cerrado" class="search-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-gray-600 hover:border-blue-400">Cerrado</button>
+        <div class="ml-auto flex items-center gap-2">
+            <span class="text-xs text-gray-400" id="search-result-count"></span>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="search-results-page" class="space-y-2"></div>
+</section>

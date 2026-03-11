@@ -1,0 +1,47 @@
+<section id="products-section">
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <button type="button" id="back-to-dashboard-from-products" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Volver
+            </button>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Catálogo de Productos</h2>
+                <p class="text-gray-500 text-sm">Productos registrados para RMA y garantía</p>
+            </div>
+        </div>
+        <button type="button" id="new-product-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold shadow transition">
+            + Nuevo Producto
+        </button>
+    </div>
+
+    <!-- Summary cards by category -->
+    <div id="product-category-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+    <div class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+        <div class="p-4 bg-gray-50 border-b flex items-center gap-3">
+            <input type="text" id="product-search-input"
+                class="flex-1 px-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Filtrar por nombre, marca o categoría...">
+            <select id="product-filter-categoria" class="text-sm border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Todas las categorías</option>
+            </select>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b text-xs uppercase text-gray-500 bg-gray-50">
+                        <th class="px-6 py-3">Marca / Modelo</th>
+                        <th class="px-6 py-3">Categoría</th>
+                        <th class="px-6 py-3">Nº Parte</th>
+                        <th class="px-6 py-3 text-center">Garantía</th>
+                        <th class="px-6 py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list-body"></tbody>
+            </table>
+        </div>
+    </div>
+</section>

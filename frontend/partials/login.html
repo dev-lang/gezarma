@@ -1,0 +1,53 @@
+<section id="login-section" class="max-w-md mx-auto mt-16 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-800">Bienvenido</h2>
+        <p class="text-gray-500 mt-2">GEZATEK · Sistema RMA</p>
+    </div>
+
+    <!-- Inline error banner (hidden by default) -->
+    <div id="login-error" class="hidden mb-4 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <span id="login-error-msg"></span>
+    </div>
+
+    <form id="login-form" class="space-y-4" novalidate>
+        <div>
+            <label class="block text-sm font-semibold mb-1">Usuario</label>
+            <input type="text" id="login-username" autocomplete="username"
+                class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                placeholder="Tu nombre de usuario">
+            <p id="login-username-err" class="hidden text-red-500 text-xs mt-1">El usuario es obligatorio.</p>
+        </div>
+        <div>
+            <label class="block text-sm font-semibold mb-1">Contraseña</label>
+            <div class="relative">
+                <input type="password" id="login-password" autocomplete="current-password"
+                    class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition pr-12"
+                    placeholder="Tu contraseña">
+                <button type="button" id="toggle-password"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    tabindex="-1" aria-label="Mostrar contraseña">
+                    <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </button>
+            </div>
+            <p id="login-password-err" class="hidden text-red-500 text-xs mt-1">La contraseña es obligatoria.</p>
+        </div>
+        <button type="submit" id="login-form-btn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition transform hover:-translate-y-0.5">
+            Ingresar
+        </button>
+    </form>
+    <p class="mt-6 text-center text-sm text-gray-600">
+        ¿No tienes cuenta? <a href="#" id="to-register" class="text-blue-600 font-semibold hover:underline">Regístrate aquí</a>
+    </p>
+</section>
