@@ -8,7 +8,9 @@ router = APIRouter(prefix="/parts", tags=["parts"])
 @router.get("/", response_model=List[schemas.SparePart])
 def list_parts(
     db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user)
+    current_user: models.Usuario = Depends(auth.check_role([
+        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
+    ]))
 ):
     return db.query(models.Repuesto).all()
 

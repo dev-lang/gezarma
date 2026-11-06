@@ -88,6 +88,10 @@ class SparePartUpdate(BaseModel):
 
 class SparePartWithQty(SparePart):
     cantidad: int = 1
+    # Internal data: None when the viewer is a client (see Ticket.for_viewer)
+    stock:     Optional[int] = None
+    proveedor: Optional[str] = None
+    precio:    Optional[float] = None
 
 # ── Products ──────────────────────────────────────────────────────────────────
 class ProductBase(BaseModel):
@@ -209,6 +213,16 @@ class Ticket(TicketBase):
             data.es_favorito = any(
                 f.usuario_id == current_user_id for f in (obj.favoritos or [])
             )
+        return data
+
+    @classmethod
+    def for_viewer(cls, obj, user):
+        """Serialize a ticket for `user`. Clients don't get internal parts data
+        (stock, supplier, cost price) — only name, code and quantity."""
+        data = cls.from_orm_with_tecnico(obj, user.id)
+        if user.rol == "cliente":
+            for r in data.repuestos_usados:
+                r.stock = r.proveedor = r.precio = None
         return data
 
     class Config:

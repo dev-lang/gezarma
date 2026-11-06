@@ -76,7 +76,8 @@ def create_ticket(
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
     ip = request.client.host if request.client else None
-    return process_ticket_creation(db, ticket, current_user, ip_address=ip)
+    created = process_ticket_creation(db, ticket, current_user, ip_address=ip)
+    return schemas.Ticket.for_viewer(created, current_user)
 
 # ── Dashboard stats ───────────────────────────────────────────────────────────
 @router.get("/stats/dashboard", response_model=schemas.DashboardStats)
@@ -125,7 +126,7 @@ def global_search(
     ).distinct()
     if current_user.rol == models.UserRole.CLIENTE:
         query = query.filter(models.Ticket.usuario_id == current_user.id)
-    return [schemas.Ticket.from_orm_with_tecnico(t, current_user.id) for t in query.all()]
+    return [schemas.Ticket.for_viewer(t, current_user) for t in query.all()]
 
 # ── List ──────────────────────────────────────────────────────────────────────
 @router.get("/", response_model=List[schemas.Ticket])
@@ -144,7 +145,7 @@ def list_tickets(
     if tecnico_id: query = query.filter(models.Ticket.tecnico_asignado == tecnico_id)
     if usuario_id: query = query.filter(models.Ticket.usuario_id == usuario_id)
     tickets = query.order_by(models.Ticket.fecha_creacion.desc()).offset(skip).limit(limit).all()
-    return [schemas.Ticket.from_orm_with_tecnico(t, current_user.id) for t in tickets]
+    return [schemas.Ticket.for_viewer(t, current_user) for t in tickets]
 
 # ── Get single ────────────────────────────────────────────────────────────────
 @router.get("/{ticket_id}", response_model=schemas.Ticket)
@@ -158,7 +159,7 @@ def get_ticket(
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acceso denegado")
-    return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
+    return schemas.Ticket.for_viewer(ticket, current_user)
 
 # ── Edit core fields (Feature 3) ──────────────────────────────────────────────
 @router.patch("/{ticket_id}/fields", response_model=schemas.Ticket)
