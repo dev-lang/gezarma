@@ -40,7 +40,8 @@ def read_index():
 
 app.mount("/js",       StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),       name="js")
 app.mount("/partials", StaticFiles(directory=os.path.join(FRONTEND_DIR, "partials")), name="partials")
-app.mount("/uploads",  StaticFiles(directory=UPLOAD_DIR),                              name="uploads")
+# Attachments are NOT served statically: they go through
+# GET /tickets/{id}/attachments/{adj_id}/download, which checks permissions.
 
 DEFAULT_TAGS = [
     ("Garantía",         "#3b82f6"),

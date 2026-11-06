@@ -57,6 +57,16 @@ def _historial_out(entries):
         ))
     return result
 
+# ── Helper: load a ticket the current user is allowed to see ─────────────────
+def _get_ticket_for_user(ticket_id: int, current_user: models.Usuario, db: Session) -> models.Ticket:
+    """404 if the ticket doesn't exist, 403 if a client tries to access someone else's ticket."""
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    return ticket
+
 # ── Create ────────────────────────────────────────────────────────────────────
 @router.post("/", response_model=schemas.Ticket)
 def create_ticket(
@@ -652,9 +662,7 @@ def upload_attachment(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    _get_ticket_for_user(ticket_id, current_user, db)
 
     # ── Validate extension ────────────────────────────────────────────────
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -734,6 +742,7 @@ def list_attachments(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
+    _get_ticket_for_user(ticket_id, current_user, db)
     adjuntos = db.query(models.Adjunto).filter_by(ticket_id=ticket_id).all()
     used_bytes = sum(a.tamanio or 0 for a in adjuntos)
     return {
@@ -759,6 +768,7 @@ def download_attachment(
         current_user = auth.decode_token_user(token, db)
     if current_user is None:
         raise HTTPException(status_code=401, detail="No autenticado")
+    _get_ticket_for_user(ticket_id, current_user, db)
 
     adj = db.query(models.Adjunto).filter_by(id=adj_id, ticket_id=ticket_id).first()
     if not adj:
