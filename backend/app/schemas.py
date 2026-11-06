@@ -320,7 +320,8 @@ class PresupuestoItemCreate(PresupuestoItemBase):
 
 class PresupuestoItemOut(PresupuestoItemBase):
     id:           int
-    costo_total:  float
+    costo_interno: Optional[float] = None   # None for clients
+    costo_total:  Optional[float] = None    # None for clients
     precio_total: float
     class Config:
         from_attributes = True
@@ -354,10 +355,10 @@ class PresupuestoOut(BaseModel):
     version:         int
     notas:           Optional[str] = None
     items:           List[PresupuestoItemOut] = []
-    costo_total:     float
+    costo_total:     Optional[float] = None   # None for clients
     precio_total:    float
-    ganancia:        float
-    versiones:       List[PresupuestoVersionOut] = []
+    ganancia:        Optional[float] = None   # None for clients
+    versiones:       List[PresupuestoVersionOut] = []   # empty for clients
     creador_nombre:  Optional[str] = None
     fecha_creacion:  datetime
     fecha_actualizacion: datetime

@@ -30,8 +30,11 @@ export async function initPresupuestoCard(ticketId, userRole) {
     _currentTicketId = ticketId;
     _editingBudget   = false;
 
-    // Load templates (for the picker)
-    try { _plantillas = await api.getPlantillasPresupuesto(); } catch { _plantillas = []; }
+    // Load templates (for the picker) — only tech/admin edit budgets
+    _plantillas = [];
+    if (userRole !== "cliente") {
+        try { _plantillas = await api.getPlantillasPresupuesto(); } catch { _plantillas = []; }
+    }
 
     // Load budget
     let budget = null;
@@ -64,10 +67,15 @@ function renderPresupuestoCard(budget, userRole) {
     badge.className   = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${cfg.bg} ${cfg.text}`;
     badge.classList.remove("hidden");
 
-    // Totals
+    // Totals — clients only see the price (the API doesn't send cost/profit to them)
     $("presupuesto-costo").textContent    = fmt(budget.costo_total);
     $("presupuesto-precio").textContent   = fmt(budget.precio_total);
     $("presupuesto-ganancia").textContent = fmt(budget.ganancia);
+    $("presupuesto-costo").parentElement.classList.toggle("hidden", isClient);
+    $("presupuesto-ganancia").parentElement.classList.toggle("hidden", isClient);
+    const totalsGrid = $("presupuesto-precio").parentElement.parentElement;
+    totalsGrid.classList.toggle("grid-cols-3", !isClient);
+    totalsGrid.classList.toggle("grid-cols-1", isClient);
 
     // Items list (compact)
     const list = $("presupuesto-items-list");

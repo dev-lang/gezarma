@@ -32,15 +32,17 @@ def _snapshot_items(items) -> list:
         for i in items
     ]
 
-def _presupuesto_out(p: models.Presupuesto) -> schemas.PresupuestoOut:
+def _presupuesto_out(p: models.Presupuesto, user: models.Usuario) -> schemas.PresupuestoOut:
+    """Serialize a budget. Clients never receive internal cost, profit or version history."""
+    interno = user.rol != models.UserRole.CLIENTE
     items_out = [
         schemas.PresupuestoItemOut(
             id=i.id,
             descripcion=i.descripcion,
             cantidad=i.cantidad,
-            costo_interno=i.costo_interno,
+            costo_interno=i.costo_interno if interno else None,
             precio_cliente=i.precio_cliente,
-            costo_total=i.cantidad * i.costo_interno,
+            costo_total=i.cantidad * i.costo_interno if interno else None,
             precio_total=i.cantidad * i.precio_cliente,
         )
         for i in p.items
@@ -56,7 +58,7 @@ def _presupuesto_out(p: models.Presupuesto) -> schemas.PresupuestoOut:
             fecha=v.fecha,
         )
         for v in p.versiones
-    ]
+    ] if interno else []
     return schemas.PresupuestoOut(
         id=p.id,
         ticket_id=p.ticket_id,
@@ -64,9 +66,9 @@ def _presupuesto_out(p: models.Presupuesto) -> schemas.PresupuestoOut:
         version=p.version,
         notas=p.notas,
         items=items_out,
-        costo_total=p.costo_total,
+        costo_total=p.costo_total if interno else None,
         precio_total=p.precio_total,
-        ganancia=p.ganancia,
+        ganancia=p.ganancia if interno else None,
         versiones=versiones_out,
         creador_nombre=p.creador.nombre if p.creador else None,
         fecha_creacion=p.fecha_creacion,
@@ -114,7 +116,7 @@ def get_presupuesto(
     if not ticket.presupuesto:
         raise HTTPException(404, "Este ticket no tiene presupuesto")
 
-    return _presupuesto_out(ticket.presupuesto)
+    return _presupuesto_out(ticket.presupuesto, current_user)
 
 
 @router.post("/tickets/{ticket_id}/presupuesto", response_model=schemas.PresupuestoOut)
@@ -149,7 +151,7 @@ def create_presupuesto(
     log_event(db, ticket_id, current_user.id, "presupuesto_creado", "Presupuesto creado")
     db.commit()
     db.refresh(presupuesto)
-    return _presupuesto_out(presupuesto)
+    return _presupuesto_out(presupuesto, current_user)
 
 
 @router.patch("/tickets/{ticket_id}/presupuesto", response_model=schemas.PresupuestoOut)
@@ -197,7 +199,7 @@ def update_presupuesto(
     log_event(db, ticket_id, current_user.id, "presupuesto_modificado", f"Presupuesto actualizado a versión {presupuesto.version}")
     db.commit()
     db.refresh(presupuesto)
-    return _presupuesto_out(presupuesto)
+    return _presupuesto_out(presupuesto, current_user)
 
 
 @router.delete("/tickets/{ticket_id}/presupuesto", status_code=204)
@@ -230,6 +232,8 @@ def update_estado_presupuesto(
     ticket = db.query(models.Ticket).filter_by(id=ticket_id).first()
     if not ticket:
         raise HTTPException(404, "Ticket no encontrado")
+    if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
+        raise HTTPException(403, "Sin acceso")
 
     presupuesto = ticket.presupuesto
     if not presupuesto:
@@ -242,14 +246,12 @@ def update_estado_presupuesto(
     if nuevo not in allowed:
         raise HTTPException(400, f"Transición no permitida: {actual} → {nuevo}")
 
-    # Clients can approve/reject; tecnico/admin can send
-    if nuevo in (models.PresupuestoEstado.APROBADO, models.PresupuestoEstado.RECHAZADO):
-        if current_user.rol not in (models.UserRole.ADMINISTRADOR, models.UserRole.CLIENTE):
-            # tecnico also allowed to approve for workflow flexibility
-            pass
-    elif nuevo == models.PresupuestoEstado.ENVIADO:
-        if current_user.rol == models.UserRole.CLIENTE:
-            raise HTTPException(403, "Solo técnicos y administradores pueden enviar presupuestos")
+    # Clients can only approve/reject; tecnico/admin can do any valid transition
+    # (tecnico can also approve/reject for workflow flexibility).
+    if current_user.rol == models.UserRole.CLIENTE and nuevo not in (
+        models.PresupuestoEstado.APROBADO, models.PresupuestoEstado.RECHAZADO
+    ):
+        raise HTTPException(403, "El cliente solo puede aprobar o rechazar el presupuesto")
 
     _save_version(db, presupuesto, current_user.id)
     presupuesto.version += 1
@@ -273,7 +275,7 @@ def update_estado_presupuesto(
     )
     db.commit()
     db.refresh(presupuesto)
-    return _presupuesto_out(presupuesto)
+    return _presupuesto_out(presupuesto, current_user)
 
 
 @router.get("/tickets/{ticket_id}/presupuesto/versiones",
@@ -310,7 +312,9 @@ def get_versiones(
 @router.get("/plantillas", response_model=List[schemas.PlantillaPresupuestoOut])
 def list_plantillas(
     db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user),
+    current_user: models.Usuario = Depends(
+        auth.check_role([models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO])
+    ),
 ):
     return (
         db.query(models.PlantillaPresupuesto)
