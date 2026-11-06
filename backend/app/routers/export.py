@@ -2,6 +2,7 @@
 export.py — CSV and XLSX export endpoints for all four main entities.
 GET /export/{entidad}?formato=csv|xlsx
 entidad: tickets | productos | repuestos | usuarios
+         (English aliases accepted: users | products | parts — used by the admin panel)
 """
 import io, csv
 from datetime import datetime
@@ -13,6 +14,7 @@ from .. import database, models, auth
 router = APIRouter(prefix="/export", tags=["export"])
 
 ENTIDADES = {"tickets", "productos", "repuestos", "usuarios"}
+ALIASES   = {"users": "usuarios", "products": "productos", "parts": "repuestos"}
 FORMATOS  = {"csv", "xlsx"}
 
 
@@ -60,6 +62,7 @@ def export_data(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
+    entidad = ALIASES.get(entidad, entidad)
     if entidad not in ENTIDADES:
         raise HTTPException(status_code=404, detail=f"Entidad inválida. Opciones: {sorted(ENTIDADES)}")
 
@@ -69,7 +72,7 @@ def export_data(
     if entidad == "tickets":
         items = db.query(models.Ticket).order_by(models.Ticket.fecha_creacion.desc()).all()
         headers = ["ID", "RMA", "Producto", "Nº Serie", "Estado", "Prioridad",
-                   "Cliente", "Técnico", "Garantía", "Diagnóstico",
+                   "Cliente", "Técnico", "Garantía", "Descripción", "Diagnóstico",
                    "Transporte", "Tracking", "Clonado de", "Relacionado con",
                    "Fecha Creación", "Fecha Actualización", "Fecha Cierre"]
         rows = []
@@ -80,6 +83,7 @@ def export_data(
                 t.cliente.nombre  if t.cliente  else "",
                 t.tecnico.nombre  if t.tecnico  else "",
                 "Sí" if t.en_garantia else "No",
+                t.descripcion or "",
                 t.diagnostico or "",
                 t.empresa_transporte or "", t.tracking_number or "",
                 t.origen.numero_rma    if t.origen     else "",
@@ -128,11 +132,12 @@ def export_data(
             headers={"Content-Disposition": disposition}
         )
     else:
-        content     = _to_csv(headers, rows)
+        # utf-8-sig adds a BOM so Excel opens accents (ñ, á…) correctly
+        content     = _to_csv(headers, rows).encode("utf-8-sig")
         media_type  = "text/csv; charset=utf-8"
         disposition = f"attachment; filename={filename}.csv"
         return StreamingResponse(
-            io.StringIO(content),
+            io.BytesIO(content),
             media_type=media_type,
             headers={"Content-Disposition": disposition}
         )

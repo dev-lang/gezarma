@@ -178,7 +178,6 @@ const api = {
     deleteStockMovimiento(id)       { return this.request(`stock/history/${id}`, { method: "DELETE" }); },
 
     // ── Exports (Feature 2) ───────────────────────────────────────────────────
-    exportUrl(tipo, formato = "csv") { return `${this.baseUrl}export/${tipo}?formato=${formato}&token=${localStorage.getItem("token")}`; },
     async downloadExport(tipo, formato = "csv") {
         const token = localStorage.getItem("token");
         const res   = await fetch(`${this.baseUrl}export/${tipo}?formato=${formato}`, {
