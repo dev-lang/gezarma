@@ -226,7 +226,8 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
                      current_user: models.Usuario = Depends(auth.get_current_user)):
     """Lo que el frontend necesita saber sin ser admin."""
     return {"pdf_modo": ajustes_mod.get(db, "pdf_modo"),
-            "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico")}
+            "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico"),
+            "sla_aviso_horas": ajustes_mod.get(db, "sla_aviso_horas")}
 
 
 # ── Email: prueba y estado ───────────────────────────────────────────────────

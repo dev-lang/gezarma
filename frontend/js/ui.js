@@ -79,10 +79,15 @@ const ui = {
         }
         document.getElementById('advanced-stats')?.classList.toggle('hidden', !isAdmin);
 
+        try {
+            const pub = await api.request('config/ajustes/publicos');
+            components.setSlaAvisoHoras(pub.sla_aviso_horas);
+        } catch { /* se usa el valor por defecto */ }
         if (isAdmin) this.loadAdvancedStats();
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         else document.getElementById('alertas-panel')?.classList.add('hidden');
         this.loadTickets();
+        if (typeof Kanban !== 'undefined') Kanban.iniciar(isTechOrAdmin);
         if (typeof Documentos !== 'undefined') Documentos.abrirDesdeHash();
     },
 

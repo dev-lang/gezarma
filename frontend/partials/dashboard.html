@@ -47,8 +47,20 @@
     <!-- Alertas del taller: SLA y stock (frontend/js/alertas.js) -->
     <div id="alertas-panel" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"></div>
 
+    <!-- Lista / Tablero (solo taller; frontend/js/kanban.js) -->
+    <div id="vista-selector" class="hidden items-center gap-1 bg-gray-200 rounded-lg p-1 w-fit mb-4">
+        <button type="button" data-vista="lista" class="px-4 py-1.5 rounded-md text-sm font-semibold transition">☰ Lista</button>
+        <button type="button" data-vista="tablero" class="px-4 py-1.5 rounded-md text-sm font-semibold transition">▦ Tablero</button>
+    </div>
+
+    <!-- Kanban -->
+    <div id="kanban-wrap" class="hidden mb-6">
+        <p class="text-xs text-gray-400 mb-2">Arrastrá una tarjeta a otra columna para cambiarle el estado. Click para abrir el ticket.</p>
+        <div id="kanban-board" class="flex gap-3 overflow-x-auto pb-3"></div>
+    </div>
+
     <!-- Filters -->
-    <div class="flex items-center space-x-4 mb-6">
+    <div id="ticket-filters" class="flex items-center space-x-4 mb-6">
         <label class="text-sm font-semibold text-gray-600">Filtrar por estado:</label>
         <select id="filter-status" class="px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="">Todos</option>
@@ -67,7 +79,7 @@
     </div>
 
     <!-- Ticket Table -->
-    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+    <div id="ticket-list-wrap" class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
         <table class="w-full text-left">
             <thead class="bg-gray-50 border-b">
                 <tr>

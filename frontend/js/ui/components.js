@@ -23,6 +23,10 @@ const components = (() => {
         return map[status] || 'bg-gray-100 text-gray-700';
     }
 
+    // Umbral de "por vencer": el mismo ajuste que usan las alertas (Ajustes → SLA)
+    let _slaAvisoMs = 4 * 3_600_000;
+    function setSlaAvisoHoras(h) { if (h > 0) _slaAvisoMs = h * 3_600_000; }
+
     function slaBadge(deadline, estado) {
         // Don't show SLA badge on new tickets — the 24h clock is internal,
         // not meaningful to display until the team has picked up the ticket.
@@ -30,7 +34,7 @@ const components = (() => {
         const diff = new Date(deadline) - new Date();
         if (diff < 0)
             return '<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded ml-2 font-bold">VENCIDO</span>';
-        if (diff < 86_400_000)
+        if (diff < _slaAvisoMs)
             return '<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded ml-2 font-bold">POR VENCER</span>';
         return '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2 font-bold">EN TIEMPO</span>';
     }
@@ -597,7 +601,7 @@ const components = (() => {
     }
 
     return {
-        statusClass, slaBadge, priorityBadge,
+        statusClass, slaBadge, setSlaAvisoHoras, priorityBadge,
         ticketRow, ticketEmptyState,
         statCard,
         comment, commentEmptyState, stockMovRow, tagCard, creatorBadge, historyEntry,
