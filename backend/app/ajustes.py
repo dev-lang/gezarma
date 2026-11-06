@@ -9,6 +9,7 @@ por la API: solo se informa si están cargados.
 Uso en el código:  ajustes.get(db, "pdf_modo")
 """
 import base64
+import contextvars
 import hashlib
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -178,9 +179,17 @@ def listado(db: Session) -> list:
     return out
 
 
+# URL con la que se está accediendo al sistema en el request actual (la fija un
+# middleware en main.py). Sirve de último recurso para QR y links de los mails.
+request_base_url: contextvars.ContextVar = contextvars.ContextVar("request_base_url", default="")
+
+
 def public_url(db: Session, request=None) -> str:
-    """URL base para QR y links. Ajuste del panel → PUBLIC_URL del entorno → la del request."""
+    """URL base para QR y links: ajuste del panel → PUBLIC_URL del entorno →
+    la dirección con la que se accede al sistema."""
     url = get(db, "public_url") or config.PUBLIC_URL
     if not url and request is not None:
         url = str(request.base_url)
+    if not url:
+        url = request_base_url.get()
     return (url or "http://localhost:8000").rstrip("/")

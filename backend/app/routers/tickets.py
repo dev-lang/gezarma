@@ -8,7 +8,7 @@ import os, shutil, uuid, re
 
 from .. import database, models, schemas, auth, config
 from ..timeutils import utcnow, to_utc_naive, iso_utc
-from ..services import stock_service
+from ..services import stock_service, email
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -245,6 +245,7 @@ def update_ticket_status(
         mensaje=f"{current_user.nombre} cambió el estado a «{update.estado}»",
         origen_usuario_id=current_user.id,
     )
+    email.cliente_cambio_estado(db, ticket)   # se envía después del commit
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
@@ -299,6 +300,8 @@ def assign_technician(
             origen_usuario_id=current_user.id,
             extra_recipient_ids=[assignment.tecnico_id],
         )
+        if assignment.tecnico_id and assignment.tecnico_id != current_user.id:
+            email.tecnico_asignado(db, ticket, assignment.tecnico_id, current_user.nombre)
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)

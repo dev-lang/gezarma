@@ -227,3 +227,36 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
     """Lo que el frontend necesita saber sin ser admin."""
     return {"pdf_modo": ajustes_mod.get(db, "pdf_modo"),
             "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico")}
+
+
+# ── Email: prueba y estado ───────────────────────────────────────────────────
+@router.post("/email/prueba")
+def email_prueba(
+    body: dict,
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR])),
+):
+    """Manda un mail de prueba ya mismo con la configuración guardada y devuelve el error real si falla."""
+    from ..services import email
+    destino = (body.get("destino") or "").strip()
+    if "@" not in destino:
+        raise HTTPException(400, "Ingresá un email de destino válido")
+    try:
+        email.enviar(db, [destino], "Prueba de email de GEZARMA", "La configuración de email funciona",
+                     ["Si recibiste este mensaje, el sistema ya puede enviar notificaciones por email.",
+                      "Acordate de activar «Enviar notificaciones por email» en Ajustes si todavía no lo hiciste."
+                      if not ajustes_mod.get(db, "email_activo") else
+                      "Las notificaciones por email están activadas."])
+    except email.ErrorEmail as e:
+        raise HTTPException(400, str(e))
+    return {"mensaje": f"Mail de prueba enviado a {destino}."}
+
+
+@router.get("/email/estado")
+def email_estado(current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    from ..services import email
+    from ..timeutils import iso_utc
+    e = email.estado
+    return {"ultimo_ok": iso_utc(e["ultimo_ok"]) if e["ultimo_ok"] else None,
+            "ultimo_error": e["ultimo_error"],
+            "ultimo_error_fecha": iso_utc(e["ultimo_error_fecha"]) if e["ultimo_error_fecha"] else None}

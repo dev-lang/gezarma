@@ -14,7 +14,7 @@ import json
 
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
-from ..services import stock_service
+from ..services import stock_service, email
 from ..timeutils import utcnow, utc_to_local
 
 router = APIRouter(prefix="/budget", tags=["budget"])
@@ -295,6 +295,8 @@ def update_estado_presupuesto(
     log_event(db, ticket_id, current_user.id, "presupuesto_estado", f"Presupuesto: {actual} → {nuevo}")
     if nuevo == models.PresupuestoEstado.APROBADO:
         _descontar_repuestos(db, ticket, presupuesto, current_user.id)
+    if nuevo == models.PresupuestoEstado.ENVIADO:
+        email.cliente_presupuesto(db, ticket)   # se envía después del commit
     estado_labels = {
         "enviado":   "enviado al cliente para aprobación",
         "aprobado":  "aprobado ✓",

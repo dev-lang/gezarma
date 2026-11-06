@@ -7,6 +7,7 @@ import os
 from .database import engine, Base, SessionLocal, run_migrations
 from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router
 from . import models, auth, config
+from . import ajustes as ajustes_mod
 
 UPLOAD_DIR  = config.UPLOAD_DIR
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
@@ -29,6 +30,12 @@ if config.CORS_ORIGINS:
         allow_origins=config.CORS_ORIGINS, allow_credentials=True,
         allow_methods=["*"], allow_headers=["*"],
     )
+
+@app.middleware("http")
+async def _recordar_base_url(request, call_next):
+    # Para armar links (mails, QR) cuando no hay URL pública configurada
+    ajustes_mod.request_base_url.set(str(request.base_url))
+    return await call_next(request)
 
 app.include_router(auth_router.router)
 app.include_router(tickets.router)

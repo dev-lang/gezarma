@@ -1,0 +1,8 @@
+{{ titulo }}
+
+{% for p in parrafos %}{{ p }}
+
+{% endfor %}{% if boton_url %}{{ boton_texto }}: {{ boton_url }}
+
+{% endif %}--
+Mensaje automático de {{ empresa }}. No hace falta responderlo.

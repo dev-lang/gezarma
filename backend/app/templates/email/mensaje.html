@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Helvetica,Arial,sans-serif;color:#1f2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#1e40af;color:#ffffff;padding:16px 24px;font-size:18px;font-weight:bold;">{{ empresa }}</td></tr>
+        <tr><td style="padding:24px;">
+          <h1 style="font-size:18px;margin:0 0 16px 0;">{{ titulo }}</h1>
+          {% for p in parrafos %}<p style="font-size:14px;line-height:1.5;margin:0 0 12px 0;">{{ p }}</p>{% endfor %}
+          {% if boton_url %}
+          <p style="margin:20px 0 4px 0;">
+            <a href="{{ boton_url }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:10px 20px;border-radius:8px;">{{ boton_texto }}</a>
+          </p>
+          {% endif %}
+        </td></tr>
+        <tr><td style="padding:12px 24px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;">
+          Mensaje automático de {{ empresa }}. No hace falta responderlo.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

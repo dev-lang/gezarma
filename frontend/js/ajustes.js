@@ -15,6 +15,7 @@ const Ajustes = (() => {
     const SMTP_PANEL = ['smtp_host', 'smtp_port', 'smtp_seguridad', 'smtp_usuario', 'smtp_password', 'smtp_remitente'];
 
     let _items = [];
+    let _destinoPrueba = '';   // se conserva al volver a dibujar el formulario
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const inputCls = 'w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white';
@@ -59,10 +60,11 @@ const Ajustes = (() => {
             if (!items.length) return '';
             const extra = g.id === 'email' ? `
                 <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap items-center gap-2">
-                    <input type="email" id="aj-test-dest" placeholder="Mail de destino para la prueba" class="${inputCls} max-w-xs">
+                    <input type="email" id="aj-test-dest" value="${esc(_destinoPrueba)}" placeholder="Mail de destino para la prueba" class="${inputCls} max-w-xs">
                     <button type="button" id="aj-test-btn" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">Enviar mail de prueba</button>
                     <span id="aj-test-res" class="text-xs"></span>
                     <p class="w-full text-xs text-gray-400">La prueba usa la configuración guardada: guardá los cambios antes de probar.</p>
+                    <p id="aj-email-estado" class="w-full text-xs"></p>
                 </div>` : '';
             return `
             <section class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden" data-grupo="${g.id}">
@@ -74,8 +76,10 @@ const Ajustes = (() => {
             </section>`;
         }).join('');
         toggleSmtp();
+        estadoEmail();
         document.getElementById('aj-smtp_origen')?.addEventListener('change', toggleSmtp);
         document.getElementById('aj-test-btn')?.addEventListener('click', probarEmail);
+        document.getElementById('aj-test-dest')?.addEventListener('input', e => { _destinoPrueba = e.target.value; });
     }
 
     function toggleSmtp() {
@@ -120,6 +124,7 @@ const Ajustes = (() => {
 
     async function probarEmail() {
         const dest = document.getElementById('aj-test-dest')?.value.trim();
+        _destinoPrueba = dest || '';
         const out = document.getElementById('aj-test-res');
         if (!dest) { toast.warning('Ingresá un mail de destino.'); return; }
         out.textContent = 'Enviando…'; out.className = 'text-xs text-gray-500';
@@ -129,6 +134,20 @@ const Ajustes = (() => {
         } catch (e) {
             out.textContent = e.message; out.className = 'text-xs text-red-600 font-semibold';
         }
+        estadoEmail();
+    }
+
+    async function estadoEmail() {
+        const el = document.getElementById('aj-email-estado');
+        if (!el) return;
+        try {
+            const e = await api.request('config/email/estado');
+            const f = iso => new Date(iso).toLocaleString('es-AR', { hour12: false });
+            const errorReciente = e.ultimo_error && (!e.ultimo_ok || e.ultimo_error_fecha > e.ultimo_ok);
+            el.innerHTML = errorReciente
+                ? `<span class="text-red-600 font-semibold">Último envío fallido (${f(e.ultimo_error_fecha)}): ${esc(e.ultimo_error)}</span>`
+                : e.ultimo_ok ? `<span class="text-green-600">Último mail enviado: ${f(e.ultimo_ok)}</span>` : '';
+        } catch { el.textContent = ''; }
     }
 
     async function cargar() {
