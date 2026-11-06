@@ -18,7 +18,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy.orm import Session
 
 from .. import ajustes, models
-from . import impresion
+from . import impresion, recepcion
 from ..timeutils import utc_to_local, utcnow
 
 # xhtml2pdf avisa en el log por cada propiedad CSS que ignora (p. ej. border-collapse,
@@ -78,6 +78,33 @@ def url_taller(base_url: str, t: models.Ticket) -> str:
     return f"{base_url}/#ticket={t.id}"
 
 
+def checklist_lineas(t: models.Ticket) -> list:
+    """Checklist de ingreso como (etiqueta, valor); vacío si no se cargó."""
+    c = t.checklist_ingreso
+    if not c:
+        return []
+    si_no = lambda v, nada: "Sí" if v is True else ("No" if v is False else nada)
+    accesorios = list(c.get("accesorios") or [])
+    if c.get("accesorios_otros"):
+        accesorios.append(c["accesorios_otros"])
+    bloqueo = c.get("tiene_bloqueo")
+    return [
+        ("Accesorios", ", ".join(accesorios) or "Ninguno"),
+        ("Estado físico", c.get("estado_fisico") or "Sin observaciones"),
+        ("Enciende", si_no(c.get("enciende"), "No se probó")),
+        ("Bloqueo", "Sí (la clave se pide si hace falta)" if bloqueo is True else si_no(bloqueo, "No informado")),
+    ]
+
+
+def _firma(t: models.Ticket, momento: str, max_ancho_mm: float, max_alto_mm: float):
+    f = t.firma(momento)
+    if not f:
+        return None
+    escala = min(max_ancho_mm / f.ancho, max_alto_mm / f.alto)
+    return {"src": recepcion.firma_data_uri(f), "aclaracion": f.aclaracion or "",
+            "fecha": _fecha(f.fecha), "ancho_mm": round(f.ancho * escala, 2), "alto_mm": round(f.alto * escala, 2)}
+
+
 def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
     estados = {e.valor: e.etiqueta for e in db.query(models.TicketStatusConfig).all()}
     pres = t.presupuesto
@@ -113,6 +140,9 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
         "qr_seguimiento": qr_png(url_seguimiento(base_url, t)),
         "url_seguimiento": url_seguimiento(base_url, t),
         "qr_taller": qr_png(url_taller(base_url, t)),
+        "checklist": checklist_lineas(t),
+        "firma_ingreso": _firma(t, "ingreso", 60, 18),
+        "firma_entrega": _firma(t, "entrega", 60, 18),
     }
 
 
@@ -153,13 +183,19 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
             bloques.append(B("par", f"{t.empresa_transporte or ''} {t.tracking_number or ''}".strip(), etiqueta="Envío"))
     else:
         bloques += [B("texto", "Falla informada:", negrita=True), B("texto", t.descripcion or "")]
+        if ctx["checklist"]:
+            bloques.append(B("texto", "Recepción del equipo:", negrita=True))
+            bloques += [B("par", valor, etiqueta=etq) for etq, valor in ctx["checklist"]]
     bloques += [B("separador"), B("qr"),
                 B("texto", "Seguí tu reparación escaneando el código, o en la página de seguimiento con tu "
                            "N° de RMA y el N° de serie.", centro=True),
                 B("barras")]
-    if entrega:
+    firma = ctx["firma_entrega" if entrega else "firma_ingreso"]
+    if firma:
+        bloques.append(B("firma_img", "Recibí conforme" if entrega else "Conforme con el ingreso", firma=firma))
+    elif entrega:
         bloques.append(B("firma", "Recibí conforme · firma y aclaración"))
-    else:
+    if not entrega:
         bloques.append(B("texto", "Conservá este comprobante para retirar el equipo.", centro=True))
     return bloques
 
@@ -167,6 +203,9 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
 def _ctx_ticket(db: Session, ctx: dict, entrega: bool) -> dict:
     d = impresion.disenio_ticket(ajustes.get(db, "ticketera_ancho"), int(ajustes.get(db, "ticketera_dpi")),
                                  ctx["t"].numero_rma)
+    # La firma, al ancho del rollo (hasta 70 % y 20 mm de alto)
+    for clave, momento in (("firma_ingreso", "ingreso"), ("firma_entrega", "entrega")):
+        ctx[clave] = _firma(ctx["t"], momento, d["imprimible_mm"] * 0.7, 20)
     d["bloques"] = _bloques_ticket(ctx, entrega)
     d["largo_mm"] = impresion.largo_ticket(d, d["bloques"])
     return {"k": d}

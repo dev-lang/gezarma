@@ -13,6 +13,8 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Comentarios** con el cliente y **notas internas** solo para el taller.
 - **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket.
 - **Stock de repuestos** con historial de movimientos, **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
+- **Ingreso en mostrador**: cliente (existente o nuevo, sin clave), equipo, **checklist de recepción** (accesorios, estado físico, si enciende, si tiene bloqueo), **fotos** desde el celular y **firma del cliente en pantalla**, en una sola pantalla; al terminar, etiqueta y comprobante en un click. La firma de entrega se toma desde el ticket.
+- **Lector de código de barras**: escanear la etiqueta (o escribir un N° de RMA exacto en el buscador) abre el ticket directo.
 - **Seguimiento público** sin login: el cliente consulta el estado con su N° de RMA y N° de serie (o escaneando el QR de su orden de ingreso).
 - **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
 - **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
@@ -60,6 +62,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Comentar | ✅ | ✅ | ✅ |
 | Notas internas | — | ✅ | ✅ |
 | Subir / descargar adjuntos | en sus tickets | ✅ | ✅ |
+| Ingreso en mostrador, checklist, fotos de ingreso y firmas | — | ✅ | ✅ |
 | Borrar adjuntos | — | ✅ | ✅ |
 | Cambiar estado, asignar técnico, diagnóstico, etiquetas, repuestos, envío | — | ✅ | ✅ |
 | Crear, editar y enviar presupuestos | — | ✅ | ✅ |
@@ -147,6 +150,20 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
 
+### Ingreso en mostrador
+
+Desde el panel, **🧾 Ingreso en mostrador** (técnicos y administradores):
+
+1. **Cliente**: se busca por nombre, teléfono o email. Si no existe, se carga en el momento con nombre y teléfono o email. Queda **sin clave**: sigue la reparación con el QR del comprobante (y, si dejó email, recibe los avisos). Si después quiere entrar al sistema, un administrador le genera una clave temporal desde *Administración → Usuarios*. El ticket queda a nombre del cliente y el historial registra quién lo cargó.
+2. **Equipo**: producto, N° de serie, fecha de compra, prioridad y falla.
+3. **Cómo llega**: accesorios que deja, estado físico, si enciende y si tiene contraseña o patrón. **La clave de desbloqueo no se guarda**: si el técnico la necesita, se la pide al cliente.
+4. **Fotos** (opcional): desde el celular abre la cámara. Se achican en el navegador antes de subir, así no se come el espacio de adjuntos del ticket, y quedan marcadas como *Ingreso*.
+5. **Firma** (opcional): el cliente firma con el dedo, un lápiz o el mouse.
+
+Al registrar, se imprimen la etiqueta, el comprobante de ticketera o la orden de ingreso A4. El checklist y la firma salen en la orden de ingreso y en el comprobante; la **firma de entrega** (desde la tarjeta *Recepción* del ticket) sale en el remito y en el comprobante de entrega. Las firmas se guardan recortadas y en blanco y negro, listas para imprimir en una térmica. Los tickets cargados de la forma habitual también pueden completar su checklist, fotos y firmas desde esa tarjeta.
+
+**Lector de código de barras**: con un lector USB (funciona como un teclado), escanear la etiqueta en cualquier pantalla abre el ticket. En el buscador, un N° de RMA exacto + Enter también lo abre directo.
+
 ### Impresoras térmicas
 
 Desde el detalle del ticket, *Documentos* ofrece la **etiqueta** del equipo y los **comprobantes de ingreso y de entrega** para ticketera. Se imprimen con el driver de la impresora, como cualquier documento: no hace falta instalar nada más en el sistema.
@@ -230,7 +247,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, ingreso en mostrador (clientes sin clave, checklist, firmas), documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 
@@ -245,7 +262,7 @@ backend/
     auth.py            contraseñas (bcrypt), JWT y permisos por rol
     routers/           endpoints por área (tickets, presupuestos, stock, …)
     ajustes.py         ajustes editables desde el panel (secretos cifrados)
-    services/          lógica: tickets, stock, documentos, impresión térmica, email, SLA, avisos
+    services/          lógica: tickets, recepción, stock, documentos, impresión térmica, email, SLA, avisos
     templates/         plantillas de documentos (PDF/impresión) y de mails
   migrations/          migraciones de Alembic
 frontend/

@@ -78,6 +78,11 @@ const ui = {
             favBtn.classList.toggle('flex', isTechOrAdmin);
         }
         document.getElementById('advanced-stats')?.classList.toggle('hidden', !isAdmin);
+        const mostradorBtn = document.getElementById('mostrador-btn');
+        if (mostradorBtn) {
+            mostradorBtn.classList.toggle('hidden', !isTechOrAdmin);
+            mostradorBtn.classList.toggle('flex', isTechOrAdmin);
+        }
 
         try {
             const pub = await api.request('config/ajustes/publicos');
@@ -365,6 +370,8 @@ const ui = {
         if (typeof Budget !== 'undefined') {
             Budget.initPresupuestoCard(ticket.id, user.role);
         }
+        // ── Recepción: checklist, firmas y fotos de ingreso ──────────────────
+        if (typeof Recepcion !== 'undefined') Recepcion.cargarDetalle(ticket);
     },
 
     // ── Comments / History / Attachments ───────────────────────────────────
@@ -537,7 +544,7 @@ const ui = {
         document.getElementById('user-edit-id').value       = u.id;
         document.getElementById('user-edit-avatar').textContent = u.nombre?.charAt(0)?.toUpperCase() || u.username?.charAt(0)?.toUpperCase();
         document.getElementById('user-edit-username').textContent   = u.username;
-        document.getElementById('user-edit-email-display').textContent = u.email;
+        document.getElementById('user-edit-email-display').textContent = u.email || 'Sin email';
         // Populate editable profile fields
         const nombreInput    = document.getElementById('user-edit-nombre');
         const emailInput     = document.getElementById('user-edit-email');

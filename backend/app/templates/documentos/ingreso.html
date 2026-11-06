@@ -1,9 +1,17 @@
 {% extends "base.html" %}
+{% from "_firma_cliente.html" import firma_cliente %}
 {% block contenido %}
 {% include "_datos.html" %}
 
 <h2>Falla informada por el cliente</h2>
 <div class="box">{{ t.descripcion }}</div>
+
+{% if checklist %}
+<h2>Recepción del equipo</h2>
+<table>
+  {% for etiqueta, valor in checklist %}<tr><td class="label">{{ etiqueta }}</td><td>{{ valor }}</td></tr>{% endfor %}
+</table>
+{% endif %}
 
 {% include "_qr.html" %}
 
@@ -14,9 +22,9 @@
 
 <table style="margin-top: 40px;">
   <tr>
-    <td style="width: 45%;"><div class="firma">Firma y aclaración del cliente</div></td>
+    <td style="width: 45%; vertical-align: bottom;">{{ firma_cliente(firma_ingreso, "Firma y aclaración del cliente") }}</td>
     <td style="width: 10%;"></td>
-    <td style="width: 45%;"><div class="firma">Recibido por {{ empresa }}</div></td>
+    <td style="width: 45%; vertical-align: bottom;"><div class="firma">Recibido por {{ empresa }}</div></td>
   </tr>
 </table>
 {% endblock %}

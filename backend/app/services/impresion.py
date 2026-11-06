@@ -193,4 +193,6 @@ def largo_ticket(d: dict, bloques: list) -> float:
             mm += d["barras"]["alto_mm"] + 3.0
         elif t == "firma":
             mm += 10 + 0.8 + renglon
+        elif t == "firma_img":
+            mm += 2.0 + b["firma"]["alto_mm"] + 0.8 + renglon * (2 if b["firma"]["aclaracion"] else 1)
     return round(mm + 4.0, 1)   # + 4 mm de margen de seguridad

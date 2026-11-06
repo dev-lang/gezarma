@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Query, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -666,6 +666,7 @@ def _serialize_adjunto(a: models.Adjunto) -> dict:
         "mime_type":      a.mime_type or "",
         "ext":            ext,
         "fecha":          iso_utc(a.fecha) if a.fecha else None,
+        "categoria":      a.categoria,
     }
 
 
@@ -673,10 +674,16 @@ def _serialize_adjunto(a: models.Adjunto) -> dict:
 def upload_attachment(
     ticket_id: int,
     file: UploadFile = File(...),
+    categoria: Optional[str] = Form(None),
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
     _get_ticket_for_user(ticket_id, current_user, db)
+    # "ingreso" = foto del estado del equipo al recibirlo (la saca el taller)
+    if categoria not in (None, "", "ingreso"):
+        raise HTTPException(status_code=400, detail="Categoría de adjunto inválida")
+    if categoria == "ingreso" and current_user.rol == models.UserRole.CLIENTE:
+        raise HTTPException(status_code=403, detail="Las fotos de ingreso las carga el taller")
 
     # ── Validate extension ────────────────────────────────────────────────
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -731,11 +738,13 @@ def upload_attachment(
         ruta_archivo=dest,
         tamanio=file_size,
         mime_type=mime,
+        categoria=categoria or None,
     )
     db.add(adj)
     log_event(db, ticket_id, current_user.id,
               models.EventoHistorial.ARCHIVO_SUBIDO,
-              detalle=f"Archivo subido: {safe_display}")
+              detalle=(f"Foto de ingreso: {safe_display}" if categoria == "ingreso"
+                       else f"Archivo subido: {safe_display}"))
     db.commit()
     db.refresh(adj)
 

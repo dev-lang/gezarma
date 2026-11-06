@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_firma_cliente.html" import firma_cliente %}
 {% block contenido %}
 {% include "_datos.html" %}
 
@@ -34,9 +35,9 @@
 
 <table style="margin-top: 40px;">
   <tr>
-    <td style="width: 45%;"><div class="firma">Firma y aclaración del cliente</div></td>
+    <td style="width: 45%; vertical-align: bottom;">{{ firma_cliente(firma_entrega, "Firma y aclaración del cliente") }}</td>
     <td style="width: 10%;"></td>
-    <td style="width: 45%;"><div class="firma">Entregado por {{ empresa }}</div></td>
+    <td style="width: 45%; vertical-align: bottom;"><div class="firma">Entregado por {{ empresa }}</div></td>
   </tr>
 </table>
 {% endblock %}

@@ -66,8 +66,11 @@ def update_user_profile(
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     data = profile.model_dump(exclude_unset=True)
-    # Check email uniqueness if changing
+    # Sin email = NULL (los clientes de mostrador pueden no tener; "" chocaría entre ellos)
     if "email" in data:
+        data["email"] = (data["email"] or "").strip() or None
+    # Check email uniqueness if changing
+    if data.get("email"):
         exists = db.query(models.Usuario).filter(
             models.Usuario.email == data["email"],
             models.Usuario.id != user_id

@@ -320,7 +320,7 @@ const components = (() => {
              data-adj-id="${a.id}">
             <span class="text-lg shrink-0">${icon}</span>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-blue-900 truncate">${a.nombre_archivo}</p>
+                <p class="text-sm font-medium text-blue-900 truncate">${a.categoria === 'ingreso' ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded mr-1">📷 Ingreso</span>' : ''}${a.nombre_archivo}</p>
                 <p class="text-[10px] text-blue-400">${mimeLabel.toUpperCase()} · ${sizeStr}</p>
             </div>
             <div class="flex items-center gap-1 shrink-0">
@@ -377,7 +377,7 @@ const components = (() => {
         <tr class="border-b hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
             <td class="px-6 py-3 font-semibold">${u.username}</td>
             <td class="px-6 py-3 text-gray-600">${u.nombre || '—'}</td>
-            <td class="px-6 py-3 text-gray-500 text-xs">${u.email}</td>
+            <td class="px-6 py-3 text-gray-500 text-xs">${u.email || '—'}</td>
             <td class="px-6 py-3">
                 <span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolCls}">${u.rol}</span>
             </td>
@@ -554,7 +554,7 @@ const components = (() => {
         <tr class="hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
             <td class="px-5 py-3 font-mono text-xs font-bold text-gray-700">${u.username}</td>
             <td class="px-5 py-3 text-gray-700">${u.nombre || '—'}</td>
-            <td class="px-5 py-3 text-gray-400 text-xs">${u.email}</td>
+            <td class="px-5 py-3 text-gray-400 text-xs">${u.email || '—'}</td>
             <td class="px-5 py-3"><span class="text-xs text-gray-400 capitalize">${u.tipo_cliente || 'persona'}</span></td>
             <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolColors[u.rol] || 'bg-gray-100 text-gray-600'}">${u.rol}</span></td>
             <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${activoCls}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>

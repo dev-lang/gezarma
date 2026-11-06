@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum, Float, Boolean, Table, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum, Float, Boolean, Table, JSON, LargeBinary, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -59,6 +59,8 @@ class EventoHistorial(str, enum.Enum):
     TICKET_DESASOCIADO = "ticket_desasociado"
     ARCHIVO_SUBIDO   = "archivo_subido"
     ARCHIVO_ELIMINADO= "archivo_eliminado"
+    CHECKLIST_INGRESO= "checklist_ingreso"
+    FIRMA_REGISTRADA = "firma_registrada"
 
 # ── Models ────────────────────────────────────────────────────────────────────
 class Usuario(Base):
@@ -173,6 +175,10 @@ class Ticket(Base):
     clonado_de        = Column(Integer, ForeignKey("tickets.id"), nullable=True)
     ticket_relacionado= Column(Integer, ForeignKey("tickets.id"), nullable=True)
 
+    # Recepción: accesorios, estado físico, si enciende y si tiene bloqueo
+    # (dict; ver schemas.ChecklistIngreso). La clave de desbloqueo NO se guarda.
+    checklist_ingreso = Column(JSON, nullable=True)
+
     cliente      = relationship("Usuario", back_populates="tickets_creados",  foreign_keys=[usuario_id])
     tecnico      = relationship("Usuario", back_populates="tickets_asignados", foreign_keys=[tecnico_asignado])
     producto_obj = relationship("Producto", back_populates="tickets")
@@ -187,6 +193,10 @@ class Ticket(Base):
     repuestos_usados_assoc = relationship("TicketRepuesto", back_populates="ticket", cascade="all, delete-orphan")
     presupuesto          = relationship("Presupuesto", back_populates="ticket", uselist=False,
                                         cascade="all, delete-orphan")
+    firmas               = relationship("Firma", back_populates="ticket", cascade="all, delete-orphan")
+
+    def firma(self, momento: str):
+        return next((f for f in self.firmas if f.momento == momento), None)
 
     @property
     def repuestos_usados(self):
@@ -278,7 +288,25 @@ class Adjunto(Base):
     tamanio         = Column(Integer, default=0)   # bytes
     mime_type       = Column(String, default="")
     fecha           = Column(DateTime, default=utcnow)
+    categoria       = Column(String, nullable=True)   # "ingreso" = foto del estado al recibirlo
     ticket = relationship("Ticket", back_populates="adjuntos")
+
+
+class Firma(Base):
+    """Firma del cliente en pantalla, al dejar el equipo ("ingreso") o al
+    retirarlo ("entrega"). Una por momento: firmar de nuevo la reemplaza."""
+    __tablename__ = "firmas"
+    __table_args__ = (UniqueConstraint("ticket_id", "momento", name="uq_firmas_ticket_momento"),)
+    id             = Column(Integer, primary_key=True, index=True)
+    ticket_id      = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    momento        = Column(String, nullable=False)
+    imagen         = Column(LargeBinary, nullable=False)   # PNG en blanco y negro
+    ancho          = Column(Integer, nullable=False)
+    alto           = Column(Integer, nullable=False)
+    aclaracion     = Column(String, nullable=True)
+    fecha          = Column(DateTime, default=utcnow)
+    registrado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    ticket = relationship("Ticket", back_populates="firmas")
 
 # ── Budget Models ─────────────────────────────────────────────────────────────
 

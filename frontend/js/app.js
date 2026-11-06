@@ -504,6 +504,7 @@ const app = {
         });
 
         // ── Ticket modal ──────────────────────────────────────────────────
+        on('mostrador-btn', 'click', () => Recepcion.abrirMostrador());
         on('create-ticket-btn', 'click', () => {
             ui.loadProductsSelect();
             document.getElementById('ticket-modal')?.classList.remove('hidden');
@@ -1003,7 +1004,13 @@ const app = {
                     e.preventDefault();
                     const q = searchInput.value.trim();
                     searchResults?.classList.add('hidden');
-                    if (q.length >= 2) ui.loadSearchPage(q);
+                    clearTimeout(searchTimeout);
+                    if (q.length < 2) return;
+                    // N° de RMA exacto (tipeado o del lector de código de barras): abre el ticket
+                    Recepcion.abrirRma(q).then(abierto => {
+                        if (abierto) searchInput.value = '';
+                        else ui.loadSearchPage(q);
+                    });
                 }
             });
 

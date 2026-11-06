@@ -82,12 +82,17 @@ def log_event(db: Session, ticket_id: int, usuario_id: int,
 
 # ── Ticket creation ───────────────────────────────────────────────────────────
 def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
-                             current_user: models.Usuario, ip_address: str = None):
-    rma_num = generate_rma_number(db, current_user.rol)
+                             current_user: models.Usuario, ip_address: str = None,
+                             cliente: models.Usuario = None, checklist: dict = None):
+    """Crea el ticket. Por defecto queda a nombre de quien lo carga; en el ingreso
+    en mostrador, el taller lo carga a nombre de `cliente` (el N° de RMA y la
+    prioridad automática salen del cliente, el historial registra quién lo cargó)."""
+    duenio = cliente or current_user
+    rma_num = generate_rma_number(db, duenio.rol)
 
     # Auto-priority
     priority = "Normal"
-    if current_user.tipo_cliente == models.UserType.EMPRESA:
+    if duenio.tipo_cliente == models.UserType.EMPRESA:
         priority = "Alta"
 
     fecha_compra_naive = ticket.fecha_compra.replace(tzinfo=None) if ticket.fecha_compra.tzinfo else ticket.fecha_compra
@@ -114,7 +119,8 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
     new_ticket = models.Ticket(
         **new_data,
         numero_rma=rma_num,
-        usuario_id=current_user.id,
+        usuario_id=duenio.id,
+        checklist_ingreso=checklist,
         estado=models.TicketStatus.NUEVO,
         en_garantia=is_warranty,
         deadline_sla=deadline,
@@ -125,7 +131,8 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
 
     log_event(db, new_ticket.id, current_user.id,
               models.EventoHistorial.CAMBIO_ESTADO,
-              detalle=f"Ticket creado con estado Nuevo",
+              detalle=("Ticket creado con estado Nuevo" if duenio is current_user
+                       else f"Ingreso en mostrador para {duenio.nombre}, cargado por {current_user.nombre}"),
               estado_ant=None, estado_nuevo=models.TicketStatus.NUEVO)
 
     # Auditoría

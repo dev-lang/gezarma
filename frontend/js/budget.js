@@ -41,6 +41,8 @@ export async function initPresupuestoCard(ticketId, userRole) {
     // Load budget
     let budget = null;
     try { budget = await api.getPresupuesto(ticketId); } catch { /* no budget yet */ }
+    // Mientras cargaba se pudo salir del ticket (o abrir otro, p. ej. con el lector)
+    if (!$("presupuesto-empty") || ui.currentTicketId !== ticketId) return;
     _currentBudget = budget;
 
     renderPresupuestoCard(budget, userRole);

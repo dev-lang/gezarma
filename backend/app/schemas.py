@@ -59,6 +59,7 @@ class UserResetPassword(BaseModel):
     pass
 
 class User(UserBase):
+    email:                Optional[str] = None   # los clientes cargados en mostrador pueden no tener
     id:                   int
     activo:               bool
     fecha_creacion:       UTCDateTime
@@ -125,6 +126,47 @@ class ProductUpdate(BaseModel):
 class Product(ProductBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+# ── Recepción (checklist de ingreso) ──────────────────────────────────────────
+ACCESORIOS_COMUNES = ["Cargador", "Cable", "Caja", "Funda", "Batería", "Control remoto", "Tarjeta de memoria", "Chip / SIM"]
+
+
+class ChecklistIngreso(BaseModel):
+    """Lo que trae el equipo y cómo llega. De la clave de desbloqueo solo se
+    registra si tiene: la clave se le pide al cliente cuando hace falta."""
+    accesorios:       List[str] = []
+    accesorios_otros: str = ""
+    estado_fisico:    str = ""
+    enciende:         Optional[bool] = None   # None = no se probó
+    tiene_bloqueo:    Optional[bool] = None   # None = no se sabe
+
+    @field_validator("accesorios")
+    @classmethod
+    def _accesorios(cls, v):
+        limpios = []
+        for a in v:
+            a = (a or "").strip()[:40]
+            if a and a not in limpios:
+                limpios.append(a)
+        if len(limpios) > 20:
+            raise ValueError("Demasiados accesorios (máximo 20)")
+        return limpios
+
+    @field_validator("accesorios_otros", "estado_fisico")
+    @classmethod
+    def _texto(cls, v):
+        v = (v or "").strip()
+        if len(v) > 500:
+            raise ValueError("Máximo 500 caracteres")
+        return v
+
+
+class FirmaInfo(BaseModel):
+    momento:    str
+    aclaracion: Optional[str] = None
+    fecha:      UTCDateTime
+    model_config = ConfigDict(from_attributes=True)
+
 
 # ── Tickets ───────────────────────────────────────────────────────────────────
 class TicketBase(BaseModel):
@@ -204,6 +246,8 @@ class Ticket(TicketBase):
     rma_relacionado:      Optional[str]  = None
     tags:                 List[Tag]              = []
     repuestos_usados:     List[SparePartWithQty] = []
+    checklist_ingreso:    Optional[ChecklistIngreso] = None
+    firmas:               List[FirmaInfo]        = []
 
     @classmethod
     def from_orm_with_tecnico(cls, obj, current_user_id: int = None):
