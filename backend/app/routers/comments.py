@@ -4,6 +4,7 @@ from typing import List
 from datetime import datetime
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
+from ..timeutils import utcnow
 
 router = APIRouter(prefix="/tickets/{ticket_id}/comments", tags=["comments"])
 
@@ -25,7 +26,7 @@ def create_comment(
         comentario=comment.comentario, is_internal=is_internal,
     )
     db.add(new_comment)
-    ticket.fecha_actualizacion = datetime.utcnow()
+    ticket.fecha_actualizacion = utcnow()
     tipo = models.EventoHistorial.NOTA_INTERNA if is_internal else models.EventoHistorial.COMENTARIO
     log_event(db, ticket_id, current_user.id, tipo,
               detalle=f"{'[Interna] ' if is_internal else ''}{comment.comentario[:80]}")

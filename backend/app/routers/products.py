@@ -22,7 +22,7 @@ def create_product(
         existing = db.query(models.Producto).filter(models.Producto.numero_parte == product.numero_parte).first()
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe un producto con el número de parte '{product.numero_parte}'")
-    db_product = models.Producto(**product.dict())
+    db_product = models.Producto(**product.model_dump())
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
@@ -47,7 +47,7 @@ def update_product(
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe un producto con el número de parte '{product.numero_parte}'")
 
-    for key, value in product.dict().items():
+    for key, value in product.model_dump().items():
         setattr(db_product, key, value)
     db.commit()
     db.refresh(db_product)

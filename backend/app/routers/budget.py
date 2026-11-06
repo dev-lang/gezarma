@@ -14,6 +14,7 @@ import json
 
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
+from ..timeutils import utcnow
 
 router = APIRouter(prefix="/budget", tags=["budget"])
 
@@ -146,7 +147,7 @@ def create_presupuesto(
     db.flush()  # get ID
 
     for item_data in body.items:
-        db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.dict()))
+        db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.model_dump()))
 
     log_event(db, ticket_id, current_user.id, "presupuesto_creado", "Presupuesto creado")
     db.commit()
@@ -187,10 +188,10 @@ def update_presupuesto(
             db.delete(item)
         db.flush()
         for item_data in body.items:
-            db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.dict()))
+            db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.model_dump()))
 
     presupuesto.actualizado_por = current_user.id
-    presupuesto.fecha_actualizacion = datetime.utcnow()
+    presupuesto.fecha_actualizacion = utcnow()
 
     # If it was sent and is being edited, revert to draft
     if presupuesto.estado == models.PresupuestoEstado.ENVIADO:
@@ -257,7 +258,7 @@ def update_estado_presupuesto(
     presupuesto.version += 1
     presupuesto.estado = nuevo
     presupuesto.actualizado_por = current_user.id
-    presupuesto.fecha_actualizacion = datetime.utcnow()
+    presupuesto.fecha_actualizacion = utcnow()
 
     log_event(db, ticket_id, current_user.id, "presupuesto_estado", f"Presupuesto: {actual} → {nuevo}")
     estado_labels = {
@@ -333,7 +334,7 @@ def create_plantilla(
 ):
     if db.query(models.PlantillaPresupuesto).filter_by(nombre=body.nombre).first():
         raise HTTPException(400, "Ya existe una plantilla con ese nombre")
-    obj = models.PlantillaPresupuesto(**body.dict())
+    obj = models.PlantillaPresupuesto(**body.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -358,7 +359,7 @@ def update_plantilla(
     ).first()
     if conflict:
         raise HTTPException(400, "Ya existe otra plantilla con ese nombre")
-    for k, v in body.dict().items():
+    for k, v in body.model_dump().items():
         setattr(obj, k, v)
     db.commit()
     db.refresh(obj)

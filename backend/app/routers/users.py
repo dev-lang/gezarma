@@ -45,7 +45,7 @@ def update_user(
     valid_roles = {r.value for r in models.UserRole}
     if user_update.rol and user_update.rol not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Rol inválido: {sorted(valid_roles)}")
-    data = user_update.dict(exclude_unset=True)
+    data = user_update.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(db_user, k, v)
     db.commit()
@@ -65,7 +65,7 @@ def update_user_profile(
     db_user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    data = profile.dict(exclude_unset=True)
+    data = profile.model_dump(exclude_unset=True)
     # Check email uniqueness if changing
     if "email" in data:
         exists = db.query(models.Usuario).filter(

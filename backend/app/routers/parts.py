@@ -23,7 +23,7 @@ def create_part(
     existing = db.query(models.Repuesto).filter(models.Repuesto.codigo == part.codigo).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Ya existe un repuesto con el código '{part.codigo}'")
-    db_part = models.Repuesto(**part.dict())
+    db_part = models.Repuesto(**part.model_dump())
     db.add(db_part)
     db.commit()
     db.refresh(db_part)
@@ -48,7 +48,7 @@ def update_part(
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe un repuesto con el código '{part.codigo}'")
 
-    for key, value in part.dict().items():
+    for key, value in part.model_dump().items():
         setattr(db_part, key, value)
 
     db.commit()

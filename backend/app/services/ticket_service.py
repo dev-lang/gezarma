@@ -106,7 +106,7 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
 
     deadline = calculate_sla_deadline(models.TicketStatus.NUEVO)
 
-    new_data = ticket.dict()
+    new_data = ticket.model_dump()
     new_data["fecha_compra"] = fecha_compra_naive
     new_data["prioridad"] = priority
 

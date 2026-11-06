@@ -184,7 +184,7 @@ def edit_ticket_fields(
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    data = fields.dict(exclude_unset=True)
+    data = fields.model_dump(exclude_unset=True)
     changed_labels = []
     for campo, valor_nuevo in data.items():
         valor_anterior = getattr(ticket, campo, None)

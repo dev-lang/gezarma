@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 from .database import Base
+from .timeutils import utcnow
 
 # ── Association Tables ────────────────────────────────────────────────────────
 class TicketRepuesto(Base):
@@ -70,7 +71,7 @@ class Usuario(Base):
     rol             = Column(String,  default=UserRole.CLIENTE)
     tipo_cliente    = Column(String,  default=UserType.PERSONA)
     activo          = Column(Boolean, default=True)
-    fecha_creacion  = Column(DateTime, default=datetime.utcnow)
+    fecha_creacion  = Column(DateTime, default=utcnow)
     telefono        = Column(String,  nullable=True)   # ← nuevo
     # Feature 1: forced password change
     must_change_password = Column(Boolean, default=False)
@@ -153,8 +154,8 @@ class Ticket(Base):
     tecnico_asignado= Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
     # SLA y Tiempos
-    fecha_creacion      = Column(DateTime, default=datetime.utcnow)
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fecha_creacion      = Column(DateTime, default=utcnow)
+    fecha_actualizacion = Column(DateTime, default=utcnow, onupdate=utcnow)
     fecha_cierre        = Column(DateTime, nullable=True)
     deadline_sla        = Column(DateTime, nullable=True)
 
@@ -205,7 +206,7 @@ class TicketFavorito(Base):
     id         = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     ticket_id  = Column(Integer, ForeignKey("tickets.id"),  index=True)
-    fecha      = Column(DateTime, default=datetime.utcnow)
+    fecha      = Column(DateTime, default=utcnow)
 
     usuario = relationship("Usuario", back_populates="favoritos")
     ticket  = relationship("Ticket")
@@ -223,7 +224,7 @@ class Comentario(Base):
     usuario_id  = Column(Integer, ForeignKey("usuarios.id"))
     comentario  = Column(Text)
     is_internal = Column(Boolean, default=False)
-    fecha       = Column(DateTime, default=datetime.utcnow)
+    fecha       = Column(DateTime, default=utcnow)
     ticket  = relationship("Ticket",   back_populates="comentarios")
     usuario = relationship("Usuario",  back_populates="comentarios")
 
@@ -238,7 +239,7 @@ class StockMovimiento(Base):
     stock_anterior = Column(Integer)
     stock_nuevo    = Column(Integer)
     nota           = Column(String, nullable=True)
-    fecha          = Column(DateTime, default=datetime.utcnow)
+    fecha          = Column(DateTime, default=utcnow)
     repuesto = relationship("Repuesto")
     ticket   = relationship("Ticket")
     usuario  = relationship("Usuario")
@@ -256,7 +257,7 @@ class HistorialEstado(Base):
     valor_nuevo     = Column(Text,   nullable=True)
     detalle         = Column(String, nullable=True)   # human-readable description
     usuario_id      = Column(Integer, ForeignKey("usuarios.id"))
-    fecha           = Column(DateTime, default=datetime.utcnow)
+    fecha           = Column(DateTime, default=utcnow)
     ticket  = relationship("Ticket",  back_populates="historial")
     usuario = relationship("Usuario", back_populates="historial_cambios")
 
@@ -269,7 +270,7 @@ class Adjunto(Base):
     ruta_archivo    = Column(String)          # full path on disk
     tamanio         = Column(Integer, default=0)   # bytes
     mime_type       = Column(String, default="")
-    fecha           = Column(DateTime, default=datetime.utcnow)
+    fecha           = Column(DateTime, default=utcnow)
     ticket = relationship("Ticket", back_populates="adjuntos")
 
 # ── Budget Models ─────────────────────────────────────────────────────────────
@@ -305,8 +306,8 @@ class Presupuesto(Base):
     estado          = Column(String, default=PresupuestoEstado.BORRADOR)
     version         = Column(Integer, default=1)
     notas           = Column(Text, nullable=True)
-    fecha_creacion  = Column(DateTime, default=datetime.utcnow)
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fecha_creacion  = Column(DateTime, default=utcnow)
+    fecha_actualizacion = Column(DateTime, default=utcnow, onupdate=utcnow)
     creado_por      = Column(Integer, ForeignKey("usuarios.id"))
     actualizado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
@@ -340,7 +341,7 @@ class PresupuestoVersion(Base):
     notas           = Column(Text, nullable=True)
     items_snapshot  = Column(JSON)   # list of item dicts at time of snapshot
     usuario_id      = Column(Integer, ForeignKey("usuarios.id"))
-    fecha           = Column(DateTime, default=datetime.utcnow)
+    fecha           = Column(DateTime, default=utcnow)
 
     presupuesto = relationship("Presupuesto", back_populates="versiones")
     usuario     = relationship("Usuario")
@@ -375,7 +376,7 @@ class Notificacion(Base):
     titulo          = Column(String)
     mensaje         = Column(Text)
     leida           = Column(Boolean, default=False, index=True)
-    fecha           = Column(DateTime, default=datetime.utcnow, index=True)
+    fecha           = Column(DateTime, default=utcnow, index=True)
     origen_usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)  # who triggered it
 
     usuario         = relationship("Usuario", foreign_keys=[usuario_id])
@@ -389,7 +390,7 @@ class Auditoria(Base):
     accion      = Column(String)
     detalle     = Column(Text)
     ip_address  = Column(String)
-    fecha       = Column(DateTime, default=datetime.utcnow)
+    fecha       = Column(DateTime, default=utcnow)
 
 class ConfigSistema(Base):
     """Key-value system configuration settable from admin panel."""
@@ -404,5 +405,5 @@ class LoginAttempt(Base):
     id         = Column(Integer, primary_key=True, index=True)
     ip_address = Column(String, index=True)
     username   = Column(String)
-    fecha      = Column(DateTime, default=datetime.utcnow)
+    fecha      = Column(DateTime, default=utcnow)
     exitoso    = Column(Boolean, default=False)

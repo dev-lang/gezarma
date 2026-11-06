@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 from typing import Optional
 from .. import database, models, schemas, auth as auth_module
+from ..timeutils import utcnow
 
 router = APIRouter(tags=["auth"])
 
@@ -34,7 +35,7 @@ def _check_rate_limit(db: Session, ip: str):
     if len(recent_fails) >= max_attempts:
         # Check if still in lockout window from the latest attempt
         last_fail_time = recent_fails[0].fecha
-        elapsed = (datetime.utcnow() - last_fail_time).total_seconds()
+        elapsed = (utcnow() - last_fail_time).total_seconds()
         if elapsed < lockout_secs:
             remaining = int(lockout_secs - elapsed)
             raise HTTPException(

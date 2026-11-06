@@ -8,7 +8,7 @@ router = APIRouter(prefix="/stock", tags=["stock"])
 STAFF = [models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO]
 
 def _enrich(m: models.StockMovimiento) -> schemas.StockMovimientoOut:
-    out = schemas.StockMovimientoOut.from_orm(m)
+    out = schemas.StockMovimientoOut.model_validate(m)
     if m.repuesto:  out.repuesto_nombre = m.repuesto.nombre
     if m.ticket:    out.ticket_rma      = m.ticket.numero_rma
     if m.usuario:   out.usuario_nombre  = m.usuario.nombre
@@ -105,7 +105,7 @@ def update_stock_movimiento(
         mov.nota = payload.nota
     db.commit()
     db.refresh(mov)
-    out = schemas.StockMovimientoOut.from_orm(mov)
+    out = schemas.StockMovimientoOut.model_validate(mov)
     if mov.repuesto: out.repuesto_nombre = mov.repuesto.nombre
     if mov.ticket:   out.ticket_rma      = mov.ticket.numero_rma
     if mov.usuario:  out.usuario_nombre  = mov.usuario.nombre

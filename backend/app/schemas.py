@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Dict
 from datetime import datetime
 
@@ -12,8 +12,7 @@ class TagCreate(TagBase):
 
 class Tag(TagBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Users ────────────────────────────────────────────────────────────────────
 class UserBase(BaseModel):
@@ -25,7 +24,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def pw_min_length(cls, v):
         if len(v) < 6:
             raise ValueError("La contraseña debe tener al menos 6 caracteres")
@@ -57,8 +57,7 @@ class User(UserBase):
     fecha_creacion:       datetime
     telefono:             Optional[str] = None
     must_change_password: bool = False
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Spare Parts ───────────────────────────────────────────────────────────────
 class SparePart(BaseModel):
@@ -69,8 +68,7 @@ class SparePart(BaseModel):
     proveedor: str
     precio:    float
     categoria: Optional[str] = "General"
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SparePartCreate(BaseModel):
     nombre:    str
@@ -115,8 +113,7 @@ class ProductUpdate(BaseModel):
 
 class Product(ProductBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Tickets ───────────────────────────────────────────────────────────────────
 class TicketBase(BaseModel):
@@ -199,7 +196,7 @@ class Ticket(TicketBase):
 
     @classmethod
     def from_orm_with_tecnico(cls, obj, current_user_id: int = None):
-        data = cls.from_orm(obj)
+        data = cls.model_validate(obj)
         if obj.tecnico:
             data.tecnico_nombre = obj.tecnico.nombre
         if obj.cliente:
@@ -227,8 +224,7 @@ class Ticket(TicketBase):
                 r.stock = r.proveedor = r.precio = None
         return data
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Comments ──────────────────────────────────────────────────────────────────
 class CommentBase(BaseModel):
@@ -247,13 +243,12 @@ class Comment(CommentBase):
 
     @classmethod
     def from_orm_with_nombre(cls, obj):
-        data = cls.from_orm(obj)
+        data = cls.model_validate(obj)
         if obj.usuario:
             data.usuario_nombre = obj.usuario.nombre
         return data
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── History ───────────────────────────────────────────────────────────────────
 class HistorialEntry(BaseModel):
@@ -269,8 +264,7 @@ class HistorialEntry(BaseModel):
     usuario_nombre:  Optional[str] = None
     fecha:           datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Stock ─────────────────────────────────────────────────────────────────────
 class StockMovimientoOut(BaseModel):
@@ -286,8 +280,7 @@ class StockMovimientoOut(BaseModel):
     stock_nuevo:    int
     nota:           Optional[str] = None
     fecha:          datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class StockMovimientoUpdate(BaseModel):
     nota: Optional[str] = None
@@ -303,8 +296,7 @@ class PlantillaCreate(PlantillaBase):
 
 class Plantilla(PlantillaBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Ticket Status Config ──────────────────────────────────────────────────────
 class StatusConfigBase(BaseModel):
@@ -320,8 +312,7 @@ class StatusConfigCreate(StatusConfigBase):
 
 class StatusConfig(StatusConfigBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Budget / Presupuesto ──────────────────────────────────────────────────────
 
@@ -339,8 +330,7 @@ class PresupuestoItemOut(PresupuestoItemBase):
     costo_interno: Optional[float] = None   # None for clients
     costo_total:  Optional[float] = None    # None for clients
     precio_total: float
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PresupuestoCreate(BaseModel):
     notas: Optional[str] = None
@@ -361,8 +351,7 @@ class PresupuestoVersionOut(BaseModel):
     items_snapshot: Optional[list] = None
     usuario_nombre: Optional[str] = None
     fecha:          datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PresupuestoOut(BaseModel):
     id:              int
@@ -378,8 +367,7 @@ class PresupuestoOut(BaseModel):
     creador_nombre:  Optional[str] = None
     fecha_creacion:  datetime
     fecha_actualizacion: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Plantilla Presupuesto ─────────────────────────────────────────────────────
 
@@ -397,8 +385,7 @@ class PlantillaPresupuestoCreate(PlantillaPresupuestoBase):
 
 class PlantillaPresupuestoOut(PlantillaPresupuestoBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ── Financial Stats ───────────────────────────────────────────────────────────
 
@@ -426,8 +413,7 @@ class NotificacionOut(BaseModel):
     leida:              bool
     fecha:              datetime
     origen_nombre:      Optional[str] = None
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class NotificacionMarkRead(BaseModel):
     ids: List[int] = []   # empty = mark all
@@ -447,8 +433,7 @@ class DashboardStats(BaseModel):
 class ConfigSistemaItem(BaseModel):
     clave: str
     valor: str
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ConfigSistemaUpdate(BaseModel):
     valor: str

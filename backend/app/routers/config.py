@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth
+from ..timeutils import utcnow
 
 router = APIRouter(prefix="/config", tags=["config"])
 
@@ -25,7 +26,7 @@ def create_plantilla(p: schemas.PlantillaCreate,
                          auth.check_role([models.UserRole.ADMINISTRADOR]))):
     if db.query(models.DiagnosticaPlantilla).filter_by(nombre=p.nombre).first():
         raise HTTPException(400, "Ya existe una plantilla con ese nombre")
-    obj = models.DiagnosticaPlantilla(**p.dict())
+    obj = models.DiagnosticaPlantilla(**p.model_dump())
     db.add(obj); db.commit(); db.refresh(obj)
     return obj
 
@@ -42,7 +43,7 @@ def update_plantilla(pid: int, p: schemas.PlantillaCreate,
         models.DiagnosticaPlantilla.id != pid).first()
     if conflict:
         raise HTTPException(400, "Ya existe otra plantilla con ese nombre")
-    for k, v in p.dict().items():
+    for k, v in p.model_dump().items():
         setattr(obj, k, v)
     db.commit(); db.refresh(obj)
     return obj
@@ -71,7 +72,7 @@ def create_estado(s: schemas.StatusConfigCreate,
                       auth.check_role([models.UserRole.ADMINISTRADOR]))):
     if db.query(models.TicketStatusConfig).filter_by(valor=s.valor).first():
         raise HTTPException(400, "Ya existe un estado con ese valor")
-    obj = models.TicketStatusConfig(**s.dict())
+    obj = models.TicketStatusConfig(**s.model_dump())
     db.add(obj); db.commit(); db.refresh(obj)
     return obj
 
@@ -83,7 +84,7 @@ def update_estado(sid: int, s: schemas.StatusConfigCreate,
     obj = db.query(models.TicketStatusConfig).filter_by(id=sid).first()
     if not obj:
         raise HTTPException(404, "Estado no encontrado")
-    for k, v in s.dict().items():
+    for k, v in s.model_dump().items():
         setattr(obj, k, v)
     db.commit(); db.refresh(obj)
     return obj
@@ -174,7 +175,7 @@ def get_login_attempts_stats(
     window = int(
         (db.query(models.ConfigSistema).filter_by(clave="login_ventana_segundos").first() or type('', (), {'valor': '300'})()).valor
     )
-    since = datetime.utcnow() - timedelta(seconds=window)
+    since = utcnow() - timedelta(seconds=window)
     rows = (
         db.query(
             models.LoginAttempt.ip_address,

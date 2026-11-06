@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +14,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="GEZATEK RMA System API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: datos iniciales (seed_data está definida más abajo)
+    seed_data()
+    yield
+
+app = FastAPI(title="GEZATEK RMA System API", lifespan=lifespan)
 # El frontend se sirve desde esta misma app, así que no necesita CORS.
 # Solo hace falta si otro origen consume la API (CORS_ORIGINS en .env; vacío = sin CORS).
 if config.CORS_ORIGINS:
@@ -66,7 +73,6 @@ def _purge_plain_temp_passwords():
             conn.execute(text("UPDATE usuarios SET temp_password_plain = NULL "
                               "WHERE temp_password_plain IS NOT NULL"))
 
-@app.on_event("startup")
 def seed_data():
     config.warn_insecure_defaults()
     _purge_plain_temp_passwords()
