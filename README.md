@@ -11,18 +11,24 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Tickets RMA** con número correlativo, estados configurables, prioridad, SLA, técnico asignado, etiquetas, tickets clonados/relacionados y datos de envío.
 - **Diagnóstico** con plantillas, **repuestos usados** con descuento de stock y **adjuntos** (PDF, TXT, JPG, PNG; hasta 10 MB por ticket).
 - **Comentarios** con el cliente y **notas internas** solo para el taller.
-- **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket.
+- **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket. Las plantillas de ítems pueden ser de un modelo de producto: al presupuestarlo aparecen primero y se cargan todas juntas.
 - **Stock de repuestos** con historial de movimientos, **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
 - **Ingreso en mostrador**: cliente (existente o nuevo, sin clave), equipo, **checklist de recepción** (accesorios, estado físico, si enciende, si tiene bloqueo), **fotos** desde el celular y **firma del cliente en pantalla**, en una sola pantalla; al terminar, etiqueta y comprobante en un click. La firma de entrega se toma desde el ticket.
 - **Lector de código de barras**: escanear la etiqueta (o escribir un N° de RMA exacto en el buscador) abre el ticket directo.
 - **Seguimiento público** sin login: el cliente consulta el estado con su N° de RMA y N° de serie (o escaneando el QR de su orden de ingreso).
+- **Portal del cliente** (*Mis equipos*): sus equipos con todas las reparaciones, los documentos para bajar y lo que tiene pendiente (aprobar un presupuesto, retirar el equipo, calificar la reparación).
+- **Listo para retirar**: aviso al cliente con la fecha límite, recordatorios y alerta al taller cuando vence el plazo de guarda.
+- **Encuesta de satisfacción** al cerrar (de 1 a 5, desde la cuenta o el seguimiento público), con promedio y comentarios en el panel.
+- **Garantía de la reparación**: si el mismo equipo vuelve dentro del plazo, el ticket se marca como reingreso, sube de prioridad y se avisa al técnico que lo reparó.
+- **Tiempo de trabajo** por técnico (iniciar / pausar o cargar a mano), con costo de mano de obra y horas por técnico.
+- **Pedidos a proveedor** armados con los repuestos bajo el mínimo: PDF, CSV o mail al proveedor, y recepción parcial o total que suma al stock.
 - **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
 - **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
 - **Notificaciones por email**: cambios de estado y presupuestos al cliente (con el PDF adjunto), asignaciones al técnico, stock bajo y SLA al taller.
 - **Alertas de SLA**: tickets vencidos o por vencer en el dashboard y aviso automático, una sola vez por ticket.
 - **Tablero Kanban** por estado: arrastrar una tarjeta a otra columna le cambia el estado.
 - **Notificaciones** in-app, **favoritos**, búsqueda global y **historial/auditoría** de cada cambio.
-- **Panel de administración**: usuarios, productos, repuestos, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, email, SLA, seguimiento) y **exportación** a CSV/Excel.
+- **Panel de administración**: usuarios, productos, repuestos, stock, pedidos a proveedor, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, impresoras, email, retiro y encuesta, taller, SLA, seguimiento) y **exportación** a CSV/Excel.
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
 
 ## Capturas
@@ -68,12 +74,15 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Crear, editar y enviar presupuestos | — | ✅ | ✅ |
 | Ver costo interno y ganancia | — | ✅ | ✅ |
 | Aprobar / rechazar presupuesto | los suyos | ✅ | ✅ |
+| Mis equipos (portal) y calificar la reparación | los suyos | — | — |
+| Registrar tiempo de trabajo | — | ✅ | ✅ |
 | Dashboard con estadísticas, alertas de SLA y stock, tablero Kanban, favoritos | — | ✅ | ✅ |
 | Documentos: orden de ingreso, remito, presupuesto | los suyos | ✅ | ✅ |
 | Etiqueta del equipo y comprobantes de ticketera | — | ✅ | ✅ |
 | Exportar tickets, productos y repuestos | — | ✅ | ✅ |
 | Administrar usuarios, productos, repuestos, stock, etiquetas, estados y plantillas | — | — | ✅ |
 | Finanzas, seguridad del login, ajustes, exportar usuarios | — | — | ✅ |
+| Pedidos a proveedor y horas por técnico | — | — | ✅ |
 
 El **seguimiento público** (`/seguimiento`) no requiere usuario: lo puede consultar cualquiera que tenga el N° de RMA **y** el N° de serie del equipo, y muestra solo el estado, la línea de tiempo y los datos de envío.
 
@@ -132,7 +141,7 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 | `UPLOAD_DIR` | `uploads` | Carpeta de adjuntos. En Docker está fija a `/data/uploads`. |
 | `PUBLIC_URL` | (vacía) | Dirección pública del sistema, para los QR y los links de los mails (ej. `https://rma.tuempresa.com`). Vacía = la dirección con la que se accede. También se puede cargar en *Ajustes*. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | (vacías), `587`, `starttls` | Servidor de correo, si en *Ajustes* elegís tomar la configuración SMTP del `.env` (la otra opción es cargarla en el panel). |
-| `TAREAS_PERIODICAS` | `1` | Revisión automática de SLA. Poné `0` si corrés más de un proceso de la app (así no avisa dos veces). |
+| `TAREAS_PERIODICAS` | `1` | Revisión automática de SLA y recordatorios de equipos para retirar. Poné `0` si corrés más de un proceso de la app (así no avisa dos veces). |
 | `PORT` | `8000` | Puerto publicado por Docker Compose. |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | IP(s) del proxy inverso en el que se confía para conocer la IP real del cliente (ver *Deploy*). |
 
@@ -146,9 +155,24 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
 - **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
 - **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
+- **Retiro y encuesta**: en qué estado el equipo queda listo para retirar (por defecto *Reparado*), plazo de guarda (90 días), cada cuántos días recordarle al cliente (7; 0 = nunca), el texto del plazo que sale en los documentos, y si se manda la encuesta al cerrar.
+- **Gestión del taller**: plazo de la garantía de la reparación (90 días; 0 = desactivada) y costo de la hora de trabajo para calcular la mano de obra.
 - **SLA**: con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el SLA más corto, 24 h) y cada cuántos minutos revisar.
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
+
+### Para el cliente
+
+- **Mis equipos**: al entrar, el cliente ve sus equipos agrupados por N° de serie, cada uno con sus reparaciones, y puede bajar la orden de ingreso, el presupuesto (cuando se lo mandaron) y el remito (cuando se entregó). Arriba, lo que tiene pendiente.
+- **Listo para retirar**: cuando el ticket pasa al estado configurado, el cliente recibe un aviso (mail y notificación) con la fecha límite. Mientras no lo retire, se le recuerda cada N días; al vencer el plazo, los administradores reciben un aviso y el equipo figura como vencido en el panel *Listos para retirar*. El seguimiento público también lo muestra.
+- **Encuesta**: al cerrar el ticket, el cliente recibe un mail para calificar la reparación de 1 a 5. Puede responder desde su cuenta o desde el seguimiento público (así también responden los clientes cargados en mostrador, que no tienen clave). Una sola vez por ticket. El taller ve la calificación en el ticket y el promedio de los últimos 90 días en el panel.
+
+### Gestión del taller
+
+- **Garantía de la reparación**: al cargar un ticket, si ese N° de serie se entregó o cerró dentro del plazo, el ticket queda marcado como *reingreso en garantía*, vinculado al anterior y con prioridad Alta (o Urgente, si ya la tenía). El técnico que lo reparó recibe un aviso con el diagnóstico anterior. Se ve en el detalle, en el tablero y en la orden de ingreso.
+- **Tiempo de trabajo**: en cada ticket, *Iniciar* / *Pausar* o cargar minutos a mano. Cada técnico tiene un solo trabajo en curso (al iniciar otro, el anterior se pausa solo) y lo ve en la barra superior con un contador. Con el costo de la hora en *Ajustes* se calcula la mano de obra; el administrador ve las horas por técnico de los últimos 30 días en el panel.
+- **Pedidos a proveedor** (*Administración → Pedidos a proveedor*, o desde la alerta de stock bajo): el sistema sugiere qué pedir, agrupado por proveedor, para llevar cada repuesto al doble de su mínimo (descontando lo que ya está pedido). El borrador se edita, se baja en PDF o CSV y se marca enviado; si se carga el email del proveedor, se le manda con los dos archivos. Cuando llega la mercadería se registra lo recibido (todo o una parte) y se suma al stock.
+- **Plantillas por producto**: en *Plantillas Presupuesto*, cada plantilla puede asociarse a un modelo. Al presupuestar un equipo de ese modelo, sus ítems típicos aparecen primero y se pueden cargar todos juntos.
 
 ### Ingreso en mostrador
 
@@ -247,7 +271,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, ingreso en mostrador (clientes sin clave, checklist, firmas), documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 
@@ -262,7 +286,8 @@ backend/
     auth.py            contraseñas (bcrypt), JWT y permisos por rol
     routers/           endpoints por área (tickets, presupuestos, stock, …)
     ajustes.py         ajustes editables desde el panel (secretos cifrados)
-    services/          lógica: tickets, recepción, stock, documentos, impresión térmica, email, SLA, avisos
+    services/          lógica: tickets, recepción, retiro, encuestas, garantía, stock, pedidos,
+                       documentos, impresión térmica, email, SLA, avisos
     templates/         plantillas de documentos (PDF/impresión) y de mails
   migrations/          migraciones de Alembic
 frontend/
