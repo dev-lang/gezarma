@@ -91,6 +91,7 @@ const ui = {
         if (isAdmin) this.loadAdvancedStats();
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         if (isTechOrAdmin && typeof Encuesta !== 'undefined') Encuesta.panel();
+        if (user.role === 'cliente' && typeof Portal !== 'undefined') Portal.cargar();
         else document.getElementById('alertas-panel')?.classList.add('hidden');
         this.loadTickets();
         if (typeof Kanban !== 'undefined') Kanban.iniciar(isTechOrAdmin);

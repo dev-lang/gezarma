@@ -93,7 +93,7 @@ const Encuesta = (() => {
                 <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Satisfacción · 90 días</h3>
                 <p class="text-4xl font-black text-gray-800 mt-2">${r.promedio.toFixed(1).replace('.', ',')}<span class="text-lg text-gray-400 font-semibold"> / 5</span></p>
                 <p class="text-amber-400">${estrellas(Math.round(r.promedio), 'text-xl')}</p>
-                <p class="text-xs text-gray-400 mt-1">${r.cantidad} calificación${r.cantidad === 1 ? '' : 'es'}${r.tasa_respuesta !== null ? ` · respondió el ${Math.round(r.tasa_respuesta * 100)} % de los cerrados` : ''}</p>
+                <p class="text-xs text-gray-400 mt-1">${r.cantidad} ${r.cantidad === 1 ? 'calificación' : 'calificaciones'}${r.tasa_respuesta !== null ? ` · respondió el ${Math.round(r.tasa_respuesta * 100)} % de los cerrados` : ''}</p>
             </div>
             <div class="space-y-1">
                 ${[5, 4, 3, 2, 1].map(p => `

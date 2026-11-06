@@ -7,6 +7,7 @@ retiro.py — Equipos listos para retirar.
   mientras siga sin retirar y, al vencer el plazo, avisa una vez al taller.
 - Deja de estar "para retirar" cuando cambia de estado (entregado, enviado…).
 """
+import math
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -47,7 +48,9 @@ def info(db: Session, t: models.Ticket, ahora: datetime = None) -> dict:
     ahora = ahora or utcnow()
     v = vence(db, t)
     return {"listo_desde": t.fecha_listo, "vence": v, "dias_esperando": (ahora - t.fecha_listo).days,
-            "dias_restantes": (v - ahora).days if v else None, "vencido": bool(v and ahora >= v),
+            # Días que quedan, redondeando para arriba: el día del aviso con 90 de plazo, "quedan 90"
+            "dias_restantes": max(0, math.ceil((v - ahora).total_seconds() / 86400)) if v else None,
+            "vencido": bool(v and ahora >= v),
             "recordatorios": t.retiro_recordatorios}
 
 
