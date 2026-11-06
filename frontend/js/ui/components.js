@@ -333,12 +333,16 @@ const components = (() => {
     }
 
     // ── Part row (in management table) ───────────────────────────────────────
+    // Color del stock según el mínimo de cada repuesto (rojo = sin stock o negativo)
+    function stockClass(p) {
+        if (p.stock <= 0) return 'bg-red-100 text-red-700';
+        if (p.stock_minimo > 0 && p.stock <= p.stock_minimo) return 'bg-amber-100 text-amber-700';
+        return 'bg-green-100 text-green-700';
+    }
+    const stockMinTxt = p => p.stock_minimo > 0 ? `<span class="block text-[10px] text-gray-400 mt-0.5">mín. ${p.stock_minimo}</span>` : '';
+
     function partRow(p) {
-        const stockCls = p.stock <= 0
-            ? 'bg-red-100 text-red-700'
-            : p.stock <= 3
-                ? 'bg-amber-100 text-amber-700'
-                : 'bg-green-100 text-green-700';
+        const stockCls = stockClass(p);
         const partJson = JSON.stringify(p).replace(/'/g, "\\'");
         return `
         <tr class="border-b hover:bg-gray-50 transition">
@@ -346,7 +350,7 @@ const components = (() => {
             <td class="py-3 pr-4 font-semibold">${p.nombre}</td>
             <td class="py-3 pr-4 text-gray-500 text-sm">${p.proveedor}</td>
             <td class="py-3 pr-4 text-center">
-                <span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock}</span>
+                <span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock}</span>${stockMinTxt(p)}
             </td>
             <td class="py-3 pr-4 text-right font-mono text-sm">$${p.precio.toFixed(2)}</td>
             <td class="py-3 text-right space-x-2">
@@ -577,13 +581,13 @@ const components = (() => {
     }
 
     function adminPartRow(p) {
-        const stockCls = p.stock === 0 ? 'bg-red-100 text-red-700' : p.stock <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700';
+        const stockCls = stockClass(p);
         return `
         <tr class="hover:bg-gray-50 transition">
             <td class="px-5 py-3 font-mono text-xs font-bold text-gray-600">${p.codigo}</td>
             <td class="px-5 py-3 font-medium text-gray-800">${p.nombre}</td>
             <td class="px-5 py-3 text-gray-500 text-xs">${p.proveedor}</td>
-            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span></td>
+            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span>${stockMinTxt(p)}</td>
             <td class="px-5 py-3 text-right font-semibold text-gray-700">$${p.precio.toFixed(2)}</td>
             <td class="px-5 py-3 text-right space-x-3">
                 <button onclick="ui.openAdminEditPart(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>

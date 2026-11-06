@@ -8,6 +8,7 @@ import os, shutil, uuid, re
 
 from .. import database, models, schemas, auth, config
 from ..timeutils import utcnow, to_utc_naive, iso_utc
+from ..services import stock_service
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -426,29 +427,7 @@ def add_ticket_part(
     part = db.query(models.Repuesto).filter(models.Repuesto.id == part_add.part_id).first()
     if not part:
         raise HTTPException(status_code=404, detail="Repuesto no encontrado")
-    if part.stock < part_add.cantidad:
-        raise HTTPException(status_code=400, detail=f"Stock insuficiente (disponible: {part.stock})")
-    assoc = db.query(models.TicketRepuesto).filter_by(
-        ticket_id=ticket_id, repuesto_id=part_add.part_id
-    ).first()
-    if assoc:
-        assoc.cantidad += part_add.cantidad
-    else:
-        assoc = models.TicketRepuesto(ticket_id=ticket_id, repuesto_id=part_add.part_id,
-                                      cantidad=part_add.cantidad)
-        db.add(assoc)
-    stock_anterior = part.stock
-    part.stock -= part_add.cantidad
-    mov = models.StockMovimiento(
-        repuesto_id=part_add.part_id, ticket_id=ticket_id,
-        usuario_id=current_user.id, tipo="consumo",
-        cantidad=-part_add.cantidad,
-        stock_anterior=stock_anterior, stock_nuevo=part.stock,
-        nota=f"Consumido en ticket {db_ticket.numero_rma}",
-    )
-    db.add(mov)
-    log_event(db, ticket_id, current_user.id, models.EventoHistorial.REPUESTO_AGREGADO,
-              detalle=f"Repuesto: {part.nombre} × {part_add.cantidad}")
+    stock_service.agregar_al_ticket(db, db_ticket, part, part_add.cantidad, current_user.id)
     db_ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(db_ticket)
@@ -482,6 +461,7 @@ def update_ticket_part(
         raise HTTPException(status_code=400, detail=f"Stock insuficiente para aumentar (disponible: {part.stock})")
     stock_anterior = part.stock
     part.stock -= diff
+    stock_service.revisar_minimo(db, part, stock_anterior)
     assoc.cantidad = nueva_cantidad
     mov = models.StockMovimiento(
         repuesto_id=part_id, ticket_id=ticket_id,

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth
+from ..services import stock_service
 
 router = APIRouter(prefix="/parts", tags=["parts"])
 
@@ -48,8 +49,12 @@ def update_part(
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe un repuesto con el código '{part.codigo}'")
 
+    if part.stock_minimo < 0:
+        raise HTTPException(status_code=400, detail="El stock mínimo no puede ser negativo")
+    stock_anterior = db_part.stock
     for key, value in part.model_dump().items():
         setattr(db_part, key, value)
+    stock_service.revisar_minimo(db, db_part, stock_anterior)
 
     db.commit()
     db.refresh(db_part)

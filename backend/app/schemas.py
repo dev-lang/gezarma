@@ -75,6 +75,7 @@ class SparePart(BaseModel):
     proveedor: str
     precio:    float
     categoria: Optional[str] = "General"
+    stock_minimo: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 class SparePartCreate(BaseModel):
@@ -84,6 +85,7 @@ class SparePartCreate(BaseModel):
     proveedor: str
     precio:    float = 0.0
     categoria: Optional[str] = "General"
+    stock_minimo: int = 0
 
 class SparePartUpdate(BaseModel):
     nombre:    Optional[str]   = None
@@ -92,6 +94,7 @@ class SparePartUpdate(BaseModel):
     proveedor: Optional[str]   = None
     precio:    Optional[float] = None
     categoria: Optional[str]   = None
+    stock_minimo: Optional[int] = None
 
 class SparePartWithQty(SparePart):
     cantidad: int = 1
@@ -99,6 +102,7 @@ class SparePartWithQty(SparePart):
     stock:     Optional[int] = None
     proveedor: Optional[str] = None
     precio:    Optional[float] = None
+    stock_minimo: Optional[int] = None
 
 # ── Products ──────────────────────────────────────────────────────────────────
 class ProductBase(BaseModel):
@@ -228,7 +232,7 @@ class Ticket(TicketBase):
         data = cls.from_orm_with_tecnico(obj, user.id)
         if user.rol == "cliente":
             for r in data.repuestos_usados:
-                r.stock = r.proveedor = r.precio = None
+                r.stock = r.proveedor = r.precio = r.stock_minimo = None
         return data
 
     model_config = ConfigDict(from_attributes=True)
@@ -324,10 +328,11 @@ class StatusConfig(StatusConfigBase):
 # ── Budget / Presupuesto ──────────────────────────────────────────────────────
 
 class PresupuestoItemBase(BaseModel):
-    descripcion:    str
+    descripcion:    str = ""
     cantidad:       float = 1
     costo_interno:  float = 0.0
     precio_cliente: float = 0.0
+    repuesto_id:    Optional[int] = None   # ítem vinculado a un repuesto del catálogo
 
 class PresupuestoItemCreate(PresupuestoItemBase):
     pass
@@ -337,6 +342,8 @@ class PresupuestoItemOut(PresupuestoItemBase):
     costo_interno: Optional[float] = None   # None for clients
     costo_total:  Optional[float] = None    # None for clients
     precio_total: float
+    repuesto_codigo:  Optional[str] = None  # None for clients
+    stock_disponible: Optional[int] = None  # None for clients
     model_config = ConfigDict(from_attributes=True)
 
 class PresupuestoCreate(BaseModel):

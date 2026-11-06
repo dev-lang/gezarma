@@ -80,6 +80,8 @@ const ui = {
         document.getElementById('advanced-stats')?.classList.toggle('hidden', !isAdmin);
 
         if (isAdmin) this.loadAdvancedStats();
+        if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
+        else document.getElementById('alertas-panel')?.classList.add('hidden');
         this.loadTickets();
     },
 
@@ -612,6 +614,8 @@ const ui = {
         const precioEl = document.getElementById('part-form-precio');
         if (stockEl) stockEl.value = '0';
         if (precioEl) precioEl.value = '0';
+        const minEl = document.getElementById('part-form-stock-minimo');
+        if (minEl) minEl.value = '0';
         document.getElementById('part-form-title').innerText = 'Nuevo Repuesto';
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },
@@ -637,6 +641,8 @@ const ui = {
         document.getElementById('part-form-proveedor').value = part.proveedor;
         document.getElementById('part-form-stock').value     = part.stock;
         document.getElementById('part-form-precio').value    = part.precio;
+        const minEl = document.getElementById('part-form-stock-minimo');
+        if (minEl) minEl.value = part.stock_minimo ?? 0;
         document.getElementById('part-form-title').innerText = 'Editar Repuesto';
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },
@@ -974,6 +980,8 @@ const ui = {
         document.getElementById('part-form-proveedor').value = part.proveedor;
         document.getElementById('part-form-stock').value     = part.stock;
         document.getElementById('part-form-precio').value    = part.precio;
+        const minEl = document.getElementById('part-form-stock-minimo');
+        if (minEl) minEl.value = part.stock_minimo ?? 0;
         document.getElementById('part-form-title').textContent = 'Editar Repuesto';
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },

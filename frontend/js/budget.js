@@ -25,6 +25,7 @@ let _currentTicketId = null;
 let _currentBudget   = null;
 let _editingBudget   = false;  // false = create, true = edit
 let _plantillas      = [];
+let _repuestos       = [];   // catálogo (solo taller), para vincular ítems a repuestos
 
 export async function initPresupuestoCard(ticketId, userRole) {
     _currentTicketId = ticketId;
@@ -34,6 +35,7 @@ export async function initPresupuestoCard(ticketId, userRole) {
     _plantillas = [];
     if (userRole !== "cliente") {
         try { _plantillas = await api.getPlantillasPresupuesto(); } catch { _plantillas = []; }
+        try { _repuestos = await api.getParts(); } catch { _repuestos = []; }
     }
 
     // Load budget
@@ -81,7 +83,9 @@ function renderPresupuestoCard(budget, userRole) {
     const list = $("presupuesto-items-list");
     list.innerHTML = budget.items.map(i =>
         `<div class="flex justify-between text-gray-600 py-0.5 border-b border-gray-50">
-            <span class="truncate flex-1">${i.descripcion} <span class="text-gray-400">×${i.cantidad}</span></span>
+            <span class="truncate flex-1">${i.repuesto_codigo ? '📦 ' : ''}${i.descripcion} <span class="text-gray-400">×${i.cantidad}</span>${
+                i.stock_disponible != null && i.stock_disponible < i.cantidad && budget.estado !== "aprobado"
+                    ? ' <span class="text-red-600 font-semibold">(stock insuficiente)</span>' : ''}</span>
             <span class="font-semibold ml-2">${fmt(i.precio_total)}</span>
         </div>`
     ).join("") || '<p class="text-gray-400 text-center py-2">Sin ítems</p>';
@@ -174,6 +178,7 @@ function openBudgetModal(editing) {
     }
 
     renderTemplatePills();
+    renderRepuestoPicker();
     recalcTotals();
     $("presupuesto-modal").classList.remove("hidden");
 }
@@ -200,14 +205,38 @@ function renderTemplatePills() {
     });
 }
 
+function renderRepuestoPicker() {
+    const sel = $("presupuesto-repuesto-select");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Elegí un repuesto…</option>' + _repuestos.map(r =>
+        `<option value="${r.id}">${escHtml(r.nombre)} · ${escHtml(r.codigo)} · stock ${r.stock}</option>`).join("");
+    sel.onchange = () => {
+        const r = _repuestos.find(x => String(x.id) === sel.value);
+        sel.value = "";
+        if (!r) return;
+        addItemRow({ repuesto_id: r.id, repuesto_codigo: r.codigo, stock_disponible: r.stock,
+                     descripcion: r.nombre, cantidad: 1, costo_interno: r.precio, precio_cliente: 0 });
+        recalcTotals();
+    };
+}
+
+const escHtml = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
 function addItemRow(data = {}) {
     const tbody = $("presupuesto-items-body");
     const tr = document.createElement("tr");
     tr.className = "border-b border-gray-50";
+    if (data.repuesto_id) {
+        tr.dataset.repuestoId = data.repuesto_id;
+        tr.dataset.stock = data.stock_disponible ?? "";
+    }
+    const repBadge = data.repuesto_id
+        ? `<div class="item-rep text-[10px] mt-0.5 text-indigo-600 font-semibold">📦 ${escHtml(data.repuesto_codigo || "")} · stock ${data.stock_disponible ?? "?"}<span class="item-rep-warn text-red-600"></span></div>`
+        : "";
     tr.innerHTML = `
         <td class="px-1 py-1">
             <input type="text" class="item-desc w-full px-2 py-1 border rounded text-xs focus:ring-1 focus:ring-blue-400 outline-none"
-                value="${data.descripcion || ""}" placeholder="Descripción">
+                value="${escHtml(data.descripcion || "")}" placeholder="Descripción">${repBadge}
         </td>
         <td class="px-1 py-1">
             <input type="number" class="item-qty w-16 px-2 py-1 border rounded text-xs text-right focus:ring-1 focus:ring-blue-400 outline-none"
@@ -242,6 +271,10 @@ function updateRowTotal(tr) {
     const qty   = parseInt(tr.querySelector(".item-qty").value)    || 0;
     const price = parseFloat(tr.querySelector(".item-price").value) || 0;
     tr.querySelector(".item-total").textContent = fmt(qty * price);
+    const warn = tr.querySelector(".item-rep-warn");
+    if (warn && tr.dataset.stock !== "") {
+        warn.textContent = qty > parseInt(tr.dataset.stock) ? " · stock insuficiente" : "";
+    }
 }
 
 function recalcTotals() {
@@ -262,12 +295,14 @@ function collectItems() {
     const items = [];
     $("presupuesto-items-body").querySelectorAll("tr").forEach(tr => {
         const desc = tr.querySelector(".item-desc").value.trim();
-        if (!desc) return;
+        const repuestoId = tr.dataset.repuestoId ? parseInt(tr.dataset.repuestoId) : null;
+        if (!desc && !repuestoId) return;
         items.push({
             descripcion:    desc,
             cantidad:       parseInt(tr.querySelector(".item-qty").value)    || 1,
             costo_interno:  parseFloat(tr.querySelector(".item-cost").value)  || 0,
             precio_cliente: parseFloat(tr.querySelector(".item-price").value) || 0,
+            repuesto_id:    repuestoId,
         });
     });
     return items;

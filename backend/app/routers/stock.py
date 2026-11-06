@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from .. import database, models, schemas, auth
+from ..services import stock_service
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 STAFF = [models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO]
@@ -13,6 +14,14 @@ def _enrich(m: models.StockMovimiento) -> schemas.StockMovimientoOut:
     if m.ticket:    out.ticket_rma      = m.ticket.numero_rma
     if m.usuario:   out.usuario_nombre  = m.usuario.nombre
     return out
+
+@router.get("/alertas", response_model=List[schemas.SparePart])
+def stock_alertas(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role(STAFF))
+):
+    """Repuestos en o bajo su stock mínimo, o con stock negativo."""
+    return stock_service.alertas(db)
 
 @router.get("/history", response_model=List[schemas.StockMovimientoOut])
 def get_stock_history(

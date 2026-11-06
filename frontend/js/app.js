@@ -204,6 +204,7 @@ const app = {
             });
             const s = document.getElementById('part-form-stock');   if (s) s.value = '0';
             const pr = document.getElementById('part-form-precio');  if (pr) pr.value = '0';
+            const sm = document.getElementById('part-form-stock-minimo'); if (sm) sm.value = '0';
             document.getElementById('part-form-title').textContent = 'Nuevo Repuesto';
             document.getElementById('parts-form-modal').classList.remove('hidden');
         });
@@ -474,6 +475,7 @@ const app = {
                 proveedor:  document.getElementById('part-form-proveedor').value,
                 stock:      parseInt(document.getElementById('part-form-stock').value),
                 precio:     parseFloat(document.getElementById('part-form-precio').value),
+                stock_minimo: parseInt(document.getElementById('part-form-stock-minimo')?.value || '0') || 0,
                 categoria:  document.getElementById('part-form-categoria')?.value || 'General',
             };
             try {

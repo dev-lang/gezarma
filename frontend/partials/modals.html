@@ -82,10 +82,14 @@
                     <option value="General">
                 </datalist>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Stock inicial</label>
-                    <input type="number" id="part-form-stock" min="0" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                    <label class="block text-sm font-semibold mb-1">Stock</label>
+                    <input type="number" id="part-form-stock" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1" title="Avisa a los administradores cuando el stock llega a este valor. 0 = sin aviso.">Stock mínimo</label>
+                    <input type="number" id="part-form-stock-minimo" min="0" value="0" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">Precio ($)</label>

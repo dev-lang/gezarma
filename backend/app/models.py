@@ -102,6 +102,7 @@ class Repuesto(Base):
     proveedor = Column(String)
     precio    = Column(Float, default=0.0)
     categoria = Column(String, nullable=True, default="General")
+    stock_minimo = Column(Integer, nullable=False, default=0, server_default="0")  # 0 = sin alerta
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -196,6 +197,8 @@ class Ticket(Base):
             obj.proveedor= rep.proveedor
             obj.precio   = rep.precio
             obj.stock    = rep.stock
+            obj.stock_minimo = rep.stock_minimo
+            obj.categoria = rep.categoria
             obj.cantidad = assoc.cantidad
             result.append(obj)
         return result
@@ -289,7 +292,10 @@ class PresupuestoItem(Base):
     cantidad        = Column(Float, default=1)
     costo_interno   = Column(Float, default=0.0)
     precio_cliente  = Column(Float, default=0.0)
+    # Si el ítem es un repuesto del catálogo: se descuenta del stock al aprobar el presupuesto
+    repuesto_id     = Column(Integer, ForeignKey("repuestos.id"), nullable=True)
     presupuesto     = relationship("Presupuesto", back_populates="items")
+    repuesto        = relationship("Repuesto")
 
     @property
     def costo_total(self):

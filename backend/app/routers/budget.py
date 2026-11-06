@@ -14,6 +14,7 @@ import json
 
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
+from ..services import stock_service
 from ..timeutils import utcnow, utc_to_local
 
 router = APIRouter(prefix="/budget", tags=["budget"])
@@ -29,6 +30,7 @@ def _snapshot_items(items) -> list:
             "precio_cliente": i.precio_cliente,
             "costo_total":    i.cantidad * i.costo_interno,
             "precio_total":   i.cantidad * i.precio_cliente,
+            "repuesto_id":    i.repuesto_id,
         }
         for i in items
     ]
@@ -45,6 +47,9 @@ def _presupuesto_out(p: models.Presupuesto, user: models.Usuario) -> schemas.Pre
             precio_cliente=i.precio_cliente,
             costo_total=i.cantidad * i.costo_interno if interno else None,
             precio_total=i.cantidad * i.precio_cliente,
+            repuesto_id=i.repuesto_id,
+            repuesto_codigo=(i.repuesto.codigo if i.repuesto else None) if interno else None,
+            stock_disponible=(i.repuesto.stock if i.repuesto else None) if interno else None,
         )
         for i in p.items
     ]
@@ -98,6 +103,35 @@ TRANSITIONS = {
     models.PresupuestoEstado.RECHAZADO: [models.PresupuestoEstado.BORRADOR],
 }
 
+# ── Ítems vinculados a repuestos ─────────────────────────────────────────────
+
+def _crear_items(db: Session, presupuesto: models.Presupuesto, items) -> None:
+    for item in items:
+        data = item.model_dump()
+        if data.get("repuesto_id"):
+            rep = db.query(models.Repuesto).filter_by(id=data["repuesto_id"]).first()
+            if not rep:
+                raise HTTPException(400, f"Repuesto inexistente (id {data['repuesto_id']})")
+            if data["cantidad"] < 1 or float(data["cantidad"]) != int(data["cantidad"]):
+                raise HTTPException(400, f"La cantidad de «{rep.nombre}» debe ser un número entero mayor a 0")
+            data["descripcion"] = data["descripcion"] or rep.nombre
+        elif not (data.get("descripcion") or "").strip():
+            raise HTTPException(400, "Cada ítem necesita una descripción")
+        db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **data))
+
+
+def _descontar_repuestos(db: Session, ticket: models.Ticket, presupuesto: models.Presupuesto,
+                         usuario_id: int) -> None:
+    """Al aprobarse: los ítems vinculados a repuestos se agregan al ticket y se
+    descuentan del stock. Si no alcanza, el stock queda negativo y se avisa
+    (no se le rechaza la aprobación al cliente)."""
+    for item in presupuesto.items:
+        if item.repuesto_id and item.repuesto:
+            stock_service.agregar_al_ticket(
+                db, ticket, item.repuesto, int(item.cantidad), usuario_id, permitir_negativo=True,
+                nota=f"Presupuesto aprobado ({ticket.numero_rma})")
+
+
 # ── Ticket Presupuesto CRUD ───────────────────────────────────────────────────
 
 @router.get("/tickets/{ticket_id}/presupuesto", response_model=schemas.PresupuestoOut)
@@ -146,8 +180,7 @@ def create_presupuesto(
     db.add(presupuesto)
     db.flush()  # get ID
 
-    for item_data in body.items:
-        db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.model_dump()))
+    _crear_items(db, presupuesto, body.items)
 
     log_event(db, ticket_id, current_user.id, "presupuesto_creado", "Presupuesto creado")
     db.commit()
@@ -187,8 +220,7 @@ def update_presupuesto(
         for item in list(presupuesto.items):
             db.delete(item)
         db.flush()
-        for item_data in body.items:
-            db.add(models.PresupuestoItem(presupuesto_id=presupuesto.id, **item_data.model_dump()))
+        _crear_items(db, presupuesto, body.items)
 
     presupuesto.actualizado_por = current_user.id
     presupuesto.fecha_actualizacion = utcnow()
@@ -261,6 +293,8 @@ def update_estado_presupuesto(
     presupuesto.fecha_actualizacion = utcnow()
 
     log_event(db, ticket_id, current_user.id, "presupuesto_estado", f"Presupuesto: {actual} → {nuevo}")
+    if nuevo == models.PresupuestoEstado.APROBADO:
+        _descontar_repuestos(db, ticket, presupuesto, current_user.id)
     estado_labels = {
         "enviado":   "enviado al cliente para aprobación",
         "aprobado":  "aprobado ✓",
