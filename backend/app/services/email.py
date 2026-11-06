@@ -192,13 +192,24 @@ def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
     if ticket.estado == retiro.estado_retiro(db) and evento_activo(db, "email_cliente_retiro"):
         cliente_retiro(db, ticket)   # en lugar del aviso genérico de cambio de estado
         return
-    if not evento_activo(db, "email_cliente_estado"):
+    from . import encuestas
+    encuesta = encuestas.pendiente(db, ticket) and evento_activo(db, "email_cliente_encuesta")
+    if not encuesta and not evento_activo(db, "email_cliente_estado"):
         return
     ticket_id, base = ticket.id, ajustes.public_url(db)
 
     def trabajo(s):
         t = s.get(models.Ticket, ticket_id)
         etiqueta = _etiqueta_estado(s, t.estado)
+        if encuesta:
+            from . import documentos
+            enviar(s, [_mail_usuario(t.cliente)], f"{t.numero_rma}: ¿cómo te fue con la reparación?",
+                   "¿Cómo te fue?",
+                   [f"Hola {t.cliente.nombre},",
+                    f"Cerramos el ticket de tu {t.producto} (RMA {t.numero_rma}). ¡Gracias por confiar en nosotros!",
+                    "¿Nos contás cómo te fue? Calificar la reparación lleva un minuto y nos ayuda a mejorar."],
+                   ("Calificar la reparación", documentos.url_seguimiento(base, t) + "#encuesta"))
+            return
         from . import documentos
         parrafos = [f"Hola {t.cliente.nombre},",
                     f"Tu equipo {t.producto} (RMA {t.numero_rma}) cambió de estado: ahora está «{etiqueta}»."]

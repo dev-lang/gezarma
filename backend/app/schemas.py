@@ -168,6 +168,18 @@ class FirmaInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EncuestaInfo(BaseModel):
+    puntaje:    int
+    comentario: Optional[str] = None
+    fecha:      UTCDateTime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EncuestaIn(BaseModel):
+    puntaje:    int
+    comentario: str = ""
+
+
 # ── Tickets ───────────────────────────────────────────────────────────────────
 class TicketBase(BaseModel):
     producto_id:  Optional[int] = None
@@ -248,6 +260,7 @@ class Ticket(TicketBase):
     repuestos_usados:     List[SparePartWithQty] = []
     checklist_ingreso:    Optional[ChecklistIngreso] = None
     firmas:               List[FirmaInfo]        = []
+    encuesta:             Optional[EncuestaInfo] = None
 
     @classmethod
     def from_orm_with_tecnico(cls, obj, current_user_id: int = None):

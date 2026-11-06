@@ -12,6 +12,7 @@ import time
 from collections import defaultdict, deque
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -62,6 +63,47 @@ def _retiro(db: Session, ticket: models.Ticket):
             "politica": ajustes.politica_retiro(db)}
 
 
+def _encuesta(db: Session, ticket: models.Ticket):
+    from ..services import encuestas
+    if not encuestas.habilitada(db, ticket):
+        return None
+    return {"respondida": ticket.encuesta is not None,
+            "puntaje": ticket.encuesta.puntaje if ticket.encuesta else None}
+
+
+def _ticket_publico(db: Session, request: Request, rma: str, serie: str) -> models.Ticket:
+    """El ticket de ese RMA + serie, con el mismo límite de intentos fallidos."""
+    if not ajustes.get(db, "seguimiento_publico"):
+        raise HTTPException(404, "El seguimiento público no está habilitado.")
+    ip = _ip(request)
+    if _bloqueada(ip):
+        raise HTTPException(429, "Demasiados intentos. Probá de nuevo en unos minutos.")
+    ticket = (db.query(models.Ticket)
+              .filter(func.upper(models.Ticket.numero_rma) == rma.strip().upper())
+              .first())
+    if not ticket or (ticket.numero_serie or "").strip().upper() != serie.strip().upper():
+        _registrar_fallo(ip)
+        raise HTTPException(404, NO_ENCONTRADO)
+    return ticket
+
+
+class EncuestaPublica(BaseModel):
+    rma:        str = Field(..., min_length=3, max_length=40)
+    serie:      str = Field(..., min_length=1, max_length=80)
+    puntaje:    int
+    comentario: str = Field("", max_length=1000)
+
+
+@router.post("/encuesta")
+def encuesta(data: EncuestaPublica, request: Request, db: Session = Depends(database.get_db)):
+    """Calificación desde el seguimiento público (sirve para clientes sin clave)."""
+    from ..services import encuestas
+    ticket = _ticket_publico(db, request, data.rma, data.serie)
+    encuestas.responder(db, ticket, data.puntaje, data.comentario, "seguimiento")
+    db.commit()
+    return {"ok": True}
+
+
 @router.get("/seguimiento")
 def seguimiento(
     request: Request,
@@ -69,19 +111,7 @@ def seguimiento(
     serie: str = Query(..., min_length=1, max_length=80),
     db: Session = Depends(database.get_db),
 ):
-    if not ajustes.get(db, "seguimiento_publico"):
-        raise HTTPException(404, "El seguimiento público no está habilitado.")
-    ip = _ip(request)
-    if _bloqueada(ip):
-        raise HTTPException(429, "Demasiados intentos. Probá de nuevo en unos minutos.")
-
-    ticket = (db.query(models.Ticket)
-              .filter(func.upper(models.Ticket.numero_rma) == rma.strip().upper())
-              .first())
-    if not ticket or (ticket.numero_serie or "").strip().upper() != serie.strip().upper():
-        _registrar_fallo(ip)
-        raise HTTPException(404, NO_ENCONTRADO)
-
+    ticket = _ticket_publico(db, request, rma, serie)
     estados = {e.valor: e for e in db.query(models.TicketStatusConfig).all()}
 
     def estado_info(valor):
@@ -112,6 +142,7 @@ def seguimiento(
         # Solo si hay algo que el cliente tenga que hacer; sin montos
         "presupuesto_pendiente": bool(pres and pres.estado == models.PresupuestoEstado.ENVIADO),
         "retiro": _retiro(db, ticket),
+        "encuesta": _encuesta(db, ticket),
         "historial": linea,
         "empresa": ajustes.get(db, "empresa_nombre"),
     }

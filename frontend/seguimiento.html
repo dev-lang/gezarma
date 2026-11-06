@@ -75,6 +75,22 @@
                     <p class="text-xs text-emerald-700 mt-0.5">Desde el ${fechaCorta(d.retiro.listo_desde)}. Podés retirarlo hasta el <b>${fechaCorta(d.retiro.vence)}</b>.</p>
                     ${d.retiro.politica ? `<p class="text-xs text-emerald-700 mt-1">${esc(d.retiro.politica)}</p>` : ''}
                 </div>` : '';
+            const encuesta = !d.encuesta ? '' : d.encuesta.respondida ? `
+                <div id="encuesta" class="px-5 py-4 border-t bg-amber-50">
+                    <p class="text-sm font-semibold text-amber-800">¡Gracias por calificar la reparación!</p>
+                    <p class="text-amber-400 text-lg">${'★'.repeat(d.encuesta.puntaje)}<span class="text-gray-300">${'★'.repeat(5 - d.encuesta.puntaje)}</span></p>
+                </div>` : `
+                <div id="encuesta" class="px-5 py-4 border-t bg-blue-50">
+                    <p class="text-sm font-semibold text-blue-800">¿Cómo te fue con la reparación?</p>
+                    <p class="text-xs text-blue-600 mb-2">Calificala de 1 a 5. Nos ayuda a mejorar.</p>
+                    <div class="flex items-center gap-1" role="radiogroup" aria-label="Calificación">
+                        ${[1, 2, 3, 4, 5].map(n => `<button type="button" data-p="${n}" role="radio" aria-label="${n} de 5" class="text-3xl leading-none text-gray-300">★</button>`).join('')}
+                    </div>
+                    <textarea id="enc-com" rows="2" maxlength="1000" placeholder="¿Algo para contarnos? (opcional)"
+                        class="mt-2 w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <p id="enc-error" class="hidden text-xs text-red-700 mt-2"></p>
+                    <button type="button" id="enc-enviar" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold">Enviar calificación</button>
+                </div>`;
             $('resultado').innerHTML = `
                 <div class="px-5 py-4 border-b">
                     <p class="font-mono text-sm text-gray-500">${esc(d.numero_rma)}</p>
@@ -91,9 +107,33 @@
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Historial</p>
                     <ol>${pasos}</ol>
                 </div>
-                ${envio}`;
+                ${envio}
+                ${encuesta}`;
             $('resultado').classList.remove('hidden');
+            if (d.encuesta && !d.encuesta.respondida) conectarEncuesta(d);
+            if (location.hash === '#encuesta') document.getElementById('encuesta')?.scrollIntoView({ behavior: 'smooth' });
             if (d.empresa) { $('marca').textContent = d.empresa; }
+        }
+
+        function conectarEncuesta(d) {
+            let puntaje = 0;
+            const botones = [...document.querySelectorAll('#encuesta [data-p]')];
+            botones.forEach(b => b.addEventListener('click', () => {
+                puntaje = +b.dataset.p;
+                botones.forEach(x => { const on = +x.dataset.p <= puntaje; x.classList.toggle('text-amber-400', on); x.classList.toggle('text-gray-300', !on); });
+            }));
+            const errorEnc = msg => { $('enc-error').textContent = msg; $('enc-error').classList.remove('hidden'); };
+            $('enc-enviar').addEventListener('click', async () => {
+                if (!puntaje) { errorEnc('Elegí de 1 a 5 estrellas.'); return; }
+                $('enc-enviar').disabled = true;
+                try {
+                    const r = await fetch('/public/encuesta', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rma: $('rma').value.trim(), serie: $('serie').value.trim(), puntaje, comentario: $('enc-com').value.trim() }) });
+                    const res = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(res.detail || 'No se pudo enviar.');
+                    consultar($('rma').value.trim(), $('serie').value.trim());
+                } catch (e) { errorEnc(e.message); $('enc-enviar').disabled = false; }
+            });
         }
 
         async function consultar(rma, serie) {
@@ -104,7 +144,7 @@
                 const d = await r.json().catch(() => ({}));
                 if (!r.ok) throw new Error(d.detail || 'No se pudo consultar. Probá de nuevo.');
                 mostrar(d);
-                history.replaceState(null, '', `?rma=${encodeURIComponent(rma)}&serie=${encodeURIComponent(serie)}`);
+                history.replaceState(null, '', `?rma=${encodeURIComponent(rma)}&serie=${encodeURIComponent(serie)}${location.hash}`);
             } catch (e) {
                 $('resultado').classList.add('hidden');
                 $('error').textContent = e.message;
