@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Datos locales de la app
+rma_system.db
+uploads/
+
+# Entorno
+.env
