@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.orm import Session
 
-from .. import ajustes, auth, database, models
+from .. import ajustes, auth, database, idiomas, models
 from ..services import documentos
 
 router = APIRouter(prefix="/tickets", tags=["documentos"])
@@ -44,7 +44,9 @@ def documento(
 
     if formato is None:
         formato = "pdf" if ajustes.get(db, "pdf_modo") == "servidor" else "html"
-    ctx = documentos.contexto_tipo(db, tipo, documentos.contexto(db, ticket, ajustes.public_url(db, request)))
+    idioma = documentos.idioma_documento(db, tipo, ticket, idiomas.normalizar(current_user.idioma)
+                                         or idiomas.desde_header(request.headers.get("accept-language")))
+    ctx = documentos.contexto_tipo(db, tipo, documentos.contexto(db, ticket, ajustes.public_url(db, request)), idioma)
 
     if formato == "html":
         return HTMLResponse(documentos.render_html(tipo, ctx, imprimir=True))

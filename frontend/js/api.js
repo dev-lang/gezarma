@@ -6,7 +6,8 @@ const api = {
 
     async request(endpoint, options = {}) {
         const token = localStorage.getItem("token");
-        const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        const headers = { "Content-Type": "application/json", "Accept-Language": window.I18N?.codigo || "es-AR",
+                          ...(options.headers || {}) };
         if (token) headers["Authorization"] = `Bearer ${token}`;
         const res = await fetch(this.baseUrl + endpoint.replace(/^\//, ""), { ...options, headers });
         if (!res.ok) {
@@ -29,7 +30,7 @@ const api = {
         const body = new URLSearchParams({ username, password });
         return fetch(this.baseUrl + "login", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept-Language": window.I18N?.codigo || "es-AR" },
             body,
         }).then(async r => {
             if (!r.ok) { const d = await r.json(); throw new Error(d.detail || "Error al iniciar sesión"); }

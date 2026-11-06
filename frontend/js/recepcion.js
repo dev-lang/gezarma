@@ -374,7 +374,7 @@ const Recepcion = (() => {
             <div class="flex-1 min-w-[180px] border border-gray-100 rounded-lg p-3 bg-white">
                 <p class="text-[10px] uppercase tracking-wide font-bold text-gray-400 mb-1">${titulo}</p>
                 ${f ? `<img data-firma="${momento}" alt="Firma de ${titulo.toLowerCase()}" class="h-12 max-w-full object-contain">
-                       <p class="text-xs text-gray-500 mt-1">${esc(f.aclaracion || '')} · ${new Date(f.fecha).toLocaleString('es-AR', { hour12: false })}</p>`
+                       <p class="text-xs text-gray-500 mt-1">${esc(f.aclaracion || '')} · ${new Date(f.fecha).toLocaleString(I18N.locale, { hour12: false })}</p>`
                     : '<p class="text-xs text-gray-400 italic">Sin firma</p>'}
                 ${taller ? `<button type="button" data-firmar="${momento}" class="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800">✍️ ${f ? 'Volver a firmar' : 'Firmar ahora'}</button>` : ''}
             </div>`;

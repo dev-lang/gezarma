@@ -24,7 +24,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
-from .. import ajustes, config, database, models
+from .. import ajustes, config, database, idiomas, models
 from ..timeutils import utcnow
 
 log = logging.getLogger("uvicorn.error")
@@ -103,22 +103,29 @@ def _enviar_smtp(cfg: dict, msg: EmailMessage) -> None:
 
 
 def enviar(db: Session, para: list, asunto: str, titulo: str, parrafos: list,
-           boton: tuple = None, adjuntos: list = None) -> None:
-    """Arma y envía un mail ya mismo (bloquea). Lanza ErrorEmail si falla."""
+           boton: tuple = None, adjuntos: list = None, idioma: str = None) -> None:
+    """Arma y envía un mail ya mismo (bloquea). Lanza ErrorEmail si falla.
+
+    Los textos se escriben en español y se traducen al idioma del destinatario
+    (por defecto, el del taller)."""
     para = [p for p in dict.fromkeys(para) if p and "@" in p]
     if not para:
         return
     cfg = smtp_config(db)
     empresa = ajustes.get(db, "empresa_nombre") or "GEZARMA"
-    ctx = {"empresa": empresa, "titulo": titulo, "parrafos": parrafos,
-           "boton_texto": boton[0] if boton else None, "boton_url": boton[1] if boton else None}
+    idioma = idioma or idiomas.de_usuario(db, None)
+    t = lambda x: idiomas.tr(x, idioma)
+    asunto, titulo, parrafos = t(asunto), t(titulo), [t(x) for x in parrafos]
+    ctx = {"empresa": empresa, "titulo": titulo, "parrafos": parrafos, "idioma": idioma,
+           "boton_texto": t(boton[0]) if boton else None, "boton_url": boton[1] if boton else None}
     msg = EmailMessage()
     msg["Subject"] = asunto
     msg["From"] = _remitente(cfg, empresa)
     msg["To"] = ", ".join(para)
     msg["Message-ID"] = make_msgid(domain="gezarma")
-    msg.set_content(_env.get_template("mensaje.txt").render(**ctx))
-    msg.add_alternative(_env.get_template("mensaje.html").render(**ctx), subtype="html")
+    texto = _env.get_template("mensaje.txt").render(**ctx)
+    msg.set_content("\n".join(t(linea) for linea in texto.split("\n")))
+    msg.add_alternative(idiomas.traducir_html(_env.get_template("mensaje.html").render(**ctx), idioma), subtype="html")
     for nombre, contenido, mime in adjuntos or []:
         tipo, subtipo = mime.split("/", 1)
         msg.add_attachment(contenido, maintype=tipo, subtype=subtipo, filename=nombre)
@@ -179,10 +186,10 @@ def _etiqueta_estado(db, valor) -> str:
     return cfg.etiqueta if cfg else valor
 
 
-def _pdf(db, ticket, tipo, base_url):
+def _pdf(db, ticket, tipo, base_url, idioma=None):
     from . import documentos
     return (documentos.nombre_archivo(tipo, ticket, "pdf"),
-            documentos.generar_pdf(db, ticket, tipo, base_url), "application/pdf")
+            documentos.generar_pdf(db, ticket, tipo, base_url, idioma), "application/pdf")
 
 
 def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
@@ -201,6 +208,7 @@ def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
     def trabajo(s):
         t = s.get(models.Ticket, ticket_id)
         etiqueta = _etiqueta_estado(s, t.estado)
+        idioma = idiomas.de_usuario(s, t.cliente)
         if encuesta:
             from . import documentos
             enviar(s, [_mail_usuario(t.cliente)], f"{t.numero_rma}: ¿cómo te fue con la reparación?",
@@ -208,7 +216,7 @@ def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
                    [f"Hola {t.cliente.nombre},",
                     f"Cerramos el ticket de tu {t.producto} (RMA {t.numero_rma}). ¡Gracias por confiar en nosotros!",
                     "¿Nos contás cómo te fue? Calificar la reparación lleva un minuto y nos ayuda a mejorar."],
-                   ("Calificar la reparación", documentos.url_seguimiento(base, t) + "#encuesta"))
+                   ("Calificar la reparación", documentos.url_seguimiento(base, t) + "#encuesta"), idioma=idioma)
             return
         from . import documentos
         parrafos = [f"Hola {t.cliente.nombre},",
@@ -219,10 +227,10 @@ def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
                 parrafos.append(f"Lo despachamos por {t.empresa_transporte or 'transporte'}"
                                 + (f", con N° de seguimiento {t.tracking_number}." if t.tracking_number else "."))
             if ajustes.get(s, "email_adjuntar_pdf"):
-                adjuntos.append(_pdf(s, t, "remito", base))
+                adjuntos.append(_pdf(s, t, "remito", base, idioma))
                 parrafos.append("Te adjuntamos el remito de entrega.")
         enviar(s, [_mail_usuario(t.cliente)], f"{t.numero_rma}: {etiqueta}", f"Tu equipo está «{etiqueta}»",
-               parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)), adjuntos)
+               parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)), adjuntos, idioma=idioma)
     programar(db, trabajo)
 
 
@@ -252,7 +260,7 @@ def cliente_retiro(db: Session, ticket: models.Ticket, recordatorio: bool = Fals
         asunto = f"{t.numero_rma}: " + ("recordatorio, tu equipo te espera" if recordatorio else "listo para retirar")
         enviar(s, [_mail_usuario(t.cliente)], asunto,
                "Tu equipo te espera" if recordatorio else "Tu equipo está listo para retirar",
-               parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)))
+               parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)), idioma=idiomas.de_usuario(s, t.cliente))
     programar(db, trabajo)
 
 
@@ -271,11 +279,13 @@ def cliente_presupuesto(db: Session, ticket: models.Ticket) -> None:
                     f"Ya tenemos el presupuesto para tu equipo {t.producto} (RMA {t.numero_rma}): "
                     f"{documentos._pesos(total)}.",
                     "Ingresá al sistema para aprobarlo o rechazarlo. Hasta que lo apruebes no avanzamos con la reparación."]
-        adjuntos = [_pdf(s, t, "presupuesto", base)] if ajustes.get(s, "email_adjuntar_pdf") else []
+        idioma = idiomas.de_usuario(s, t.cliente)
+        adjuntos = [_pdf(s, t, "presupuesto", base, idioma)] if ajustes.get(s, "email_adjuntar_pdf") else []
         if adjuntos:
             parrafos.append("Te adjuntamos el presupuesto en PDF.")
         enviar(s, [_mail_usuario(t.cliente)], f"{t.numero_rma}: presupuesto para aprobar",
-               "Presupuesto listo para aprobar", parrafos, ("Ver y aprobar", f"{base}/#ticket={t.id}"), adjuntos)
+               "Presupuesto listo para aprobar", parrafos, ("Ver y aprobar", f"{base}/#ticket={t.id}"), adjuntos,
+               idioma=idioma)
     programar(db, trabajo)
 
 
@@ -291,7 +301,7 @@ def tecnico_asignado(db: Session, ticket: models.Ticket, tecnico_id: int, asigna
                [f"Hola {tec.nombre},",
                 f"{asignado_por} te asignó el ticket {t.numero_rma}: {t.producto} (SN {t.numero_serie}).",
                 f"Falla informada: {t.descripcion}"],
-               ("Abrir el ticket", f"{base}/#ticket={t.id}"))
+               ("Abrir el ticket", f"{base}/#ticket={t.id}"), idioma=idiomas.de_usuario(s, tec))
     programar(db, trabajo)
 
 
@@ -310,7 +320,7 @@ def reingreso(db: Session, ticket: models.Ticket, anterior: models.Ticket) -> No
                 f"garantía de la reparación. Nuevo ticket: {t.numero_rma}.",
                 f"Falla informada: {t.descripcion}",
                 f"Diagnóstico anterior: {prev.diagnostico or 'sin diagnóstico cargado'}"],
-               ("Abrir el ticket", f"{base}/#ticket={t.id}"))
+               ("Abrir el ticket", f"{base}/#ticket={t.id}"), idioma=idiomas.de_usuario(s, tec))
     programar(db, trabajo)
 
 

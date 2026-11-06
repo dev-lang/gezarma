@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de reparación - GEZARMA</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/i18n.js"></script>
     <style>
         body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
     </style>
@@ -13,7 +14,10 @@
     <header class="bg-blue-800 text-white">
         <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
             <span id="marca" class="text-lg font-bold tracking-tight">GEZARMA</span>
-            <a href="/" class="text-sm text-blue-200 hover:text-white">Ingresar</a>
+            <div class="flex items-center gap-3">
+                <span id="idioma"></span>
+                <a href="/" class="text-sm text-blue-200 hover:text-white">Ingresar</a>
+            </div>
         </div>
     </header>
 
@@ -43,8 +47,9 @@
     <script>
     (function () {
         const $ = id => document.getElementById(id);
+        $('idioma').appendChild(I18N.selector('bg-blue-700 text-blue-50 text-xs rounded-lg px-1.5 py-1 border-0'));
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const fecha = iso => iso ? new Date(iso).toLocaleString('es-AR', { hour12: false, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        const fecha = iso => iso ? new Date(iso).toLocaleString(I18N.locale, { hour12: false, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
         function mostrar(d) {
             const pasos = d.historial.map((h, i) => {
@@ -68,7 +73,7 @@
                     <p class="text-sm font-semibold text-amber-800">Hay un presupuesto esperando tu aprobación.</p>
                     <p class="text-xs text-amber-700 mt-0.5"><a href="/" class="underline font-semibold">Ingresá al sistema</a> para verlo y aprobarlo o rechazarlo.</p>
                 </div>` : '';
-            const fechaCorta = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '';
+            const fechaCorta = iso => iso ? new Date(iso).toLocaleDateString(I18N.locale) : '';
             const retiro = d.retiro ? `
                 <div class="px-5 py-4 border-t bg-emerald-50">
                     <p class="text-sm font-semibold text-emerald-800">¡Tu equipo está listo para retirar!</p>
@@ -127,7 +132,7 @@
                 if (!puntaje) { errorEnc('Elegí de 1 a 5 estrellas.'); return; }
                 $('enc-enviar').disabled = true;
                 try {
-                    const r = await fetch('/public/encuesta', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    const r = await fetch('/public/encuesta', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept-Language': I18N.codigo },
                         body: JSON.stringify({ rma: $('rma').value.trim(), serie: $('serie').value.trim(), puntaje, comentario: $('enc-com').value.trim() }) });
                     const res = await r.json().catch(() => ({}));
                     if (!r.ok) throw new Error(res.detail || 'No se pudo enviar.');
@@ -140,7 +145,7 @@
             $('error').classList.add('hidden');
             $('btn').disabled = true; $('btn').textContent = 'Consultando…';
             try {
-                const r = await fetch(`/public/seguimiento?rma=${encodeURIComponent(rma)}&serie=${encodeURIComponent(serie)}`);
+                const r = await fetch(`/public/seguimiento?rma=${encodeURIComponent(rma)}&serie=${encodeURIComponent(serie)}`, { headers: { "Accept-Language": I18N.codigo } });
                 const d = await r.json().catch(() => ({}));
                 if (!r.ok) throw new Error(d.detail || 'No se pudo consultar. Probá de nuevo.');
                 mostrar(d);

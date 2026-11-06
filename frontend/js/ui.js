@@ -64,7 +64,8 @@ const ui = {
 
         await this.showSection('dashboard');
 
-        document.getElementById('user-info').innerText = `${user.nombre || user.username || user.sub} (${user.role})`;
+        const ROLES = { cliente: 'Cliente', tecnico: 'Técnico', administrador: 'Administrador' };
+        document.getElementById('user-info').innerText = `${user.nombre || user.username || user.sub} (${I18N.t(ROLES[user.role] || user.role)})`;
         document.getElementById('role-badge').innerText = `Rol: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`;
         document.getElementById('search-container').classList.remove('hidden');
 
@@ -183,7 +184,7 @@ const ui = {
         document.getElementById('detail-rma-id').innerText  = ticket.numero_rma;
         document.getElementById('detail-product').innerText = ticket.producto;
         document.getElementById('detail-serial').innerText  = ticket.numero_serie;
-        document.getElementById('detail-compra').innerText  = new Date(ticket.fecha_compra).toLocaleDateString('es-AR');
+        document.getElementById('detail-compra').innerText  = new Date(ticket.fecha_compra).toLocaleDateString(I18N.locale);
         document.getElementById('detail-priority').innerText = ticket.prioridad;
         document.getElementById('detail-tecnico').innerText = ticket.tecnico_nombre || 'Sin asignar';
         document.getElementById('detail-description').innerText = ticket.descripcion;
@@ -778,7 +779,7 @@ const ui = {
                             <span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase ${statusCls}">${esc(t.estado)}</span>
                         </div>
                         <p class="text-sm text-gray-700 mt-0.5 font-medium truncate">${esc(t.producto)}</p>
-                        <p class="text-xs text-gray-400">${esc(t.usuario_nombre || '—')} · ${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p>
+                        <p class="text-xs text-gray-400">${esc(t.usuario_nombre || '—')} · ${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}</p>
                     </div>
                     <button type="button" class="fav-remove-btn shrink-0 text-yellow-400 hover:text-gray-300 text-2xl transition"
                         data-ticket-id="${t.id}" title="Quitar de favoritos">★</button>
@@ -1285,14 +1286,14 @@ const ui = {
             window.myChart1 = new Chart(document.getElementById('chart-states').getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: stateLabels,
+                    labels: stateLabels.map(l => I18N.tr(l)),
                     datasets: [{ data: stateData, backgroundColor: stateBgs }]
                 },
                 options: { ...opts, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } },
             });
             window.myChart2 = new Chart(document.getElementById('chart-products').getContext('2d'), {
                 type: 'bar',
-                data: { labels: Object.keys(stats.fallas_por_producto), datasets: [{ label: 'Fallas', data: Object.values(stats.fallas_por_producto), backgroundColor: '#3b82f6' }] },
+                data: { labels: Object.keys(stats.fallas_por_producto), datasets: [{ label: I18N.tr('Fallas'), data: Object.values(stats.fallas_por_producto), backgroundColor: '#3b82f6' }] },
                 options: { ...opts, indexAxis: 'y', plugins: { legend: { display: false } } },
             });
             window.myChart3 = new Chart(document.getElementById('chart-techs').getContext('2d'), {

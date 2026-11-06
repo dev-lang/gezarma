@@ -7,7 +7,7 @@
  */
 const Tiempo = (() => {
     const esTaller = () => ['administrador', 'tecnico'].includes(auth.getUser()?.role || '');
-    const pesos = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const pesos = n => '$ ' + Number(n).toLocaleString(I18N.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     function duracion(min) {
         const m = Math.round(min);
         const h = Math.floor(m / 60);
@@ -56,7 +56,7 @@ const Tiempo = (() => {
                 <summary class="text-xs font-semibold text-gray-500 cursor-pointer">Ver ${d.registros.length} registro${d.registros.length === 1 ? '' : 's'}</summary>
                 <ul class="mt-2 divide-y text-sm">${d.registros.map(r => `
                     <li class="py-1.5 flex items-center justify-between gap-2">
-                        <span><b>${esc(r.usuario_nombre)}</b> · ${new Date(r.inicio).toLocaleString('es-AR', { hour12: false, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        <span><b>${esc(r.usuario_nombre)}</b> · ${new Date(r.inicio).toLocaleString(I18N.locale, { hour12: false, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             · ${r.en_curso ? '<span class="text-emerald-700 font-semibold">en curso</span>' : duracion(r.minutos)}${r.manual ? ' <span class="text-[10px] text-gray-400">(a mano)</span>' : ''}${r.nota ? ` — ${esc(r.nota)}` : ''}</span>
                         ${(r.usuario_id === yo?.user_id || yo?.role === 'administrador') && !r.en_curso
                             ? `<button type="button" data-borrar="${r.id}" class="text-xs text-red-500 hover:text-red-700" aria-label="Borrar registro">✕</button>` : ''}

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
-from .. import database, models, schemas, auth
+from .. import database, models, schemas, auth, idiomas
 from .auth import email_en_uso
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -115,6 +115,21 @@ def reset_password(
     db.commit()
     return {"temp_password": temp_pw, "username": db_user.username,
             "message": "Contraseña temporal generada. El usuario deberá cambiarla en el próximo login."}
+
+@router.put("/me/idioma")
+def cambiar_idioma(
+    data: dict,
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.get_current_user)
+):
+    """El idioma de la interfaz, los mails y los documentos de este usuario (null = el del taller)."""
+    pedido = data.get("idioma")
+    codigo = idiomas.normalizar(pedido)
+    if pedido and not codigo:
+        raise HTTPException(status_code=400, detail="Idioma no disponible")
+    current_user.idioma = codigo
+    db.commit()
+    return {"idioma": codigo}
 
 @router.post("/change-password")
 def change_password(

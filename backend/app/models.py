@@ -80,6 +80,8 @@ class Usuario(Base):
     # Va dentro del JWT: al cambiar o resetear la clave se incrementa y los
     # tokens anteriores dejan de valer
     token_version   = Column(Integer, nullable=False, default=0, server_default="0")
+    # es-AR / es-ES / en / pt-BR; vacío = el predeterminado del taller (ver idiomas.py)
+    idioma          = Column(String, nullable=True)
 
     tickets_creados   = relationship("Ticket", back_populates="cliente",  foreign_keys="Ticket.usuario_id")
     tickets_asignados = relationship("Ticket", back_populates="tecnico",  foreign_keys="Ticket.tecnico_asignado")

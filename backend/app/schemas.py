@@ -31,6 +31,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    idioma:   Optional[str] = None
     @field_validator("password")
     @classmethod
     def pw_min_length(cls, v):
@@ -65,6 +66,7 @@ class User(UserBase):
     fecha_creacion:       UTCDateTime
     telefono:             Optional[str] = None
     must_change_password: bool = False
+    idioma:               Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 # ── Spare Parts ───────────────────────────────────────────────────────────────

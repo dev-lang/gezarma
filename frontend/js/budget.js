@@ -8,7 +8,7 @@
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
-const _ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const _ars = new Intl.NumberFormat(I18N.locale, { style: 'currency', currency: 'ARS' });
 const fmt = n => _ars.format(+n || 0);   // $ 12.345,50
 
 const ESTADO_COLORS = {
@@ -382,7 +382,7 @@ function renderVersiones(versiones) {
                     <span class="px-2 py-0.5 rounded-full text-xs font-bold ${cfg.bg} ${cfg.text}">${cfg.label}</span>
                 </div>
                 <p class="text-xs text-gray-400 mb-2">
-                    ${escHtml(v.usuario_nombre || "—")} &bull; ${new Date(v.fecha).toLocaleString("es-AR", { hour12: false })}
+                    ${escHtml(v.usuario_nombre || "—")} &bull; ${new Date(v.fecha).toLocaleString(I18N.locale, { hour12: false })}
                 </p>
                 ${v.notas ? `<p class="text-xs italic text-gray-500 mb-2">"${escHtml(v.notas)}"</p>` : ""}
                 ${items ? `<ul class="space-y-0.5 list-disc list-inside">${items}</ul>` : ""}

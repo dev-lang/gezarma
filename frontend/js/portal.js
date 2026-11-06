@@ -6,7 +6,7 @@
 const Portal = (() => {
     const DOCS = { ingreso: 'Orden de ingreso', presupuesto: 'Presupuesto', remito: 'Remito' };
     const ICONO = { presupuesto: '💰', retiro: '📦', encuesta: '⭐' };
-    const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '';
+    const fecha = iso => iso ? new Date(iso).toLocaleDateString(I18N.locale) : '';
     const abrirTicket = id => api.getTicket(id).then(t => ui.showTicketDetail(t));
 
     function reparacion(r) {

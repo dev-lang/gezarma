@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 from typing import Optional
-from .. import database, models, schemas, auth as auth_module
+from .. import database, models, schemas, idiomas, auth as auth_module
 from ..timeutils import utcnow
 
 router = APIRouter(tags=["auth"])
@@ -137,6 +137,7 @@ def login(
         "nombre":       user.nombre,
         "user_id":      user.id,
         "must_change_password": user.must_change_password,
+        "idioma":       user.idioma,
     }
 
 @router.post("/register", response_model=schemas.User)
@@ -174,6 +175,7 @@ def register(
         email=user_data.email,
         rol=rol,
         tipo_cliente=user_data.tipo_cliente,
+        idioma=idiomas.normalizar(user_data.idioma),
     )
     db.add(new_user)
     db.commit()

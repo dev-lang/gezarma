@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from .. import ajustes, auth, database, models
+from .. import ajustes, auth, database, idiomas, models
 from ..services import documentos, email, pedidos
 from ..timeutils import iso_utc, utc_to_local, utcnow
 
@@ -124,7 +124,12 @@ def _html(db: Session, p: models.PedidoProveedor, imprimir: bool) -> str:
            "empresa_datos": [l for l in (ajustes.get(db, "empresa_datos") or "").splitlines() if l.strip()],
            "t": {"numero_rma": f"Pedido N° {p.id:05d}"}, "hoy": utc_to_local(utcnow()).strftime("%d/%m/%Y %H:%M"),
            "pedido": p, "fecha": utc_to_local(p.fecha_envio or p.fecha_creacion).strftime("%d/%m/%Y")}
-    return documentos._env.get_template("pedido.html").render(**ctx, titulo="Pedido de repuestos", imprimir=imprimir)
+    # A un proveedor: en el idioma del taller
+    idioma = idiomas.de_usuario(db, None)
+    ctx["t"]["numero_rma"] = idiomas.tr(ctx["t"]["numero_rma"], idioma)
+    html = documentos._env.get_template("pedido.html").render(**ctx, titulo=idiomas.tr("Pedido de repuestos", idioma),
+                                                              imprimir=imprimir)
+    return idiomas.traducir_html(html, idioma)
 
 
 @router.get("/{pedido_id}/pdf")

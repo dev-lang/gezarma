@@ -29,6 +29,12 @@ DEFS = {
     "empresa_datos": dict(grupo="general", tipo="text", default="",
                           label="Datos de contacto para los documentos",
                           ayuda="Dirección, teléfono, mail, CUIT… (una línea por dato)."),
+    "idioma_predeterminado": dict(grupo="general", tipo="choice", default="es-AR",
+                                  opciones={"es-AR": "Español (Argentina)", "es-ES": "Español (España)",
+                                            "en": "English", "pt-BR": "Português (Brasil)"},
+                                  label="Idioma predeterminado",
+                                  ayuda="Para los mails y documentos de quien no eligió idioma, y los pedidos a proveedores. "
+                                        "Cada usuario puede elegir el suyo desde la barra superior."),
     "seguimiento_publico": dict(grupo="general", tipo="bool", default=True,
                                 label="Seguimiento público de reparaciones",
                                 ayuda="Permite consultar el estado con N° de RMA + N° de serie, sin iniciar sesión."),

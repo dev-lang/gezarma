@@ -144,7 +144,7 @@ const Ajustes = (() => {
         if (!el) return;
         try {
             const e = await api.request('config/email/estado');
-            const f = iso => new Date(iso).toLocaleString('es-AR', { hour12: false });
+            const f = iso => new Date(iso).toLocaleString(I18N.locale, { hour12: false });
             const errorReciente = e.ultimo_error && (!e.ultimo_ok || e.ultimo_error_fecha > e.ultimo_ok);
             el.innerHTML = errorReciente
                 ? `<span class="text-red-600 font-semibold">Último envío fallido (${f(e.ultimo_error_fecha)}): ${esc(e.ultimo_error)}</span>`

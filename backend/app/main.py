@@ -2,11 +2,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi import Request
+from fastapi.responses import FileResponse, JSONResponse, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from .database import SessionLocal, run_migrations
 from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos
-from . import models, auth, config
+from . import models, auth, config, idiomas
 from . import ajustes as ajustes_mod
 from .services import sla as sla_service
 
@@ -64,6 +66,28 @@ app.include_router(encuestas_router.router)
 app.include_router(portal_router.router)
 app.include_router(tiempos_router.router)
 app.include_router(pedidos_router.router)
+
+# ── Idiomas ──────────────────────────────────────────────────────────────────
+@app.exception_handler(StarletteHTTPException)
+async def _error_traducido(request: Request, exc: StarletteHTTPException):
+    """Los mensajes de error en el idioma de quien llama (Accept-Language)."""
+    detalle = exc.detail
+    if isinstance(detalle, str):
+        detalle = idiomas.tr(detalle, idiomas.desde_header(request.headers.get("accept-language")))
+    return JSONResponse({"detail": detalle}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+
+
+@app.get("/i18n/idiomas")
+def lista_idiomas():
+    return [{"codigo": k, "nombre": v} for k, v in idiomas.IDIOMAS.items()]
+
+
+@app.get("/i18n/{codigo}.js")
+def diccionario_js(codigo: str):
+    cod = idiomas.normalizar(codigo) or idiomas.BASE
+    return Response(idiomas.js(cod), media_type="application/javascript",
+                    headers={"Cache-Control": "no-cache"})
+
 
 @app.get("/")
 def read_index():

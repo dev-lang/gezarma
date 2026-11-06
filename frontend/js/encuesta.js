@@ -53,7 +53,7 @@ const Encuesta = (() => {
                 <h3 class="text-amber-800 font-bold text-xs uppercase mb-1">${esCliente ? 'Tu calificación' : 'Calificación del cliente'}</h3>
                 <p class="text-amber-500">${estrellas(e.puntaje)} <span class="text-sm text-amber-800 font-semibold ml-1">${ETIQUETAS[e.puntaje]}</span></p>
                 ${e.comentario ? `<p class="text-sm text-gray-700 mt-1">“${esc(e.comentario)}”</p>` : ''}
-                <p class="text-xs text-gray-400 mt-1">${new Date(e.fecha).toLocaleDateString('es-AR')}</p>
+                <p class="text-xs text-gray-400 mt-1">${new Date(e.fecha).toLocaleDateString(I18N.locale)}</p>
             </div>`;
             card.classList.remove('hidden');
             return;

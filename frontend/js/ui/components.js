@@ -2,12 +2,13 @@
 function garantiaTexto(meses) {
     const m = +meses || 0;
     if (!m) return 'Sin garantía';
-    if (m % 12 === 0) return `${m / 12} año${m > 12 ? 's' : ''}`;
-    return `${m} mes${m > 1 ? 'es' : ''}`;
+    if (m === 12) return '1 año';
+    if (m % 12 === 0) return `${m / 12} años`;
+    return m === 1 ? '1 mes' : `${m} meses`;
 }
 
 /** Precio en pesos con formato argentino: $ 12.345,50 */
-const _ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const _ars = new Intl.NumberFormat(I18N.locale, { style: 'currency', currency: 'ARS' });
 function precioARS(n) { return _ars.format(+n || 0); }
 window.garantiaTexto = garantiaTexto;
 window.precioARS = precioARS;
@@ -87,7 +88,7 @@ const components = (() => {
                 </span>
             </td>
             <td class="px-6 py-4 text-xs text-gray-500">
-                ${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}
+                ${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}
                 <div class="mt-0.5">${priorityBadge(t.prioridad)}</div>
             </td>
             <td class="px-6 py-4 text-right">
@@ -170,7 +171,7 @@ const components = (() => {
                 <span class="font-bold text-sm flex items-center flex-wrap gap-1 ${headerCls}">
                     ${icon}${esc(c.usuario_nombre || 'Usuario #' + c.usuario_id)}${badge}
                 </span>
-                <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString('es-AR', { hour12: false })}</span>
+                <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString(I18N.locale, { hour12: false })}</span>
             </div>
             <p class="text-sm leading-relaxed ${isInternal ? 'text-violet-900 dark:text-violet-200 italic' : 'text-gray-700'}">${esc(c.comentario)}</p>
         </div>`;
@@ -183,7 +184,7 @@ const components = (() => {
         const isConsumo = m.cantidad < 0;
         const cls   = isConsumo ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
         const sign  = isConsumo ? '−' : '+';
-        const fecha = new Date(m.fecha).toLocaleString('es-AR', { hour12: false });
+        const fecha = new Date(m.fecha).toLocaleString(I18N.locale, { hour12: false });
         const ticketLink = m.ticket_rma
             ? `<span class="font-mono text-blue-600 text-xs">${esc(m.ticket_rma)}</span>`
             : '<span class="text-gray-300 text-xs">—</span>';
@@ -283,7 +284,7 @@ const components = (() => {
 
     function historyEntry(h) {
         const ev      = EVENTO_ICON[h.tipo_evento] || { icon: "•", color: "gray" };
-        const fecha   = new Date(h.fecha).toLocaleString("es-AR", { hour12: false });
+        const fecha   = new Date(h.fecha).toLocaleString(I18N.locale, { hour12: false });
         const usuario = h.usuario_nombre || "Sistema";
         let body = "";
         if (h.tipo_evento === "cambio_estado" && h.estado_anterior && h.estado_nuevo) {
@@ -461,7 +462,7 @@ const components = (() => {
                 ${t.descripcion ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${esc(t.descripcion)}</p>` : ''}
             </div>
             <div class="text-right shrink-0">
-                <p class="text-xs text-gray-400">${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p>
+                <p class="text-xs text-gray-400">${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}</p>
                 ${t.tecnico_nombre ? `<p class="text-xs text-gray-500 mt-1">👷 ${esc(t.tecnico_nombre)}</p>` : ''}
             </div>
         </div>`;

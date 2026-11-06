@@ -17,7 +17,7 @@ import qrcode
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy.orm import Session
 
-from .. import ajustes, models
+from .. import ajustes, idiomas, models
 from . import impresion, recepcion
 from ..timeutils import utc_to_local, utcnow
 
@@ -148,11 +148,11 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
     }
 
 
-def _ctx_etiqueta(db: Session, ctx: dict) -> dict:
+def _ctx_etiqueta(db: Session, ctx: dict, idioma=None) -> dict:
     t = ctx["t"]
     dpi = int(ajustes.get(db, "etiqueta_dpi"))
     lineas = [t.producto, f"SN {t.numero_serie or ''}", ctx["cliente"]["nombre"],
-              f"Ingreso {ctx['fecha_ingreso'][:10]}"]
+              idiomas.tr(f"Ingreso {ctx['fecha_ingreso'][:10]}", idioma)]
     return {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, t.numero_rma, lineas),
             "dpi": dpi}
 
@@ -206,29 +206,44 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
     return bloques
 
 
-def _ctx_ticket(db: Session, ctx: dict, entrega: bool) -> dict:
+def _ctx_ticket(db: Session, ctx: dict, entrega: bool, idioma=None) -> dict:
     d = impresion.disenio_ticket(ajustes.get(db, "ticketera_ancho"), int(ajustes.get(db, "ticketera_dpi")),
                                  ctx["t"].numero_rma)
     # La firma, al ancho del rollo (hasta 70 % y 20 mm de alto)
     for clave, momento in (("firma_ingreso", "ingreso"), ("firma_entrega", "entrega")):
         ctx[clave] = _firma(ctx["t"], momento, d["imprimible_mm"] * 0.7, 20)
     d["bloques"] = _bloques_ticket(ctx, entrega)
+    # Traducido antes de medir: el largo del ticket depende del texto
+    for b in d["bloques"]:
+        for k in ("texto", "etiqueta"):
+            if b.get(k):
+                b[k] = idiomas.tr(b[k], idioma)
     d["largo_mm"] = impresion.largo_ticket(d, d["bloques"])
     return {"k": d}
 
 
-def contexto_tipo(db: Session, tipo: str, ctx: dict) -> dict:
+def contexto_tipo(db: Session, tipo: str, ctx: dict, idioma: str = None) -> dict:
     """Agrega lo específico de cada documento (medidas de etiqueta / ticket)."""
+    ctx = {**ctx, "idioma": idioma or idiomas.BASE}
     if tipo == "etiqueta":
-        return {**ctx, **_ctx_etiqueta(db, ctx)}
+        return {**ctx, **_ctx_etiqueta(db, ctx, idioma)}
     if tipo in ("ticket_ingreso", "ticket_entrega"):
-        return {**ctx, **_ctx_ticket(db, ctx, tipo == "ticket_entrega")}
+        return {**ctx, **_ctx_ticket(db, ctx, tipo == "ticket_entrega", idioma)}
     return ctx
+
+
+def idioma_documento(db: Session, tipo: str, t: models.Ticket, quien_pide: str = None) -> str:
+    """Los documentos para el cliente salen en su idioma; los internos (etiqueta), en el de quien los pide."""
+    if tipo in TIPOS_CLIENTE or tipo.startswith("ticket_"):
+        return idiomas.de_usuario(db, t.cliente)
+    return quien_pide or idiomas.de_usuario(db, None)
 
 
 def render_html(tipo: str, ctx: dict, imprimir: bool = False) -> str:
     plantilla = PLANTILLAS.get(tipo, f"{tipo}.html")
-    return _env.get_template(plantilla).render(**ctx, titulo=TIPOS[tipo], imprimir=imprimir)
+    idioma = ctx.get("idioma")
+    html = _env.get_template(plantilla).render(**ctx, titulo=idiomas.tr(TIPOS[tipo], idioma), imprimir=imprimir)
+    return idiomas.traducir_html(html, idioma)
 
 
 def render_pdf(html: str) -> bytes:
@@ -244,5 +259,6 @@ def nombre_archivo(tipo: str, t: models.Ticket, ext: str) -> str:
     return f"{tipo}-{t.numero_rma}.{ext}"
 
 
-def generar_pdf(db: Session, t: models.Ticket, tipo: str, base_url: str) -> bytes:
-    return render_pdf(render_html(tipo, contexto_tipo(db, tipo, contexto(db, t, base_url))))
+def generar_pdf(db: Session, t: models.Ticket, tipo: str, base_url: str, idioma: str = None) -> bytes:
+    idioma = idioma or idioma_documento(db, tipo, t)
+    return render_pdf(render_html(tipo, contexto_tipo(db, tipo, contexto(db, t, base_url), idioma)))

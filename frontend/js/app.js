@@ -20,6 +20,10 @@ const app = {
         this._eventsController = new AbortController();
         const sig = { signal: this._eventsController.signal };
 
+        // Selectores de idioma (barra superior, login y registro)
+        document.querySelectorAll('[data-idioma-selector]:empty').forEach(el =>
+            el.appendChild(I18N.selector(el.dataset.idiomaSelector || '')));
+
         const on = (id, event, handler) => {
             document.getElementById(id)?.addEventListener(event, handler, sig);
         };
@@ -99,6 +103,7 @@ const app = {
             try {
                 const res = await api.login(userEl.value.trim(), passEl.value);
                 auth.setSession(res);
+                if (I18N.deLaCuenta(res.idioma)) return;   // la cuenta tiene otro idioma: recarga en ese
                 if (res.must_change_password) {
                     ui.showSection('change-password');
                 } else {
@@ -166,6 +171,7 @@ const app = {
                 email,
                 tipo_cliente: document.getElementById('reg-tipo').value,
                 password,
+                idioma: I18N.codigo,
             };
             try {
                 await api.register(data);

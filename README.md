@@ -30,6 +30,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Notificaciones** in-app, **favoritos**, búsqueda global y **historial/auditoría** de cada cambio.
 - **Panel de administración**: usuarios, productos, repuestos, stock, pedidos a proveedor, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, impresoras, email, retiro y encuesta, taller, SLA, seguimiento) y **exportación** a CSV/Excel.
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
+- **Idiomas**: español (Argentina), español (España), inglés y portugués (Brasil). Cada usuario elige el suyo desde la barra superior (o el login); los mails, PDF y comprobantes le llegan al cliente en su idioma.
 
 ## Capturas
 
@@ -152,7 +153,7 @@ Al arrancar, la app avisa en el log si generó la `SECRET_KEY`, si ignoró la cl
 
 En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor:
 
-- **General**: nombre y datos de contacto que salen en documentos y mails, URL pública y si el seguimiento público está habilitado.
+- **General**: nombre y datos de contacto que salen en documentos y mails, URL pública, idioma predeterminado y si el seguimiento público está habilitado.
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
 - **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
 - **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
@@ -161,6 +162,17 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 - **SLA**: con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el SLA más corto, 24 h) y cada cuántos minutos revisar.
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
+
+### Idiomas
+
+El sistema está escrito en español rioplatense y se traduce a **español (España)**, **inglés** y **portugués (Brasil)**:
+
+- **Interfaz**: cada usuario elige el idioma en la barra superior (o en el login y el registro). Se guarda en su cuenta y, la primera vez, se toma el del navegador. El seguimiento público tiene su propio selector.
+- **Mails, documentos y comprobantes**: los del cliente (orden de ingreso, remito, presupuesto, tickets de ticketera) salen en el idioma del cliente; la etiqueta, en el de quien la imprime; los pedidos a proveedor, en el idioma predeterminado del taller (*Ajustes → General*), que también se usa para quien no eligió idioma.
+- **Mensajes de error** de la API en el idioma del navegador (encabezado `Accept-Language`).
+- Fechas y precios con el formato de cada idioma (los montos siguen en pesos).
+
+Los diccionarios están en `backend/app/traducciones/<idioma>.json`: `{"texto en español": "traducción"}`, con `{0}`, `{1}`… para las partes variables. Un texto nuevo que no esté en el diccionario se ve en español hasta que se agrega. Los textos que cargó el taller (estados con otro nombre, plantillas, política de retiro modificada) y lo que escriben los usuarios no se traducen.
 
 ### Para el cliente
 
@@ -287,6 +299,8 @@ backend/
     auth.py            contraseñas (bcrypt), JWT y permisos por rol
     routers/           endpoints por área (tickets, presupuestos, stock, …)
     ajustes.py         ajustes editables desde el panel (secretos cifrados)
+    idiomas.py         traducción (interfaz, mails, documentos, errores)
+    traducciones/      diccionarios por idioma (en, pt-BR, es-ES)
     services/          lógica: tickets, recepción, retiro, encuestas, garantía, stock, pedidos,
                        documentos, impresión térmica, email, SLA, avisos
     templates/         plantillas de documentos (PDF/impresión) y de mails
@@ -294,6 +308,7 @@ backend/
 frontend/
   index.html, seguimiento.html (página pública), partials/ (pantallas en HTML)
   js/                  un módulo por área (kanban, recepción, pedidos, adjuntos, búsqueda, …)
+  js/i18n.js           idioma de la interfaz (traduce la pantalla con el diccionario del servidor)
   js/ui/               piezas comunes: escape.js (esc() para todo texto que va a HTML),
                        confirm.js (confirmDialog/promptDialog), modales.js (Escape, foco
                        y role="dialog" para todos los modales), components.js, toast.js
