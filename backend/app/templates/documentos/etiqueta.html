@@ -4,30 +4,32 @@
 <meta charset="utf-8">
 <title>Etiqueta {{ t.numero_rma }}</title>
 <style>
-  /* Etiqueta 62 x 29 mm (Brother QL y similares). El código de barras va en su
-     tamaño exacto: no escalar al imprimir ("tamaño real" / 100 %). */
-  @page { size: 62mm 29mm; margin: 1.2mm 1.5mm; }
-  body { font-family: Helvetica, Arial, sans-serif; font-size: 6.3pt; color: #000; margin: 0; }
-  table { width: 100%; }
-  td { vertical-align: top; padding: 0; }
-  .rma { font-family: Courier, monospace; font-size: 8.3pt; font-weight: bold; }
-  @media screen { body { width: 59mm; margin: 12px; } }
+  /* Etiqueta {{ e.ancho_mm }} x {{ e.alto_mm }} mm. Imprimir a escala 100 % / tamaño real:
+     el código de barras tiene el ancho de barra exacto para {{ dpi }} dpi. */
+  @page { size: {{ e.ancho_mm }}mm {{ e.alto_mm }}mm; margin: {{ e.margen_v }}mm {{ e.margen_h }}mm; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: {{ e.fuente_pt }}pt; color: #000; line-height: 1.2; }
+  table.lay { width: 100%; }
+  table.lay td { vertical-align: top; padding: 0; }
+  .rma { font-family: Courier, monospace; font-size: {{ e.fuente_rma_pt }}pt; font-weight: bold; }
+  .barras { margin-top: 0.8mm; }
+  @media screen { body { width: {{ e.ancho_mm - 2 * e.margen_h }}mm; margin: 12px; outline: 1px dashed #d1d5db; } }
 </style>
 </head>
 <body>
-<table>
+<table class="lay">
   <tr>
-    <td style="width: 19mm;"><img src="{{ qr_taller }}" width="18mm" height="18mm"></td>
+    <td style="width: {{ e.qr_mm + 1.5 }}mm;"><img src="{{ qr_taller }}" width="{{ e.qr_mm }}mm" height="{{ e.qr_mm }}mm"></td>
     <td>
-      <div class="rma">{{ t.numero_rma }}</div>
-      <div><b>{{ (t.producto or "")[:30] }}</b></div>
-      <div>SN {{ (t.numero_serie or "")[:28] }}</div>
-      <div>{{ (cliente.nombre or "")[:30] }}</div>
-      <div>Ingreso {{ fecha_ingreso[:10] }}</div>
+      {% if not e.rma_abajo %}<div class="rma">{{ t.numero_rma }}</div>{% endif %}
+      {% for linea in e.lineas %}<div>{% if loop.first %}<b>{{ linea }}</b>{% else %}{{ linea }}{% endif %}</div>{% endfor %}
     </td>
   </tr>
 </table>
-<div style="text-align: center;"><img src="{{ barcode_rma.src }}" width="{{ barcode_rma.ancho_mm }}mm" height="{{ barcode_rma.alto_mm }}mm"></div>
+{% if e.rma_abajo %}<div class="rma" align="center" style="margin-top: 0.8mm;">{{ t.numero_rma }}</div>{% endif %}
+{% if e.barras %}
+<div class="barras" align="center">{% if imprimir %}{{ e.barras.svg|safe }}{% else %}{{ e.barras.tabla|safe }}{% endif %}</div>
+{% endif %}
 {% if imprimir %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}
 </body>
 </html>

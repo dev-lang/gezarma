@@ -227,7 +227,8 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
     """Lo que el frontend necesita saber sin ser admin."""
     return {"pdf_modo": ajustes_mod.get(db, "pdf_modo"),
             "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico"),
-            "sla_aviso_horas": ajustes_mod.get(db, "sla_aviso_horas")}
+            "sla_aviso_horas": ajustes_mod.get(db, "sla_aviso_horas"),
+            "etiqueta_tamano": ajustes_mod.get(db, "etiqueta_tamano")}
 
 
 # ── Email: prueba y estado ───────────────────────────────────────────────────

@@ -1,10 +1,11 @@
 """
 documentos.py — GET /tickets/{id}/documentos/{tipo}
 
-tipo: ingreso | remito | presupuesto | etiqueta
+tipo: ingreso | remito | presupuesto | etiqueta | ticket_ingreso | ticket_entrega
 formato: pdf | html. Si no se indica, se usa el ajuste "pdf_modo"
 (servidor → pdf, navegador → html que se imprime solo).
-El cliente solo puede pedir ingreso, remito y presupuesto de sus tickets.
+El cliente solo puede pedir ingreso, remito y presupuesto de sus tickets
+(la etiqueta y los comprobantes de ticketera son para el mostrador del taller).
 """
 from typing import Optional
 
@@ -43,7 +44,7 @@ def documento(
 
     if formato is None:
         formato = "pdf" if ajustes.get(db, "pdf_modo") == "servidor" else "html"
-    ctx = documentos.contexto(db, ticket, ajustes.public_url(db, request))
+    ctx = documentos.contexto_tipo(db, tipo, documentos.contexto(db, ticket, ajustes.public_url(db, request)))
 
     if formato == "html":
         return HTMLResponse(documentos.render_html(tipo, ctx, imprimir=True))

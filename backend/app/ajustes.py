@@ -39,6 +39,25 @@ DEFS = {
                      label="Cómo se generan los documentos",
                      ayuda="Orden de ingreso, remito, presupuesto y etiqueta. Los PDF adjuntos a los mails "
                            "siempre los genera el servidor."),
+    # ── Impresoras térmicas ──────────────────────────────────────────────────
+    "etiqueta_tamano": dict(grupo="impresion", tipo="choice", default="62x29",
+                            opciones={"62x29": "62 × 29 mm (Brother QL DK-11209 y similares)",
+                                      "50x25": "50 × 25 mm", "40x30": "40 × 30 mm",
+                                      "58x40": "58 × 40 mm", "100x50": "100 × 50 mm"},
+                            label="Tamaño de la etiqueta"),
+    "etiqueta_dpi": dict(grupo="impresion", tipo="choice", default="300",
+                         opciones={"203": "203 dpi (Zebra, TSC, Xprinter, Godex… la mayoría)",
+                                   "300": "300 dpi (Brother QL, Zebra de 300…)"},
+                         label="Resolución de la impresora de etiquetas",
+                         ayuda="Está en la hoja de datos de la impresora. Con la resolución correcta, el código de "
+                               "barras sale con barras parejas; si no entra en la etiqueta, queda solo el QR."),
+    "ticketera_ancho": dict(grupo="impresion", tipo="choice", default="80",
+                            opciones={"80": "80 mm", "58": "58 mm"},
+                            label="Ancho del rollo de la ticketera",
+                            ayuda="Para los comprobantes de ingreso y entrega en formato ticket."),
+    "ticketera_dpi": dict(grupo="impresion", tipo="choice", default="203",
+                          opciones={"203": "203 dpi (la mayoría de las ticketeras)", "300": "300 dpi"},
+                          label="Resolución de la ticketera"),
     # ── Email ────────────────────────────────────────────────────────────────
     "email_activo": dict(grupo="email", tipo="bool", default=False, label="Enviar notificaciones por email"),
     "smtp_origen": dict(grupo="email", tipo="choice", default="env",

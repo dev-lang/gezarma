@@ -1,6 +1,6 @@
 /**
  * documentos.js — Menú "Documentos" del detalle del ticket (orden de ingreso,
- * remito, presupuesto, etiqueta) y apertura de un ticket desde el QR de la
+ * remito, presupuesto, etiqueta, comprobantes de ticketera) y apertura de un ticket desde el QR de la
  * etiqueta (/#ticket=ID).
  *
  * El servidor decide el formato según el ajuste "pdf_modo": PDF, o HTML que
@@ -11,8 +11,20 @@ const Documentos = (() => {
         { id: 'ingreso',     label: 'Orden de ingreso',     cliente: true },
         { id: 'remito',      label: 'Remito de entrega',    cliente: true },
         { id: 'presupuesto', label: 'Presupuesto',          cliente: true },
-        { id: 'etiqueta',    label: 'Etiqueta (62 × 29 mm)', cliente: false },
+        { id: 'etiqueta',    label: 'Etiqueta',             cliente: false },
+        { id: 'ticket_ingreso', label: 'Comprobante de ingreso (ticketera)', cliente: false },
+        { id: 'ticket_entrega', label: 'Comprobante de entrega (ticketera)', cliente: false },
     ];
+    // El tamaño de etiqueta configurado en Ajustes (se muestra en el menú)
+    let tamanoEtiqueta = null;
+    async function cargarTamano() {
+        try {
+            const r = await fetch('/config/ajustes/publicos');
+            tamanoEtiqueta = (await r.json()).etiqueta_tamano || null;
+        } catch { /* sin dato: el menú dice solo "Etiqueta" */ }
+    }
+    const etiquetaDe = t => (t.id === 'etiqueta' && tamanoEtiqueta)
+        ? `Etiqueta (${tamanoEtiqueta.replace('x', ' × ')} mm)` : t.label;
 
     async function abrir(ticketId, tipo) {
         // La pestaña se abre en el mismo click (si no, el navegador la bloquea)
@@ -43,8 +55,9 @@ const Documentos = (() => {
         if (!e.target.closest('#documentos-menu')) cerrarMenu();
     }
 
-    function menu(boton) {
+    async function menu(boton) {
         if (document.getElementById('documentos-menu')) { cerrarMenu(); return; }
+        await cargarTamano();   // puede haber cambiado en Ajustes
         const ticketId = ui.currentTicketId;
         const esCliente = (auth.getUser()?.role || '') === 'cliente';
         const tipos = TIPOS.filter(t => !esCliente || t.cliente);
@@ -59,7 +72,7 @@ const Documentos = (() => {
         div.style.top = (r.bottom + 4 + alto > window.innerHeight && r.top - 4 - alto > 0)
             ? `${r.top - 4 - alto}px` : `${r.bottom + 4}px`;
         div.innerHTML = tipos.map(t =>
-            `<button type="button" data-tipo="${t.id}" class="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold text-gray-700">📄 ${t.label}</button>`
+            `<button type="button" data-tipo="${t.id}" class="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold text-gray-700">📄 ${etiquetaDe(t)}</button>`
         ).join('');
         div.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
             cerrarMenu();

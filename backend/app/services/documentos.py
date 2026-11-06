@@ -13,13 +13,12 @@ import logging
 from pathlib import Path
 from urllib.parse import urlencode
 
-import barcode
 import qrcode
-from barcode.writer import ImageWriter
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy.orm import Session
 
 from .. import ajustes, models
+from . import impresion
 from ..timeutils import utc_to_local, utcnow
 
 # xhtml2pdf avisa en el log por cada propiedad CSS que ignora (p. ej. border-collapse,
@@ -31,7 +30,11 @@ TIPOS = {
     "remito": "Remito de entrega",
     "presupuesto": "Presupuesto",
     "etiqueta": "Etiqueta",
+    "ticket_ingreso": "Comprobante de ingreso",
+    "ticket_entrega": "Comprobante de entrega",
 }
+# Plantilla de cada tipo (por defecto, la de su mismo nombre)
+PLANTILLAS = {"ticket_ingreso": "ticket.html", "ticket_entrega": "ticket.html"}
 # Lo que puede pedir el cliente sobre sus propios tickets (la etiqueta es interna)
 TIPOS_CLIENTE = {"ingreso", "remito", "presupuesto"}
 
@@ -64,26 +67,6 @@ def qr_png(texto: str) -> str:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return _png_data_uri(buf.getvalue())
-
-
-# Código de barras para impresoras de etiquetas de 300 dpi: cada barra mide un
-# número entero de puntos (2) y la imagen se ubica en su tamaño exacto, sin
-# reescalar. Si se achica, las barras quedan desparejas y los lectores no lo leen.
-BARCODE_DPI = 300
-BARCODE_MODULO_MM = 2 * 25.4 / BARCODE_DPI   # 2 puntos ≈ 0,17 mm
-
-
-def code128_png(texto: str) -> dict:
-    """{"src": data URI, "ancho_mm": ..., "alto_mm": ...} en tamaño de impresión exacto."""
-    buf = io.BytesIO()
-    barcode.get("code128", texto, writer=ImageWriter()).write(buf, options={
-        "write_text": False, "module_width": BARCODE_MODULO_MM, "module_height": 4.5,
-        "quiet_zone": 2.0, "dpi": BARCODE_DPI})
-    png = buf.getvalue()
-    from PIL import Image
-    w, h = Image.open(io.BytesIO(png)).size
-    return {"src": _png_data_uri(png), "ancho_mm": round(w * 25.4 / BARCODE_DPI, 2),
-            "alto_mm": round(h * 25.4 / BARCODE_DPI, 2)}
 
 
 def url_seguimiento(base_url: str, t: models.Ticket) -> str:
@@ -130,12 +113,77 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
         "qr_seguimiento": qr_png(url_seguimiento(base_url, t)),
         "url_seguimiento": url_seguimiento(base_url, t),
         "qr_taller": qr_png(url_taller(base_url, t)),
-        "barcode_rma": code128_png(t.numero_rma),
     }
 
 
+def _ctx_etiqueta(db: Session, ctx: dict) -> dict:
+    t = ctx["t"]
+    dpi = int(ajustes.get(db, "etiqueta_dpi"))
+    lineas = [t.producto, f"SN {t.numero_serie or ''}", ctx["cliente"]["nombre"],
+              f"Ingreso {ctx['fecha_ingreso'][:10]}"]
+    return {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, t.numero_rma, lineas),
+            "dpi": dpi}
+
+
+def _bloques_ticket(ctx: dict, entrega: bool) -> list:
+    t, cli = ctx["t"], ctx["cliente"]
+    B = lambda tipo, texto="", **kw: {"tipo": tipo, "texto": texto, **kw}
+    bloques = [B("titulo", ctx["empresa"])]
+    bloques += [B("texto", l, centro=True) for l in ctx["empresa_datos"]]
+    bloques += [B("separador"),
+                B("grande", "COMPROBANTE DE ENTREGA" if entrega else "COMPROBANTE DE INGRESO"),
+                B("grande", t.numero_rma, mono=True),
+                B("texto", f"Emitido el {ctx['hoy']}", centro=True),
+                B("separador"),
+                B("par", cli["nombre"], etiqueta="Cliente")]
+    if cli["telefono"]:
+        bloques.append(B("par", cli["telefono"], etiqueta="Teléfono"))
+    bloques += [B("par", t.producto or "", etiqueta="Equipo"),
+                B("par", t.numero_serie or "", etiqueta="N° de serie"),
+                B("par", "Sí" if t.en_garantia else "No", etiqueta="Garantía"),
+                B("par", ctx["fecha_ingreso"], etiqueta="Ingreso")]
+    if entrega:
+        bloques.append(B("par", ctx["estado"], etiqueta="Estado"))
+        if t.diagnostico:
+            bloques += [B("texto", "Trabajo realizado:", negrita=True), B("texto", t.diagnostico)]
+        if ctx["repuestos"]:
+            bloques.append(B("texto", "Repuestos:", negrita=True))
+            bloques += [B("texto", f"{r['cantidad']} × {r['nombre']}") for r in ctx["repuestos"]]
+        if t.tracking_number or t.empresa_transporte:
+            bloques.append(B("par", f"{t.empresa_transporte or ''} {t.tracking_number or ''}".strip(), etiqueta="Envío"))
+    else:
+        bloques += [B("texto", "Falla informada:", negrita=True), B("texto", t.descripcion or "")]
+    bloques += [B("separador"), B("qr"),
+                B("texto", "Seguí tu reparación escaneando el código, o en la página de seguimiento con tu "
+                           "N° de RMA y el N° de serie.", centro=True),
+                B("barras")]
+    if entrega:
+        bloques.append(B("firma", "Recibí conforme · firma y aclaración"))
+    else:
+        bloques.append(B("texto", "Conservá este comprobante para retirar el equipo.", centro=True))
+    return bloques
+
+
+def _ctx_ticket(db: Session, ctx: dict, entrega: bool) -> dict:
+    d = impresion.disenio_ticket(ajustes.get(db, "ticketera_ancho"), int(ajustes.get(db, "ticketera_dpi")),
+                                 ctx["t"].numero_rma)
+    d["bloques"] = _bloques_ticket(ctx, entrega)
+    d["largo_mm"] = impresion.largo_ticket(d, d["bloques"])
+    return {"k": d}
+
+
+def contexto_tipo(db: Session, tipo: str, ctx: dict) -> dict:
+    """Agrega lo específico de cada documento (medidas de etiqueta / ticket)."""
+    if tipo == "etiqueta":
+        return {**ctx, **_ctx_etiqueta(db, ctx)}
+    if tipo in ("ticket_ingreso", "ticket_entrega"):
+        return {**ctx, **_ctx_ticket(db, ctx, tipo == "ticket_entrega")}
+    return ctx
+
+
 def render_html(tipo: str, ctx: dict, imprimir: bool = False) -> str:
-    return _env.get_template(f"{tipo}.html").render(**ctx, titulo=TIPOS[tipo], imprimir=imprimir)
+    plantilla = PLANTILLAS.get(tipo, f"{tipo}.html")
+    return _env.get_template(plantilla).render(**ctx, titulo=TIPOS[tipo], imprimir=imprimir)
 
 
 def render_pdf(html: str) -> bytes:
@@ -152,4 +200,4 @@ def nombre_archivo(tipo: str, t: models.Ticket, ext: str) -> str:
 
 
 def generar_pdf(db: Session, t: models.Ticket, tipo: str, base_url: str) -> bytes:
-    return render_pdf(render_html(tipo, contexto(db, t, base_url)))
+    return render_pdf(render_html(tipo, contexto_tipo(db, tipo, contexto(db, t, base_url))))

@@ -4,3 +4,5 @@ pytest
 httpx2   # cliente HTTP que usa el TestClient de Starlette
 pypdf    # para leer los PDF generados en los tests
 aiosmtpd # servidor SMTP de prueba para los tests de email
+pypdfium2 # rasteriza los PDF como una térmica, para probar que los códigos se lean
+zxing-cpp # lector de QR y Code128 para esos tests

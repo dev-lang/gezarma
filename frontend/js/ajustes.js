@@ -7,6 +7,7 @@ const Ajustes = (() => {
     const GRUPOS = [
         { id: 'general',       titulo: 'General',                 desc: 'Datos que aparecen en documentos, mails y QR.' },
         { id: 'documentos',    titulo: 'Documentos',              desc: 'Orden de ingreso, remito de entrega, presupuesto y etiqueta.' },
+        { id: 'impresion',     titulo: 'Impresoras térmicas',     desc: 'Etiquetas para el equipo y comprobantes en ticketera. Se imprimen con el diálogo del sistema, a escala 100 %.' },
         { id: 'email',         titulo: 'Email (SMTP)',            desc: 'Servidor de correo para las notificaciones.' },
         { id: 'email_eventos', titulo: 'Qué notificar por email', desc: 'Además de las notificaciones dentro del sistema.' },
         { id: 'sla',           titulo: 'Alertas de SLA',          desc: 'Avisos de tickets vencidos o por vencer.' },
