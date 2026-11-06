@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
-from .database import engine, Base, SessionLocal
+from .database import engine, Base, SessionLocal, run_migrations
 from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router
 from . import models, auth, config
 
@@ -12,11 +12,11 @@ UPLOAD_DIR  = config.UPLOAD_DIR
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: datos iniciales (seed_data está definida más abajo)
+    # Startup: migraciones de la base y datos iniciales (seed_data está más abajo)
+    run_migrations()
     seed_data()
     yield
 
@@ -63,19 +63,8 @@ DEFAULT_TAGS = [
     ("Sin falla",        "#22c55e"),
 ]
 
-def _purge_plain_temp_passwords():
-    """Older databases have a usuarios.temp_password_plain column with plain-text
-    temp passwords. The app no longer uses it; wipe any value left there."""
-    from sqlalchemy import inspect, text
-    cols = {c["name"] for c in inspect(engine).get_columns("usuarios")}
-    if "temp_password_plain" in cols:
-        with engine.begin() as conn:
-            conn.execute(text("UPDATE usuarios SET temp_password_plain = NULL "
-                              "WHERE temp_password_plain IS NOT NULL"))
-
 def seed_data():
     config.warn_insecure_defaults()
-    _purge_plain_temp_passwords()
     db = SessionLocal()
     if not db.query(models.Usuario).filter_by(username="admin").first():
         admin = models.Usuario(
