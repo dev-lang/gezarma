@@ -1142,7 +1142,7 @@ const app = {
         const t = ui._ticketCache?.[ui.currentTicketId];
         if (!t) { window.print(); return; }
 
-        const logo = 'GEZATEK RMA System';
+        const logo = 'GEZARMA';
         const now  = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
         const status = t.estado || '';
         const garantia = t.en_garantia ? 'SÍ — Dentro del período de garantía' : 'No';
@@ -1177,7 +1177,7 @@ const app = {
             @media print { body { padding: 20px; } }
         </style></head><body>
         <div class="header">
-            <div><div class="logo">GEZATEK <span>RMA System</span></div><div style="font-size:9pt;color:#6b7280;margin-top:2px;">Comprobante de Servicio Técnico</div></div>
+            <div><div class="logo">GEZARMA</div><div style="font-size:9pt;color:#6b7280;margin-top:2px;">Comprobante de Servicio Técnico</div></div>
             <div class="meta"><div>Emitido: ${now}</div><div>Documento RMA oficial</div></div>
         </div>
 
@@ -1240,7 +1240,7 @@ const app = {
         </div>
 
         <div class="footer">
-            <span>GEZATEK RMA System — Documento generado automáticamente</span>
+            <span>GEZARMA — Documento generado automáticamente</span>
             <span>${t.numero_rma} · ${now}</span>
         </div>
         </body></html>`;

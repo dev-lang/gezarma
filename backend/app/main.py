@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     seed_data()
     yield
 
-app = FastAPI(title="GEZATEK RMA System API", lifespan=lifespan)
+app = FastAPI(title="GEZARMA API", lifespan=lifespan)
 # El frontend se sirve desde esta misma app, así que no necesita CORS.
 # Solo hace falta si otro origen consume la API (CORS_ORIGINS en .env; vacío = sin CORS).
 if config.CORS_ORIGINS:
@@ -70,7 +70,7 @@ def seed_data():
         admin = models.Usuario(
             username="admin",
             password_hash=auth.get_password_hash(config.ADMIN_PASSWORD),
-            nombre="Administrador Gezatek",
+            nombre="Administrador GEZARMA",
             email=config.ADMIN_EMAIL,
             rol=models.UserRole.ADMINISTRADOR,
             tipo_cliente=models.UserType.EMPRESA,

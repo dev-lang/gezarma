@@ -1,5 +1,5 @@
 /**
- * budget.js — Presupuesto (budget) management for Gezatek RMA.
+ * budget.js — Presupuesto (budget) management for GEZARMA.
  * Handles:
  *   - Budget card on ticket detail (create/edit/state transitions/versions)
  *   - Admin: budget item templates CRUD

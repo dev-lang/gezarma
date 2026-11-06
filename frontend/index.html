@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEZATEK - Gestión de RMA</title>
+    <title>GEZARMA - Gestión de RMA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -80,7 +80,7 @@
     <!-- Navigation Bar -->
     <nav id="navbar" class="bg-blue-800 text-white shadow-md hidden">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-tight">GEZATEK <span class="font-normal text-blue-200">RMA System</span></h1>
+            <h1 class="text-xl font-bold tracking-tight">GEZARMA</h1>
             <div id="search-container" class="hidden flex-1 max-w-md mx-8">
                 <div class="relative">
                     <input type="text" id="global-search"
@@ -157,7 +157,9 @@
     <script>
         // Dark mode — persists via localStorage, applies before render
         (function() {
-            if (localStorage.getItem('gezatek-dark') === '1') {
+            // 'gezatek-dark' es la clave anterior al cambio de nombre: se sigue leyendo
+            const pref = localStorage.getItem('gezarma-dark') ?? localStorage.getItem('gezatek-dark');
+            if (pref === '1') {
                 document.documentElement.classList.add('dark');
             }
         })();

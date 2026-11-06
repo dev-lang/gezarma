@@ -6,7 +6,8 @@
 const ui = {
     // ── Dark mode ──────────────────────────────────────────────────────────────
     initDarkMode() {
-        const isDark = localStorage.getItem('gezatek-dark') === '1';
+        // 'gezatek-dark' es la clave anterior al cambio de nombre: se sigue leyendo
+        const isDark = (localStorage.getItem('gezarma-dark') ?? localStorage.getItem('gezatek-dark')) === '1';
         document.documentElement.classList.toggle('dark', isDark);
         document.getElementById('icon-sun')?.classList.toggle('hidden', !isDark);
         document.getElementById('icon-moon')?.classList.toggle('hidden', isDark);
@@ -14,7 +15,7 @@ const ui = {
     toggleDark() {
         const html = document.documentElement;
         const nowDark = html.classList.toggle('dark');
-        localStorage.setItem('gezatek-dark', nowDark ? '1' : '0');
+        localStorage.setItem('gezarma-dark', nowDark ? '1' : '0');
         document.getElementById('icon-sun')?.classList.toggle('hidden', !nowDark);
         document.getElementById('icon-moon')?.classList.toggle('hidden', nowDark);
     },

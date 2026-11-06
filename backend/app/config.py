@@ -18,7 +18,7 @@ load_dotenv(ROOT_DIR / ".env", override=False)
 
 log = logging.getLogger("uvicorn.error")  # sale junto con los logs de uvicorn
 
-_DEFAULT_SECRET_KEY = "gezatek_super_secret_key_123"
+_DEFAULT_SECRET_KEY = "gezatek_super_secret_key_123"  # valor histórico: cambiarlo cerraría las sesiones de quien no tenga .env
 _DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
@@ -33,7 +33,7 @@ CORS_ORIGINS = _list(os.getenv("CORS_ORIGINS", "*"))
 
 # ── Admin inicial (usuario "admin"; solo se usa al crear una base nueva) ─────
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or _DEFAULT_ADMIN_PASSWORD
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gezatek.com.ar")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gezarma.local")
 
 # ── Zona horaria ─────────────────────────────────────────────────────────────
 # Las fechas se guardan en UTC. TIMEZONE es la zona del negocio: se usa para lo

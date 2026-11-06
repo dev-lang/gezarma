@@ -99,7 +99,7 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` (1 día) | Duración de la sesión. |
 | `CORS_ORIGINS` | `*` | Orígenes externos que pueden llamar a la API, separados por coma. El frontend se sirve desde la misma app, así que normalmente conviene dejarla **vacía** (CORS desactivado). |
 | `ADMIN_PASSWORD` | `admin123` | Contraseña del `admin` inicial (solo al crear la base). |
-| `ADMIN_EMAIL` | `admin@gezatek.com.ar` | Email del `admin` inicial. |
+| `ADMIN_EMAIL` | `admin@gezarma.local` | Email del `admin` inicial. |
 | `TIMEZONE` | `America/Argentina/Buenos_Aires` | Zona horaria del negocio (nombre IANA). Las fechas se guardan en UTC y cada navegador las muestra en su hora local; esta zona se usa para las exportaciones a CSV/Excel. |
 | `DATABASE_URL` | `sqlite:///./rma_system.db` | Base de datos (cualquier URL de SQLAlchemy). En Docker está fija a `/data`. |
 | `UPLOAD_DIR` | `uploads` | Carpeta de adjuntos. En Docker está fija a `/data/uploads`. |

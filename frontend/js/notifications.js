@@ -1,5 +1,5 @@
 /**
- * notifications.js — In-app notification bell for Gezatek RMA.
+ * notifications.js — In-app notification bell for GEZARMA.
  * Polls the server every 30s while logged in.
  * Injected into the navbar next to the logout button.
  */
