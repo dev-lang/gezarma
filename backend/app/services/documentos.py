@@ -9,6 +9,7 @@ siempre se generan en el servidor.
 """
 import base64
 import io
+import logging
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -20,6 +21,10 @@ from sqlalchemy.orm import Session
 
 from .. import ajustes, models
 from ..timeutils import utc_to_local, utcnow
+
+# xhtml2pdf avisa en el log por cada propiedad CSS que ignora (p. ej. border-collapse,
+# que sí usa el modo navegador). No es un error: se baja a solo errores.
+logging.getLogger("xhtml2pdf").setLevel(logging.ERROR)
 
 TIPOS = {
     "ingreso": "Orden de ingreso",
