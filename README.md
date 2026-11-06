@@ -12,7 +12,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Diagnóstico** con plantillas, **repuestos usados** con descuento de stock y **adjuntos** (PDF, TXT, JPG, PNG; hasta 10 MB por ticket).
 - **Comentarios** con el cliente y **notas internas** solo para el taller.
 - **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket. Las plantillas de ítems pueden ser de un modelo de producto: al presupuestarlo aparecen primero y se cargan todas juntas.
-- **Stock de repuestos** con historial de movimientos, **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
+- **Stock de repuestos** con historial de movimientos (no se borran: se anulan con un movimiento inverso que corrige también el ticket o el pedido), **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
 - **Ingreso en mostrador**: cliente (existente o nuevo, sin clave), equipo, **checklist de recepción** (accesorios, estado físico, si enciende, si tiene bloqueo), **fotos** desde el celular y **firma del cliente en pantalla**, en una sola pantalla; al terminar, etiqueta y comprobante en un click. La firma de entrega se toma desde el ticket.
 - **Lector de código de barras**: escanear la etiqueta (o escribir un N° de RMA exacto en el buscador) abre el ticket directo.
 - **Seguimiento público** sin login: el cliente consulta el estado con su N° de RMA y N° de serie (o escaneando el QR de su orden de ingreso).
@@ -131,7 +131,8 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 
 | Variable | Por defecto | Para qué sirve |
 |---|---|---|
-| `SECRET_KEY` | clave de ejemplo del repo | Firma las sesiones (JWT). **Definila siempre en producción**. Generá una con `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Cambiarla cierra todas las sesiones abiertas. |
+| `SECRET_KEY` | (generada) | Firma las sesiones (JWT) y cifra la contraseña SMTP del panel. Si no la definís, la app genera una aleatoria la primera vez y la guarda en `secret_key`, junto a la base (en Docker, en `/data`). La clave de ejemplo que tenía el repo antes se ignora. Para elegirla vos: `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Cambiarla cierra todas las sesiones abiertas y obliga a volver a cargar la contraseña SMTP del panel. |
+| `SECRET_KEY_FILE` | `secret_key` junto a la base | Dónde guardar la clave generada, si no querés que quede al lado de la base. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` (1 día) | Duración de la sesión. |
 | `CORS_ORIGINS` | `*` | Orígenes externos que pueden llamar a la API, separados por coma. El frontend se sirve desde la misma app, así que normalmente conviene dejarla **vacía** (CORS desactivado). |
 | `ADMIN_PASSWORD` | `admin123` | Contraseña del `admin` inicial (solo al crear la base). |
@@ -145,7 +146,7 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 | `PORT` | `8000` | Puerto publicado por Docker Compose. |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | IP(s) del proxy inverso en el que se confía para conocer la IP real del cliente (ver *Deploy*). |
 
-Al arrancar, la app avisa en el log si la `SECRET_KEY` o `CORS_ORIGINS` quedaron con valores inseguros.
+Al arrancar, la app avisa en el log si generó la `SECRET_KEY`, si ignoró la clave de ejemplo del repo o si `CORS_ORIGINS` quedó en `*`.
 
 ### Ajustes desde el panel
 
@@ -226,7 +227,7 @@ rma.tudominio.com {
 
 Checklist:
 
-- `SECRET_KEY` larga y aleatoria, y `ADMIN_PASSWORD` propia (o cambiar la del admin en el primer login).
+- `SECRET_KEY` propia (o dejar que la app genere una y respaldar `secret_key`), y `ADMIN_PASSWORD` propia (o cambiar la del admin en el primer login: hasta entonces esa cuenta solo puede cambiar la clave).
 - `CORS_ORIGINS` vacía.
 - `FORWARDED_ALLOW_IPS` con la IP desde la que el proxy llega a la app. Así el bloqueo por intentos fallidos de login usa la IP real de cada cliente y no la del proxy (que bloquearía a todos a la vez). Con Docker y el proxy en el mismo host, suele ser el gateway de la red de Docker: `docker network inspect gezarma_default` → `Gateway`.
 - No publicar el puerto 8000 directo a internet si hay proxy: en `docker-compose.yml` se puede usar `"127.0.0.1:8000:8000"`.
@@ -244,7 +245,7 @@ docker run --rm -v gezarma_gezarma-data:/data -v "$PWD":/backup alpine \
 docker compose start
 ```
 
-Sin Docker, alcanza con copiar `rma_system.db` y la carpeta `uploads/` con la app detenida.
+Sin Docker, alcanza con copiar `rma_system.db`, la carpeta `uploads/` y el archivo `secret_key` (si la clave la generó la app) con la app detenida. Sin `secret_key`, al restaurar se cierran las sesiones y hay que volver a cargar la contraseña SMTP del panel.
 
 Si en lugar del volumen usás una carpeta del host (por ejemplo en un NAS: `./data:/data`), esa carpeta tiene que pertenecer al usuario del contenedor: `sudo chown -R 10001 ./data`.
 
@@ -271,7 +272,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 
