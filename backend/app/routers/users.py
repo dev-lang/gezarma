@@ -122,6 +122,8 @@ def change_password(
         raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
     if len(new_pw) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    if auth.password_too_long(new_pw):
+        raise HTTPException(status_code=400, detail="La contraseña no puede superar los 72 bytes")
     if new_pw == current_pw:
         raise HTTPException(status_code=400, detail="La nueva contraseña debe ser distinta de la actual")
     current_user.password_hash       = auth.get_password_hash(new_pw)

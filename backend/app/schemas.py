@@ -29,6 +29,8 @@ class UserCreate(UserBase):
     def pw_min_length(cls, v):
         if len(v) < 6:
             raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("La contraseña no puede superar los 72 bytes")
         return v
 
 class UserUpdate(BaseModel):

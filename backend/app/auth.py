@@ -1,31 +1,41 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from . import database, models
 
-# Parche de compatibilidad para bcrypt 4.0+ y passlib
-import bcrypt
-if not hasattr(bcrypt, "__about__"):
-    class About:
-        pass
-    About.__version__ = bcrypt.__version__
-    bcrypt.__about__ = About
-
 from .config import SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES  # clave para firmar los JWT (ver config.py)
 ALGORITHM = "HS256"
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+# ── Passwords (bcrypt directo; los hashes que hacía passlib son compatibles) ──
+BCRYPT_MAX_BYTES = 72   # bcrypt solo usa los primeros 72 bytes de la clave
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+
+def password_too_long(password: str) -> bool:
+    return len(password.encode("utf-8")) > BCRYPT_MAX_BYTES
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
+    # passlib truncaba en silencio a 72 bytes: se hace lo mismo para que las
+    # claves largas guardadas antes sigan validando.
+    pw = plain_password.encode("utf-8")[:BCRYPT_MAX_BYTES]
+    try:
+        return bcrypt.checkpw(pw, hashed_password.encode("utf-8"))
+    except ValueError:   # hash con formato inválido
+        return False
+
+
+def get_password_hash(password: str) -> str:
+    if password_too_long(password):
+        raise ValueError(f"La contraseña no puede superar los {BCRYPT_MAX_BYTES} bytes")
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
