@@ -6,13 +6,23 @@ from typing import List, Optional
 from datetime import datetime
 import os, shutil, uuid, re
 
-from .. import database, models, schemas, auth
+from .. import database, models, schemas, auth, config
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = config.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+def _adjunto_path(adj) -> str:
+    """Where an attachment lives on disk. Built from the current UPLOAD_DIR, so files
+    keep working if UPLOAD_DIR changes (e.g. moving to Docker); falls back to the
+    path stored at upload time."""
+    path = os.path.join(UPLOAD_DIR, f"ticket_{adj.ticket_id}", adj.nombre_guardado or "")
+    if adj.nombre_guardado and os.path.exists(path):
+        return path
+    return adj.ruta_archivo
 
 ALLOWED_EXTENSIONS = {"pdf", "txt", "jpg", "jpeg", "png"}
 ALLOWED_MIME_TYPES = {"application/pdf", "text/plain", "image/jpeg", "image/png"}
@@ -770,10 +780,11 @@ def download_attachment(
     adj = db.query(models.Adjunto).filter_by(id=adj_id, ticket_id=ticket_id).first()
     if not adj:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    if not os.path.exists(adj.ruta_archivo):
+    path = _adjunto_path(adj)
+    if not path or not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Archivo no encontrado en el servidor")
     return FileResponse(
-        path=adj.ruta_archivo,
+        path=path,
         filename=adj.nombre_archivo,
         media_type=adj.mime_type or "application/octet-stream",
     )
@@ -794,8 +805,9 @@ def delete_attachment(
     nombre_del_archivo = adj.nombre_archivo
     # Remove from disk safely
     try:
-        if os.path.exists(adj.ruta_archivo):
-            os.remove(adj.ruta_archivo)
+        path = _adjunto_path(adj)
+        if path and os.path.exists(path):
+            os.remove(path)
     except OSError:
         pass
     db.delete(adj)

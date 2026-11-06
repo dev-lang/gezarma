@@ -15,10 +15,8 @@ if not hasattr(bcrypt, "__about__"):
     About.__version__ = bcrypt.__version__
     bcrypt.__about__ = About
 
-# Clave secreta para firmar los tokens JWT
-SECRET_KEY = "gezatek_super_secret_key_123"
+from .config import SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES  # clave para firmar los JWT (ver config.py)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 día
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")

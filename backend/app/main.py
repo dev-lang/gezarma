@@ -5,20 +5,23 @@ from fastapi.responses import FileResponse
 import os
 from .database import engine, Base, SessionLocal
 from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router
-from . import models, auth
+from . import models, auth, config
 
-UPLOAD_DIR  = "uploads"
+UPLOAD_DIR  = config.UPLOAD_DIR
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="GEZATEK RMA System API")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
-    allow_methods=["*"], allow_headers=["*"],
-)
+# El frontend se sirve desde esta misma app, así que no necesita CORS.
+# Solo hace falta si otro origen consume la API (CORS_ORIGINS en .env; vacío = sin CORS).
+if config.CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.CORS_ORIGINS, allow_credentials=True,
+        allow_methods=["*"], allow_headers=["*"],
+    )
 
 app.include_router(auth_router.router)
 app.include_router(tickets.router)
@@ -65,16 +68,19 @@ def _purge_plain_temp_passwords():
 
 @app.on_event("startup")
 def seed_data():
+    config.warn_insecure_defaults()
     _purge_plain_temp_passwords()
     db = SessionLocal()
     if not db.query(models.Usuario).filter_by(username="admin").first():
         admin = models.Usuario(
             username="admin",
-            password_hash=auth.get_password_hash("admin123"),
+            password_hash=auth.get_password_hash(config.ADMIN_PASSWORD),
             nombre="Administrador Gezatek",
-            email="admin@gezatek.com.ar",
+            email=config.ADMIN_EMAIL,
             rol=models.UserRole.ADMINISTRADOR,
             tipo_cliente=models.UserType.EMPRESA,
+            # Con la clave por defecto del repo, se obliga a cambiarla en el primer login
+            must_change_password=config.USING_DEFAULT_ADMIN_PASSWORD,
         )
         db.add(admin)
 
