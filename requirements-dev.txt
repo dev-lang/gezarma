@@ -1,0 +1,4 @@
+# Dependencias para desarrollo y tests: pip install -r requirements-dev.txt
+-r backend/requirements.txt
+pytest
+httpx

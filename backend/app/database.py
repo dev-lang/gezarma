@@ -20,7 +20,7 @@ def get_db():
         db.close()
 
 
-def run_migrations() -> None:
+def run_migrations(bind=None) -> list:
     """Lleva la base a la última versión con Alembic (se llama al arrancar la app).
 
     - Base nueva: se crea entera con las migraciones.
@@ -38,11 +38,12 @@ def run_migrations() -> None:
     from .config import ROOT_DIR
 
     log = logging.getLogger("uvicorn.error")
+    eng = bind if bind is not None else engine   # `bind` permite migrar otra base (tests)
     cfg = Config(str(ROOT_DIR / "alembic.ini"))
     cfg.attributes["configure_logger"] = False   # no pisar la config de logs de uvicorn
-    cfg.attributes["url"] = SQLALCHEMY_DATABASE_URL
+    cfg.attributes["url"] = eng.url.render_as_string(hide_password=False)
 
-    insp = inspect(engine)
+    insp = inspect(eng)
     tables = set(insp.get_table_names())
     if "alembic_version" not in tables and "usuarios" in tables:
         cols = {c["name"] for c in insp.get_columns("usuarios")}
@@ -53,8 +54,9 @@ def run_migrations() -> None:
 
     command.upgrade(cfg, "head")
 
-    with engine.connect() as conn:
+    with eng.connect() as conn:
         diff = compare_metadata(MigrationContext.configure(conn), Base.metadata)
     if diff:
         log.warning("El esquema de la base no coincide del todo con los modelos (%d diferencias). "
                     "Revisá con: alembic check. Detalle: %s", len(diff), diff[:5])
+    return diff
