@@ -67,6 +67,8 @@ La app queda en <http://localhost:8000> (el puerto se cambia con `PORT` en `.env
 
 Para actualizar: `git pull && docker compose up -d --build`. Las migraciones de la base corren solas al arrancar.
 
+> **Al actualizar una instalación anterior a noviembre 2026:** una migración pasa a UTC las fechas que se guardaban en hora local, usando `TIMEZONE`. Si el servidor viejo no estaba en hora argentina, definí `TIMEZONE` con su zona **antes** de actualizar.
+
 ### Local (sin Docker)
 
 Requiere Python 3.11 o superior.
@@ -98,6 +100,7 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 | `CORS_ORIGINS` | `*` | Orígenes externos que pueden llamar a la API, separados por coma. El frontend se sirve desde la misma app, así que normalmente conviene dejarla **vacía** (CORS desactivado). |
 | `ADMIN_PASSWORD` | `admin123` | Contraseña del `admin` inicial (solo al crear la base). |
 | `ADMIN_EMAIL` | `admin@gezatek.com.ar` | Email del `admin` inicial. |
+| `TIMEZONE` | `America/Argentina/Buenos_Aires` | Zona horaria del negocio (nombre IANA). Las fechas se guardan en UTC y cada navegador las muestra en su hora local; esta zona se usa para las exportaciones a CSV/Excel. |
 | `DATABASE_URL` | `sqlite:///./rma_system.db` | Base de datos (cualquier URL de SQLAlchemy). En Docker está fija a `/data`. |
 | `UPLOAD_DIR` | `uploads` | Carpeta de adjuntos. En Docker está fija a `/data/uploads`. |
 | `PORT` | `8000` | Puerto publicado por Docker Compose. |
