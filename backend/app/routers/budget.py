@@ -353,11 +353,17 @@ def list_plantillas(
         auth.check_role([models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO])
     ),
 ):
-    return (
+    plantillas = (
         db.query(models.PlantillaPresupuesto)
         .order_by(models.PlantillaPresupuesto.orden, models.PlantillaPresupuesto.id)
         .all()
     )
+    return [schemas.PlantillaPresupuestoOut.de(p) for p in plantillas]
+
+
+def _validar_producto(db: Session, producto_id):
+    if producto_id is not None and not db.query(models.Producto).filter_by(id=producto_id).first():
+        raise HTTPException(400, "El producto elegido no existe")
 
 
 @router.post("/plantillas", response_model=schemas.PlantillaPresupuestoOut)
@@ -370,11 +376,12 @@ def create_plantilla(
 ):
     if db.query(models.PlantillaPresupuesto).filter_by(nombre=body.nombre).first():
         raise HTTPException(400, "Ya existe una plantilla con ese nombre")
+    _validar_producto(db, body.producto_id)
     obj = models.PlantillaPresupuesto(**body.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
-    return obj
+    return schemas.PlantillaPresupuestoOut.de(obj)
 
 
 @router.patch("/plantillas/{pid}", response_model=schemas.PlantillaPresupuestoOut)
@@ -395,11 +402,12 @@ def update_plantilla(
     ).first()
     if conflict:
         raise HTTPException(400, "Ya existe otra plantilla con ese nombre")
+    _validar_producto(db, body.producto_id)
     for k, v in body.model_dump().items():
         setattr(obj, k, v)
     db.commit()
     db.refresh(obj)
-    return obj
+    return schemas.PlantillaPresupuestoOut.de(obj)
 
 
 @router.delete("/plantillas/{pid}", status_code=204)

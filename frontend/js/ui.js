@@ -375,7 +375,7 @@ const ui = {
 
         // ── Budget card ──────────────────────────────────────────────────────
         if (typeof Budget !== 'undefined') {
-            Budget.initPresupuestoCard(ticket.id, user.role);
+            Budget.initPresupuestoCard(ticket.id, user.role, ticket.producto_id);
         }
         // ── Recepción: checklist, firmas y fotos de ingreso ──────────────────
         if (typeof Recepcion !== 'undefined') Recepcion.cargarDetalle(ticket);

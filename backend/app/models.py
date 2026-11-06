@@ -464,6 +464,9 @@ class PlantillaPresupuesto(Base):
     categoria       = Column(String, nullable=True, default="General")
     activo          = Column(Boolean, default=True)
     orden           = Column(Integer, default=0)
+    # Ítem típico de un modelo: se sugiere primero al presupuestar ese producto
+    producto_id     = Column(Integer, ForeignKey("productos.id", ondelete="SET NULL"), nullable=True, index=True)
+    producto        = relationship("Producto")
 
 class TipoNotificacion(str, enum.Enum):
     COMENTARIO      = "comentario"

@@ -455,13 +455,22 @@ class PlantillaPresupuestoBase(BaseModel):
     categoria:      Optional[str] = "General"
     activo:         bool = True
     orden:          int = 0
+    producto_id:    Optional[int] = None   # ítem típico de ese modelo
 
 class PlantillaPresupuestoCreate(PlantillaPresupuestoBase):
     pass
 
 class PlantillaPresupuestoOut(PlantillaPresupuestoBase):
     id: int
+    producto_nombre: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def de(cls, obj):
+        out = cls.model_validate(obj)
+        if obj.producto:
+            out.producto_nombre = f"{obj.producto.marca} {obj.producto.modelo}"
+        return out
 
 # ── Financial Stats ───────────────────────────────────────────────────────────
 

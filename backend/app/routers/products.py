@@ -69,6 +69,9 @@ def delete_product(
             status_code=400,
             detail=f"No se puede eliminar: el producto está asociado a {tickets_using} ticket(s)"
         )
+    # Las plantillas de presupuesto de ese modelo pasan a ser generales
+    db.query(models.PlantillaPresupuesto).filter(models.PlantillaPresupuesto.producto_id == product_id) \
+        .update({models.PlantillaPresupuesto.producto_id: None})
     db.delete(db_product)
     db.commit()
     return None

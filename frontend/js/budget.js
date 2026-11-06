@@ -27,8 +27,11 @@ let _editingBudget   = false;  // false = create, true = edit
 let _plantillas      = [];
 let _repuestos       = [];   // catálogo (solo taller), para vincular ítems a repuestos
 
-export async function initPresupuestoCard(ticketId, userRole) {
+let _productoTicket = null;   // producto_id del ticket: sus plantillas se sugieren primero
+
+export async function initPresupuestoCard(ticketId, userRole, productoId = null) {
     _currentTicketId = ticketId;
+    _productoTicket  = productoId;
     _editingBudget   = false;
 
     // Load templates (for the picker) — only tech/admin edit budgets
@@ -192,19 +195,38 @@ function closeBudgetModal() {
 function renderTemplatePills() {
     const wrap = $("template-pills");
     wrap.innerHTML = "";
-    _plantillas.filter(p => p.activo).forEach(p => {
+    const activas  = _plantillas.filter(p => p.activo);
+    const delModelo = activas.filter(p => _productoTicket && p.producto_id === _productoTicket);
+    const generales = activas.filter(p => !p.producto_id);   // las de otros modelos no se muestran
+    const agregar = p => {
+        // Si la única fila está vacía, se reemplaza en lugar de dejarla en blanco
+        const filas = [...$("presupuesto-items-body").querySelectorAll("tr")];
+        if (filas.length === 1 && !filas[0].querySelector(".item-desc").value.trim()) filas[0].remove();
+        addItemRow({ descripcion: p.descripcion, cantidad: 1, costo_interno: p.costo_interno, precio_cliente: p.precio_cliente });
+        recalcTotals();
+    };
+    const pill = (p, cls) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition";
+        btn.className = `px-3 py-1 rounded-full text-xs font-semibold border transition ${cls}`;
         btn.textContent = `+ ${p.nombre}`;
-        btn.onclick = () => addItemRow({
-            descripcion:    p.descripcion,
-            cantidad:       1,
-            costo_interno:  p.costo_interno,
-            precio_cliente: p.precio_cliente,
-        });
-        wrap.appendChild(btn);
-    });
+        btn.onclick = () => agregar(p);
+        return btn;
+    };
+    if (delModelo.length) {
+        const fila = document.createElement("div");
+        fila.className = "w-full flex flex-wrap items-center gap-2 mb-1";
+        fila.innerHTML = `<span class="text-[11px] font-bold uppercase text-indigo-500">Para este modelo:</span>`;
+        delModelo.forEach(p => fila.appendChild(pill(p, "border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100")));
+        const todas = document.createElement("button");
+        todas.type = "button";
+        todas.className = "px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white";
+        todas.textContent = `Cargar las ${delModelo.length}`;
+        todas.onclick = () => delModelo.forEach(agregar);
+        if (delModelo.length > 1) fila.appendChild(todas);
+        wrap.appendChild(fila);
+    }
+    generales.forEach(p => wrap.appendChild(pill(p, "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100")));
 }
 
 function renderRepuestoPicker() {
@@ -432,6 +454,7 @@ function _renderPlantillaRows(items) {
                     <span class="text-sm font-semibold text-gray-800">${p.nombre}</span>
                     <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">${p.categoria || "General"}</span>
                     ${!p.activo ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-500 font-bold">inactivo</span>' : ""}
+                    ${p.producto_nombre ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">📦 ${escHtml(p.producto_nombre)}</span>` : ""}
                 </div>
                 <p class="text-xs text-gray-400 mt-0.5 truncate">${p.descripcion}</p>
                 <p class="text-xs text-gray-500 mt-0.5">
@@ -481,6 +504,12 @@ function _openPpModal(item = null) {
     document.getElementById("pp-orden").value      = item ? item.orden : 0;
     _rebuildCatSelect();
     if (item) document.getElementById("pp-categoria").value = item.categoria || "General";
+    const sel = document.getElementById("pp-producto");
+    api.getProducts().then(productos => {
+        sel.innerHTML = '<option value="">Todos los productos</option>' + productos.map(pr =>
+            `<option value="${pr.id}">${escHtml(`${pr.marca} ${pr.modelo}`)}</option>`).join("");
+        sel.value = item && item.producto_id ? String(item.producto_id) : "";
+    }).catch(() => {});
     document.getElementById("pp-modal").classList.remove("hidden");
     document.getElementById("pp-nombre").focus();
 }
@@ -580,6 +609,7 @@ async function savePlantillaPresupuesto() {
         categoria:      document.getElementById("pp-categoria").value.trim() || "General",
         orden:          parseInt(document.getElementById("pp-orden").value)    || 0,
         activo:         true,
+        producto_id:    parseInt(document.getElementById("pp-producto").value) || null,
     };
     if (!payload.nombre) { showToast("El nombre es obligatorio", "warn"); return; }
     if (!payload.descripcion) { showToast("La descripción es obligatoria", "warn"); return; }

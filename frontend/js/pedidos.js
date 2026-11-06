@@ -77,7 +77,7 @@ const Pedidos = (() => {
         const [etq, cls] = ESTADOS[p.estado] || [p.estado, 'bg-gray-100'];
         const cuerpo = p.estado === 'borrador' ? itemsEditables(p) : ['enviado', 'parcial'].includes(p.estado) ? itemsRecepcion(p) : itemsLectura(p);
         return `
-        <details class="border rounded-xl bg-white" data-pedido="${p.id}" ${p.estado === 'borrador' || p.estado === 'parcial' ? 'open' : ''}>
+        <details class="border rounded-xl bg-white" data-pedido="${p.id}" ${['borrador', 'enviado', 'parcial'].includes(p.estado) ? 'open' : ''}>
             <summary class="px-4 py-3 cursor-pointer flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span class="font-mono text-sm font-bold text-gray-700">N° ${String(p.id).padStart(5, '0')}</span>
                 <span class="font-semibold text-gray-800">${esc(p.proveedor)}</span>
