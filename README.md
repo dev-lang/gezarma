@@ -12,6 +12,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Diagnóstico** con plantillas, **repuestos usados** con descuento de stock y **adjuntos** (PDF, TXT, JPG, PNG; hasta 10 MB por ticket).
 - **Comentarios** con el cliente y **notas internas** solo para el taller.
 - **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket. Las plantillas de ítems pueden ser de un modelo de producto: al presupuestarlo aparecen primero y se cargan todas juntas.
+- **Importación desde Excel o CSV** de productos y repuestos, con vista previa fila por fila (nuevos, con cambios, errores), plantillas para bajar y exportación de lo cargado para editarlo y volver a subirlo.
 - **Stock de repuestos** con historial de movimientos (no se borran: se anulan con un movimiento inverso que corrige también el ticket o el pedido), **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
 - **Ingreso en mostrador**: cliente (existente o nuevo, sin clave), equipo, **checklist de recepción** (accesorios, estado físico, si enciende, si tiene bloqueo), **fotos** desde el celular y **firma del cliente en pantalla**, en una sola pantalla; al terminar, etiqueta y comprobante en un click. La firma de entrega se toma desde el ticket.
 - **Lector de código de barras**: escanear la etiqueta (o escribir un N° de RMA exacto en el buscador) abre el ticket directo.

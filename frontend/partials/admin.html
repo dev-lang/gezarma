@@ -183,18 +183,22 @@
             <!-- PRODUCTS TAB -->
             <div id="admin-tab-products" class="admin-tab-content hidden">
                 <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
-                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                    <div class="p-5 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="font-bold text-gray-800">Catálogo de Productos</h3>
                             <p class="text-xs text-gray-400 mt-0.5">Productos habilitados para crear tickets RMA</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                             <input type="text" id="admin-product-search"
                                 class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-green-500 w-48 bg-white"
                                 placeholder="Buscar producto...">
                             <select id="admin-product-filter-cat" class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-green-500 bg-white">
                                 <option value="">Todas las categorías</option>
                             </select>
+                            <button type="button" id="admin-import-products-btn" title="Importar desde Excel o CSV"
+                                class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                                ⬆ Importar
+                            </button>
                             <button type="button" id="admin-new-product-btn"
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
                                 + Nuevo
@@ -225,15 +229,19 @@
             <!-- PARTS TAB -->
             <div id="admin-tab-parts" class="admin-tab-content hidden">
                 <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
-                    <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
+                    <div class="p-5 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="font-bold text-gray-800">Inventario de Repuestos</h3>
                             <p class="text-xs text-gray-400 mt-0.5">Stock, precios y proveedores</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                             <input type="text" id="admin-parts-search"
                                 class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 w-48 bg-white"
                                 placeholder="Buscar repuesto...">
+                            <button type="button" id="admin-import-parts-btn" title="Importar desde Excel o CSV"
+                                class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
+                                ⬆ Importar
+                            </button>
                             <button type="button" id="admin-new-part-btn"
                                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
                                 + Nuevo

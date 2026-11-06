@@ -200,6 +200,10 @@ const app = {
 
         // Products tab
         on('admin-new-product-btn',      'click',  () => ui.openNewProductForm());
+        on('admin-import-products-btn',  'click',  () => Importar.abrir('productos', () => ui.loadAdminPanel('products')));
+        on('admin-import-parts-btn',     'click',  () => Importar.abrir('repuestos', () => ui.loadAdminPanel('parts')));
+        on('import-parts-btn',           'click',  () => Importar.abrir('repuestos', () => ui.loadPartsManagement()));
+        document.getElementById('import-parts-btn')?.classList.toggle('hidden', auth.getUser()?.role !== 'administrador');
         on('admin-product-search',       'input',  () => ui.adminRenderProducts());
         on('admin-product-filter-cat',   'change', () => ui.adminRenderProducts());
 
