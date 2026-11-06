@@ -68,8 +68,10 @@ DEFS = {
                              label="A los administradores: repuesto bajo el stock mínimo"),
     # ── SLA ──────────────────────────────────────────────────────────────────
     "sla_alertas": dict(grupo="sla", tipo="bool", default=True, label="Avisar SLA vencidos y por vencer"),
-    "sla_aviso_horas": dict(grupo="sla", tipo="int", default=24, minimo=1,
-                            label="Avisar cuando falten menos de (horas)"),
+    "sla_aviso_horas": dict(grupo="sla", tipo="int", default=4, minimo=1,
+                            label="Avisar cuando falten menos de (horas)",
+                            ayuda="Tiene que ser menor que el SLA más corto (24 h para tickets nuevos); "
+                                  "si no, todo ticket nace «por vencer»."),
     "sla_intervalo_minutos": dict(grupo="sla", tipo="int", default=15, minimo=1,
                                   label="Cada cuántos minutos se revisan los SLA"),
 }

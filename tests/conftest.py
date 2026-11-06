@@ -21,6 +21,7 @@ os.environ["UPLOAD_DIR"] = os.path.join(_TMP, "uploads")
 os.environ["SECRET_KEY"] = "clave-de-test"
 os.environ["ADMIN_PASSWORD"] = "admin-test-123"
 os.environ["TIMEZONE"] = "America/Argentina/Buenos_Aires"
+os.environ["TAREAS_PERIODICAS"] = "0"   # la revisión de SLA se prueba llamándola directo
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

@@ -8,6 +8,7 @@ from .database import engine, Base, SessionLocal, run_migrations
 from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router
 from . import models, auth, config
 from . import ajustes as ajustes_mod
+from .services import sla as sla_service
 
 UPLOAD_DIR  = config.UPLOAD_DIR
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
@@ -19,7 +20,10 @@ async def lifespan(app: FastAPI):
     # Startup: migraciones de la base y datos iniciales (seed_data está más abajo)
     run_migrations()
     seed_data()
+    tarea_sla = sla_service.iniciar()   # revisión periódica de SLA
     yield
+    if tarea_sla:
+        tarea_sla.cancel()
 
 app = FastAPI(title="GEZARMA API", lifespan=lifespan)
 # El frontend se sirve desde esta misma app, así que no necesita CORS.

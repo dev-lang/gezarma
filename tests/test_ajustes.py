@@ -20,7 +20,7 @@ def test_valores_por_defecto_y_guardado(client, admin):
     assert r.status_code == 200
     assert _ajuste(client, admin, "pdf_modo")["valor"] == "navegador"
     assert _ajuste(client, admin, "sla_aviso_horas")["valor"] == 12
-    client.put("/config/ajustes", headers=admin, json={"pdf_modo": "servidor", "sla_aviso_horas": 24})
+    client.put("/config/ajustes", headers=admin, json={"pdf_modo": "servidor", "sla_aviso_horas": 4})
 
 
 def test_valores_invalidos_no_guardan_nada(client, admin):

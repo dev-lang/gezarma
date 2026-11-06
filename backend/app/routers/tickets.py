@@ -9,6 +9,7 @@ import os, shutil, uuid, re
 from .. import database, models, schemas, auth, config
 from ..timeutils import utcnow, to_utc_naive, iso_utc
 from ..services import stock_service, email
+from ..services import sla as sla_service
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -121,6 +122,22 @@ def get_dashboard_stats(
         "tickets_por_estado":   {s[0]: s[1] for s in states},
         "tickets_por_tecnico":  {t[0]: t[1] for t in techs},
     }
+
+# ── SLA: vencidos o por vencer (panel de alertas del dashboard) ──────────────
+@router.get("/sla/alertas")
+def sla_alertas(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([
+        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
+    ]))
+):
+    ahora = utcnow()
+    return [{
+        "id": t.id, "numero_rma": t.numero_rma, "producto": t.producto, "estado": t.estado,
+        "tecnico_nombre": t.tecnico.nombre if t.tecnico else None,
+        "deadline_sla": iso_utc(t.deadline_sla),
+        "horas_restantes": sla_service.horas_restantes(t, ahora),
+    } for t in sla_service.alertas(db, ahora)]
 
 # ── Global search ─────────────────────────────────────────────────────────────
 @router.get("/search/global")

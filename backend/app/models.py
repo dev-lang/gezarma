@@ -159,6 +159,10 @@ class Ticket(Base):
     fecha_actualizacion = Column(DateTime, default=utcnow, onupdate=utcnow)
     fecha_cierre        = Column(DateTime, nullable=True)
     deadline_sla        = Column(DateTime, nullable=True)
+    # Último aviso de SLA enviado: para qué vencimiento y de qué nivel
+    # ("por_vencer" o "vencido"), así cada aviso sale una sola vez
+    sla_aviso_deadline  = Column(DateTime, nullable=True)
+    sla_aviso_nivel     = Column(String, nullable=True)
 
     # Envíos
     empresa_transporte = Column(String, nullable=True)

@@ -57,6 +57,10 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "")
 
+# Tareas periódicas (revisión de SLA). Se pueden apagar, p. ej. en los tests
+# o si se corre más de un proceso de la app (para que no avisen dos veces).
+TAREAS_PERIODICAS = (os.getenv("TAREAS_PERIODICAS", "1").strip().lower() not in ("0", "false", "no"))
+
 # ── Datos ────────────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rma_system.db")
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
