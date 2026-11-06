@@ -32,7 +32,7 @@ const toast = (() => {
         if (!container) return;
 
         const el = document.createElement('div');
-        el.className = `pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[280px] max-w-sm toast-enter ${STYLES[type]}`;
+        el.className = `pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg sm:min-w-[280px] sm:max-w-sm toast-enter ${STYLES[type]}`;
         el.setAttribute('role', type === 'error' ? 'alert' : 'status');
         el.innerHTML = `
             <span class="${ICON_STYLES[type]} shrink-0 mt-0.5">${ICONS[type]}</span>

@@ -608,9 +608,7 @@ const app = {
         });
 
         // ── Detail: status toggle → show shipping fields ──────────────────
-        on('update-status', 'change', e => {
-            ui.toggleShippingFields(e.target.value);
-        });
+
 
         // ── Edit fields card ──────────────────────────────────────────────────
         on('toggle-edit-fields-btn', 'click', () => {
@@ -779,6 +777,7 @@ const app = {
                 const f = document.getElementById('update-diagnostic');
                 if (!f) return;
                 f.value = f.value.trim() ? f.value.trim() + '\n\n' + btn.dataset.text : btn.dataset.text;
+                f.dispatchEvent(new Event('input', { bubbles: true }));   // habilita "Guardar diagnóstico"
                 f.focus();
             }, sig);
         });
@@ -817,88 +816,10 @@ const app = {
         on('print-pdf-btn',        'click', e => Documentos.menu(e.currentTarget));
         on('client-print-pdf-btn', 'click', e => Documentos.menu(e.currentTarget));
 
-        // ── Detail: management save ───────────────────────────────────────
-        on('save-mgmt-btn', 'click', async () => {
-            const mgmtCard = document.getElementById('mgmt-card');
-
-            // Original values stamped onto mgmtCard.dataset when this ticket was loaded.
-            // These are the source of truth for dirty-checking — without them every save
-            // would fire ALL endpoints even when nothing actually changed.
-            const origEstado  = mgmtCard?.dataset.origEstado  ?? null;
-            const origTecnico = mgmtCard?.dataset.origTecnico ?? null; // '' = unassigned
-
-            const newStatus  = document.getElementById('update-status')?.value ?? '';
-            const newTechRaw = document.getElementById('assign-tech')?.value   ?? ''; // '' = unassigned
-            const tagNombre  = document.getElementById('update-tags')?.value;
-            const diagnostic = document.getElementById('update-diagnostic')?.value?.trim();
-            const shippingCo = document.getElementById('update-shipping-company')?.value?.trim();
-            const tracking   = document.getElementById('update-tracking')?.value?.trim();
-            const partId     = document.getElementById('update-part')?.value;
-            const partQty    = document.getElementById('update-part-qty')?.value;
-
-            // Dirty flags — compare against originals, not just truthiness.
-            // This prevents the backend from firing historial + notifications for fields
-            // the user never touched.
-            const statusChanged = newStatus !== '' && newStatus !== origEstado;
-            const techChanged   = origTecnico !== null        // field was shown (admin only)
-                               && newTechRaw  !== origTecnico; // value actually differs
-
-            ui.setLoading('save-mgmt-btn', true);
-            try {
-                let anyChange = false;
-
-                // ── Estado — only if the value differs from what was loaded ──
-                if (statusChanged) {
-                    if (newStatus === 'Enviado al cliente') {
-                        if (!shippingCo || !tracking) {
-                            toast.warning('Completá el transporte y número de tracking para marcar como enviado.');
-                            ui.setLoading('save-mgmt-btn', false);
-                            return;
-                        }
-                        await api.updateShipping(ui.currentTicketId, { empresa_transporte: shippingCo, tracking_number: tracking });
-                    }
-                    await api.updateTicketStatus(ui.currentTicketId, newStatus);
-                    anyChange = true;
-                }
-
-                // ── Técnico — only if the selection actually changed ──
-                if (techChanged) {
-                    await api.assignTechnician(ui.currentTicketId, newTechRaw ? parseInt(newTechRaw) : null);
-                    anyChange = true;
-                }
-
-                // ── Etiqueta — only if user explicitly selected one ──
-                if (tagNombre) {
-                    await api.addTag(ui.currentTicketId, tagNombre);
-                    anyChange = true;
-                }
-
-                // ── Repuesto — only if user explicitly selected one ──
-                if (partId) {
-                    await api.addPart(ui.currentTicketId, parseInt(partId), parseInt(partQty) || 1);
-                    anyChange = true;
-                }
-
-                // ── Diagnóstico — only if user typed something ──
-                if (diagnostic) {
-                    await api.addComment(ui.currentTicketId, `DIAGNÓSTICO TÉCNICO: ${diagnostic}`);
-                    anyChange = true;
-                }
-
-                if (!anyChange) {
-                    toast.warning('No se detectaron cambios para guardar.');
-                    return;
-                }
-
-                toast.success('Ticket actualizado correctamente.');
-                const ticket = await api.getTicket(ui.currentTicketId);
-                ui.showTicketDetail(ticket);
-            } catch (err) {
-                toast.error(err.message);
-            } finally {
-                ui.setLoading('save-mgmt-btn', false);
-            }
-        });
+        // ── Detail: gestión del ticket ───────────────────────────────────
+        // Cada control se guarda solo, en el momento: cambiar el estado no
+        // arrastra el técnico, ni un repuesto elegido, ni el diagnóstico.
+        Gestion.conectar(on);
 
         // ── Detail: adjuntos (frontend/js/adjuntos.js) ────────────────────
         Adjuntos.conectar(on);

@@ -364,7 +364,7 @@ const ui = {
             mgmtCard.dataset.origEstado  = ticket.estado;
             mgmtCard.dataset.origTecnico = ticket.tecnico_asignado ?? '';
             await this.loadPartsSelect();
-            this.toggleShippingFields(ticket.estado);
+            this.toggleShippingFields(null);   // se muestra al elegir "Enviado al cliente" (gestion.js)
             const techContainer = document.getElementById('assign-tech-container');
             if (user.role === 'administrador') {
                 techContainer.classList.remove('hidden');
@@ -533,6 +533,7 @@ const ui = {
         } catch (err) { console.error(err); }
     },
 
+    /** Transporte y tracking: solo mientras se está por marcar "Enviado al cliente" (ver gestion.js). */
     toggleShippingFields(status) {
         document.getElementById('shipping-info-fields')?.classList.toggle('hidden', status !== 'Enviado al cliente');
     },
@@ -1090,6 +1091,7 @@ const ui = {
                 const f = document.getElementById('update-diagnostic');
                 if (!f) return;
                 f.value = f.value.trim() ? f.value.trim() + '\n\n' + btn.dataset.text : btn.dataset.text;
+                f.dispatchEvent(new Event('input', { bubbles: true }));   // habilita "Guardar diagnóstico"
                 f.focus();
             });
         });
