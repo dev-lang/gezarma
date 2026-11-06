@@ -92,6 +92,7 @@ const ui = {
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         if (isTechOrAdmin && typeof Encuesta !== 'undefined') Encuesta.panel();
         if (user.role === 'cliente' && typeof Portal !== 'undefined') Portal.cargar();
+        if (typeof Tiempo !== 'undefined') { Tiempo.chip(); if (isAdmin) Tiempo.panel(); }
         else document.getElementById('alertas-panel')?.classList.add('hidden');
         this.loadTickets();
         if (typeof Kanban !== 'undefined') Kanban.iniciar(isTechOrAdmin);
@@ -379,6 +380,7 @@ const ui = {
         // ── Recepción: checklist, firmas y fotos de ingreso ──────────────────
         if (typeof Recepcion !== 'undefined') Recepcion.cargarDetalle(ticket);
         if (typeof Encuesta !== 'undefined') Encuesta.cargarDetalle(ticket);
+        if (typeof Tiempo !== 'undefined') { Tiempo.cargarDetalle(ticket.id); Tiempo.chip(); }
     },
 
     // ── Comments / History / Attachments ───────────────────────────────────

@@ -208,6 +208,7 @@ class Ticket(Base):
     firmas               = relationship("Firma", back_populates="ticket", cascade="all, delete-orphan")
     encuesta             = relationship("Encuesta", back_populates="ticket", uselist=False,
                                         cascade="all, delete-orphan")
+    tiempos              = relationship("TiempoTrabajo", back_populates="ticket", cascade="all, delete-orphan")
 
     def firma(self, momento: str):
         return next((f for f in self.firmas if f.momento == momento), None)
@@ -304,6 +305,20 @@ class Adjunto(Base):
     fecha           = Column(DateTime, default=utcnow)
     categoria       = Column(String, nullable=True)   # "ingreso" = foto del estado al recibirlo
     ticket = relationship("Ticket", back_populates="adjuntos")
+
+
+class TiempoTrabajo(Base):
+    """Un tramo de trabajo de un técnico sobre un ticket (fin vacío = en curso)."""
+    __tablename__ = "tiempos_trabajo"
+    id         = Column(Integer, primary_key=True, index=True)
+    ticket_id  = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
+    inicio     = Column(DateTime, nullable=False, default=utcnow)
+    fin        = Column(DateTime, nullable=True)
+    nota       = Column(String, nullable=True)
+    manual     = Column(Boolean, nullable=False, default=False, server_default="0")
+    ticket  = relationship("Ticket", back_populates="tiempos")
+    usuario = relationship("Usuario")
 
 
 class Encuesta(Base):
