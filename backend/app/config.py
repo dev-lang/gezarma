@@ -8,6 +8,7 @@ instalación existente sigue funcionando igual.
 """
 import logging
 import os
+import secrets
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -18,7 +19,7 @@ load_dotenv(ROOT_DIR / ".env", override=False)
 
 log = logging.getLogger("uvicorn.error")  # sale junto con los logs de uvicorn
 
-_DEFAULT_SECRET_KEY = "gezatek_super_secret_key_123"  # valor histórico: cambiarlo cerraría las sesiones de quien no tenga .env
+_DEFAULT_SECRET_KEY = "gezatek_super_secret_key_123"  # clave histórica publicada en el repo: nunca se usa
 _DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
@@ -26,8 +27,47 @@ def _list(value: str) -> list:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+# ── Datos ────────────────────────────────────────────────────────────────────
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rma_system.db")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+
+
+def _carpeta_de_datos() -> Path:
+    """Donde vive la base SQLite (en Docker, /data); si no es SQLite, la raíz del repo."""
+    if DATABASE_URL.startswith("sqlite:///"):
+        ruta = DATABASE_URL[len("sqlite:///"):]
+        if ruta and ruta != ":memory:":
+            return Path(ruta).expanduser().resolve().parent
+    return ROOT_DIR
+
+
+def _secret_key():
+    """SECRET_KEY del entorno; si no hay (o es la clave histórica del repo), una
+    clave aleatoria guardada junto a la base, que se genera la primera vez.
+    Devuelve (clave, origen)."""
+    valor = os.getenv("SECRET_KEY")
+    if valor and valor != _DEFAULT_SECRET_KEY:
+        return valor, "env"
+    archivo = Path(os.getenv("SECRET_KEY_FILE") or (_carpeta_de_datos() / "secret_key"))
+    try:
+        if archivo.exists() and archivo.read_text().strip():
+            return archivo.read_text().strip(), "archivo"
+        archivo.parent.mkdir(parents=True, exist_ok=True)
+        clave = secrets.token_urlsafe(48)
+        archivo.write_text(clave + "\n")
+        try:
+            archivo.chmod(0o600)
+        except OSError:
+            pass
+        return clave, "generada"
+    except OSError as exc:
+        raise RuntimeError(f"No hay SECRET_KEY y no se pudo guardar una nueva en {archivo}: {exc}. "
+                           "Definí SECRET_KEY en el .env (o SECRET_KEY_FILE con una ruta escribible).") from exc
+
+
 # ── Seguridad ────────────────────────────────────────────────────────────────
-SECRET_KEY = os.getenv("SECRET_KEY") or _DEFAULT_SECRET_KEY
+SECRET_KEY, SECRET_KEY_ORIGEN = _secret_key()
+SECRET_KEY_LEGADA = os.getenv("SECRET_KEY") == _DEFAULT_SECRET_KEY
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24))
 CORS_ORIGINS = _list(os.getenv("CORS_ORIGINS", "*"))
 
@@ -61,18 +101,18 @@ SMTP_FROM = os.getenv("SMTP_FROM", "")
 # o si se corre más de un proceso de la app (para que no avisen dos veces).
 TAREAS_PERIODICAS = (os.getenv("TAREAS_PERIODICAS", "1").strip().lower() not in ("0", "false", "no"))
 
-# ── Datos ────────────────────────────────────────────────────────────────────
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rma_system.db")
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
-
-USING_DEFAULT_SECRET_KEY = SECRET_KEY == _DEFAULT_SECRET_KEY
 USING_DEFAULT_ADMIN_PASSWORD = ADMIN_PASSWORD == _DEFAULT_ADMIN_PASSWORD
 
 
 def warn_insecure_defaults() -> None:
-    if USING_DEFAULT_SECRET_KEY:
-        log.warning("SECRET_KEY no está configurada: se usa la clave por defecto del repo. "
-                    "Definila en .env antes de usar la app en producción.")
+    if SECRET_KEY_LEGADA:
+        log.warning("SECRET_KEY tiene la clave de ejemplo publicada en el repo: se ignora y se usa una "
+                    "clave propia. Cambiala en el .env (las sesiones abiertas se cierran y, si la "
+                    "contraseña SMTP estaba cargada en el panel, hay que volver a cargarla).")
+    if SECRET_KEY_ORIGEN == "generada":
+        log.warning("No había SECRET_KEY: se generó una aleatoria y se guardó junto a la base. "
+                    "Incluila en los backups (sin ella se cierran las sesiones y hay que volver a "
+                    "cargar la contraseña SMTP del panel).")
     if "*" in CORS_ORIGINS:
         log.warning("CORS_ORIGINS='*': cualquier sitio puede llamar a la API. "
                     "Si el frontend se sirve desde la misma app, podés dejarlo vacío.")

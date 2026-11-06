@@ -1,7 +1,7 @@
 """
 garantia.py — Garantía de la reparación.
 
-Cuando entra un ticket de un equipo (mismo N° de serie) que se entregó o cerró
+Cuando el mismo cliente trae un equipo (mismo N° de serie) que se entregó o cerró
 hace menos de `garantia_reparacion_dias`, el ticket nuevo se marca como
 reingreso en garantía: queda vinculado al anterior, sube a prioridad Alta y se
 avisa al técnico que lo reparó (y a los administradores).
@@ -26,8 +26,11 @@ def reparacion_anterior(db: Session, t: models.Ticket):
         return None
     desde = utcnow() - timedelta(days=dias)
     entregado = func.coalesce(models.Ticket.fecha_cierre, models.Ticket.fecha_envio)
+    # Solo reparaciones del mismo cliente: si no, con el N° de serie de un equipo
+    # ajeno se obtendría su RMA (y con él, su seguimiento público)
     return (db.query(models.Ticket)
             .filter(models.Ticket.id != t.id,
+                    models.Ticket.usuario_id == t.usuario_id,
                     func.upper(func.trim(models.Ticket.numero_serie)) == serie,
                     or_(models.Ticket.estado == models.TicketStatus.CERRADO.value,
                         models.Ticket.estado == models.TicketStatus.ENVIADO.value),

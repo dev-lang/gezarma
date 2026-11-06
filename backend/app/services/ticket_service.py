@@ -106,8 +106,8 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
         if priority != "Alta":
             priority = "Baja"
 
-    # Override priority from request if explicitly set
-    if ticket.prioridad and ticket.prioridad != "Normal":
+    # La prioridad elegida a mano solo vale si la carga el taller; la del cliente es automática
+    if current_user.rol != models.UserRole.CLIENTE and ticket.prioridad and ticket.prioridad != "Normal":
         priority = ticket.prioridad
 
     deadline = calculate_sla_deadline(models.TicketStatus.NUEVO)

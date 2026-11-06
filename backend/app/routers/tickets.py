@@ -33,6 +33,9 @@ ALLOWED_EXTENSIONS = {"pdf", "txt", "jpg", "jpeg", "png"}
 ALLOWED_MIME_TYPES = {"application/pdf", "text/plain", "image/jpeg", "image/png"}
 MAX_FILE_BYTES         = 10 * 1024 * 1024  # 10 MB per individual file
 MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB total per ticket
+# Tope por cliente entre todos sus tickets: como puede crear tickets, sin esto
+# podría llenar el disco subiendo 10 MB a cada uno
+MAX_CLIENTE_UPLOAD_BYTES = 50 * 1024 * 1024
 
 def _safe_filename(original: str) -> tuple[str, str]:
     """
@@ -168,14 +171,19 @@ def global_search(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    query = db.query(models.Ticket).outerjoin(models.Comentario).filter(
+    es_cliente = current_user.rol == models.UserRole.CLIENTE
+    # El cliente no busca dentro de las notas internas (se podría deducir su texto)
+    union = models.Ticket.id == models.Comentario.ticket_id
+    if es_cliente:
+        union = union & (models.Comentario.is_internal == False)  # noqa: E712
+    query = db.query(models.Ticket).outerjoin(models.Comentario, union).filter(
         (models.Ticket.numero_rma.contains(q))   |
         (models.Ticket.numero_serie.contains(q)) |
         (models.Ticket.producto.contains(q))     |
         (models.Ticket.descripcion.contains(q))  |
         (models.Comentario.comentario.contains(q))
     ).distinct()
-    if current_user.rol == models.UserRole.CLIENTE:
+    if es_cliente:
         query = query.filter(models.Ticket.usuario_id == current_user.id)
     return [schemas.Ticket.for_viewer(t, current_user) for t in query.all()]
 
@@ -310,6 +318,9 @@ def assign_technician(
         tech = db.query(models.Usuario).filter(models.Usuario.id == assignment.tecnico_id).first()
         if not tech:
             raise HTTPException(status_code=404, detail="Técnico no encontrado")
+        # Solo personal del taller (un cliente asignado recibiría las notas internas)
+        if tech.rol not in (models.UserRole.TECNICO, models.UserRole.ADMINISTRADOR) or not tech.activo:
+            raise HTTPException(status_code=400, detail="Solo se puede asignar a un técnico o administrador activo")
         tech_nombre = tech.nombre
     else:
         tech_nombre = "Sin asignar"
@@ -719,8 +730,8 @@ def upload_attachment(
             detail=f"Tipo de archivo no permitido. Solo se aceptan: {', '.join(sorted(ALLOWED_EXTENSIONS)).upper()}"
         )
 
-    # ── Read into memory ──────────────────────────────────────────────────
-    file_data = file.file.read()
+    # ── Leer como mucho el límite + 1 byte (no el archivo entero a memoria) ──
+    file_data = file.file.read(MAX_FILE_BYTES + 1)
     file_size = len(file_data)
 
     # ── Per-file size limit ───────────────────────────────────────────────
@@ -738,6 +749,14 @@ def upload_attachment(
             status_code=400,
             detail=f"Límite del ticket alcanzado. Espacio disponible: {remaining_mb} MB de 10 MB."
         )
+
+    if current_user.rol == models.UserRole.CLIENTE:
+        usado_cliente = (db.query(func.coalesce(func.sum(models.Adjunto.tamanio), 0))
+                         .join(models.Ticket, models.Ticket.id == models.Adjunto.ticket_id)
+                         .filter(models.Ticket.usuario_id == current_user.id).scalar())
+        if usado_cliente + file_size > MAX_CLIENTE_UPLOAD_BYTES:
+            raise HTTPException(status_code=400,
+                                detail="Llegaste al límite de archivos de tu cuenta (50 MB). Si necesitás mandar más, consultá al taller.")
 
     # ── Build safe filename & per-ticket folder ───────────────────────────
     safe_display, stored_name = _safe_filename(file.filename or "archivo")

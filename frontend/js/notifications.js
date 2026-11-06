@@ -179,16 +179,16 @@ function _renderItem(n) {
             <span class="text-lg mt-0.5 shrink-0">${icon}</span>
             <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-1">
-                    <p class="text-xs font-bold text-gray-800 leading-snug">${n.titulo}</p>
+                    <p class="text-xs font-bold text-gray-800 leading-snug">${esc(n.titulo)}</p>
                     ${unread ? '<span class="notif-unread-dot w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1"></span>' : ""}
                 </div>
-                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${n.mensaje}</p>
+                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${esc(n.mensaje)}</p>
                 <div class="flex items-center gap-3 mt-1">
                     <span class="text-[10px] text-gray-400">${timeAgo}</span>
                     ${n.ticket_rma ? `
                         <button type="button" class="notif-ticket-link text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline"
                             data-ticket-id="${n.ticket_id}" data-notif-id="${n.id}">
-                            Ver ${n.ticket_rma} →
+                            Ver ${esc(n.ticket_rma)} →
                         </button>` : ""}
                 </div>
             </div>
@@ -202,5 +202,6 @@ function _timeAgo(date) {
     if (diff < 60)    return "Ahora mismo";
     if (diff < 3600)  return `Hace ${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
-    return `Hace ${Math.floor(diff / 86400)} días`;
+    const dias = Math.floor(diff / 86400);
+    return `Hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
 }

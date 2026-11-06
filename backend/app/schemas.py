@@ -180,6 +180,18 @@ class EncuestaIn(BaseModel):
     comentario: str = ""
 
 
+PRIORIDADES = ("Baja", "Normal", "Alta", "Urgente")
+
+
+def _prioridad_valida(v):
+    if v is None:
+        return v
+    v = {"Media": "Normal"}.get(str(v).strip(), str(v).strip())   # "Media" = nombre viejo de Normal
+    if v not in PRIORIDADES:
+        raise ValueError(f"Prioridad inválida. Opciones: {', '.join(PRIORIDADES)}")
+    return v
+
+
 # ── Tickets ───────────────────────────────────────────────────────────────────
 class TicketBase(BaseModel):
     producto_id:  Optional[int] = None
@@ -189,6 +201,11 @@ class TicketBase(BaseModel):
     descripcion:  str
     prioridad:    str = "Normal"
 
+    @field_validator("prioridad")
+    @classmethod
+    def _v_prioridad(cls, v):
+        return _prioridad_valida(v)
+
 class TicketCreate(TicketBase):
     pass
 
@@ -197,6 +214,11 @@ class TicketUpdateStatus(BaseModel):
 
 class TicketUpdatePriority(BaseModel):
     prioridad: str
+
+    @field_validator("prioridad")
+    @classmethod
+    def _v_prioridad(cls, v):
+        return _prioridad_valida(v)
 
 class TicketUpdateAssignment(BaseModel):
     tecnico_id: Optional[int] = None
@@ -223,6 +245,11 @@ class TicketEditFields(BaseModel):
     numero_serie: Optional[str] = None
     prioridad:    Optional[str] = None
     diagnostico:  Optional[str] = None
+
+    @field_validator("prioridad")
+    @classmethod
+    def _v_prioridad(cls, v):
+        return _prioridad_valida(v)
 
 class TicketClone(BaseModel):
     """Clone a ticket, optionally linking it (Feature 11)."""

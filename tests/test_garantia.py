@@ -76,10 +76,26 @@ def test_plazo_configurable_y_desactivable(client, admin, make_user, make_ticket
 
 
 def test_urgente_se_mantiene(client, admin, make_user):
-    h, _ = make_user()
+    """Si el taller lo carga como Urgente (el cliente no elige prioridad), no baja a Alta."""
+    h, cli = make_user()
     _, tec = make_user(rol="tecnico")
     cuerpo = {"producto": "X", "numero_serie": "GAR-600", "fecha_compra": "2026-01-01T00:00:00", "descripcion": "x"}
     t1 = client.post("/tickets/", headers=h, json=cuerpo).json()
     _reparado_y_cerrado(client, admin, tec["id"], t1)
-    t2 = client.post("/tickets/", headers=h, json={**cuerpo, "prioridad": "Urgente"}).json()
+    t2 = client.post("/mostrador/ingreso", headers=admin,
+                     json={"cliente_id": cli["id"], "ticket": {**cuerpo, "prioridad": "Urgente"}}).json()
     assert t2["reingreso_garantia"] is True and t2["prioridad"] == "Urgente"
+
+
+def test_no_cruza_clientes(client, admin, make_user, make_ticket):
+    """Con el N° de serie de un equipo ajeno no se obtiene su RMA."""
+    victima, _ = make_user()
+    otro, _ = make_user()
+    _, tec = make_user(rol="tecnico")
+    t1 = make_ticket(victima, serie="GAR-AJENO")
+    _reparado_y_cerrado(client, admin, tec["id"], t1)
+    t2 = make_ticket(otro, serie="GAR-AJENO")
+    assert t2["reingreso_garantia"] is False and t2["rma_reingreso_de"] is None
+    assert t2["ticket_relacionado"] is None and t2["rma_relacionado"] is None
+    hist = client.get(f"/tickets/{t2['id']}/history", headers=otro).json()
+    assert not any(t1["numero_rma"] in (x["detalle"] or "") for x in hist)

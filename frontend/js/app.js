@@ -53,7 +53,9 @@ const app = {
 
             try {
                 if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-                await api.changePassword(currentPw, newPw);
+                const res = await api.changePassword(currentPw, newPw);
+                // Al cambiar la clave el servidor invalida los tokens anteriores y manda uno nuevo
+                if (res?.access_token) localStorage.setItem('token', res.access_token);
                 // Update local session so must_change_password is cleared
                 const user = auth.getUser();
                 if (user) {
@@ -507,6 +509,8 @@ const app = {
         on('mostrador-btn', 'click', () => Recepcion.abrirMostrador());
         on('create-ticket-btn', 'click', () => {
             ui.loadProductsSelect();
+            // La prioridad la decide el taller: para el cliente se calcula sola
+            document.getElementById('tk-prioridad-wrap')?.classList.toggle('hidden', (auth.getUser()?.role || '') === 'cliente');
             document.getElementById('ticket-modal')?.classList.remove('hidden');
         });
         on('close-modal',    'click', () => app.confirmModalClose('ticket-modal'));
@@ -921,7 +925,7 @@ const app = {
                         : Math.round(f.size / 1024) + ' KB';
                     return `<div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm">
                         <span>${icon}</span>
-                        <span class="flex-1 font-medium text-gray-800 truncate">${f.name}</span>
+                        <span class="flex-1 font-medium text-gray-800 truncate">${esc(f.name)}</span>
                         <span class="text-gray-400 text-xs shrink-0">${ext.toUpperCase()} · ${size}</span>
                     </div>`;
                 }).join('');
@@ -1028,12 +1032,12 @@ const app = {
                                 <div onclick="app.viewTicket(${t.id}); document.getElementById('search-results').classList.add('hidden');"
                                     class="p-4 border-b hover:bg-gray-50 cursor-pointer transition">
                                     <div class="flex items-center gap-2">
-                                        <span class="font-bold text-blue-600 text-sm">${t.numero_rma}</span>
-                                        <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase">${t.estado}</span>
+                                        <span class="font-bold text-blue-600 text-sm">${esc(t.numero_rma)}</span>
+                                        <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase">${esc(t.estado)}</span>
                                     </div>
-                                    <div class="text-xs text-gray-500 mt-0.5">${t.producto} · SN: ${t.numero_serie}</div>
+                                    <div class="text-xs text-gray-500 mt-0.5">${esc(t.producto)} · SN: ${esc(t.numero_serie)}</div>
                                 </div>`).join('')
-                              + (results.length > 6 ? `<div onclick="ui.loadSearchPage('${q}')" class="p-3 text-center text-blue-600 text-xs font-bold hover:bg-blue-50 cursor-pointer">Ver los ${results.length} resultados →</div>` : '')
+                              + (results.length > 6 ? `<div data-q="${esc(q)}" onclick="ui.loadSearchPage(this.dataset.q)" class="p-3 text-center text-blue-600 text-xs font-bold hover:bg-blue-50 cursor-pointer">Ver los ${results.length} resultados →</div>` : '')
                             : '<div class="p-4 text-gray-400 italic text-sm">Sin resultados</div>';
                         searchResults.classList.remove('hidden');
                     } catch (err) { console.error(err); }
@@ -1126,10 +1130,10 @@ const app = {
         if (!cont) return;
         cont.innerHTML = tags.map(t =>
             `<span class="ef-tag-pill flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-default"
-                style="background:${t.color||'#6366f1'}20;color:${t.color||'#6366f1'};border:1px solid ${t.color||'#6366f1'}50"
-                data-nombre="${t.nombre}">
-                ${t.nombre}
-                <button type="button" class="ef-tag-remove font-bold leading-none hover:opacity-70" data-nombre="${t.nombre}">×</button>
+                style="background:${colorSeguro(t.color, '#6366f1')}20;color:${colorSeguro(t.color, '#6366f1')};border:1px solid ${colorSeguro(t.color, '#6366f1')}50"
+                data-nombre="${esc(t.nombre)}">
+                ${esc(t.nombre)}
+                <button type="button" class="ef-tag-remove font-bold leading-none hover:opacity-70" data-nombre="${esc(t.nombre)}">×</button>
             </span>`
         ).join('');
         cont.querySelectorAll('.ef-tag-remove').forEach(btn => {
@@ -1152,13 +1156,13 @@ const app = {
         const sel = document.getElementById('reposicion-part-id');
         if (!sel) return;
         sel.innerHTML = ui._adminPartsCache.map(p =>
-            `<option value="${p.id}">${p.nombre} (stock: ${p.stock})</option>`
+            `<option value="${p.id}">${esc(p.nombre)} (stock: ${esc(p.stock)})</option>`
         ).join('');
         // Also populate the filter select
         const filterSel = document.getElementById('admin-stock-filter-part');
         if (filterSel && filterSel.options.length <= 1) {
             filterSel.innerHTML = '<option value="">Todos los repuestos</option>'
-                + ui._adminPartsCache.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+                + ui._adminPartsCache.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
         }
         document.getElementById('reposicion-cantidad').value = '1';
         document.getElementById('reposicion-nota').value = '';

@@ -88,7 +88,7 @@ function renderPresupuestoCard(budget, userRole) {
     const list = $("presupuesto-items-list");
     list.innerHTML = budget.items.map(i =>
         `<div class="flex justify-between text-gray-600 py-0.5 border-b border-gray-50">
-            <span class="truncate flex-1">${i.repuesto_codigo ? '📦 ' : ''}${i.descripcion} <span class="text-gray-400">×${i.cantidad}</span>${
+            <span class="truncate flex-1">${i.repuesto_codigo ? '📦 ' : ''}${escHtml(i.descripcion)} <span class="text-gray-400">×${i.cantidad}</span>${
                 i.stock_disponible != null && i.stock_disponible < i.cantidad && budget.estado !== "aprobado"
                     ? ' <span class="text-red-600 font-semibold">(stock insuficiente)</span>' : ''}</span>
             <span class="font-semibold ml-2">${fmt(i.precio_total)}</span>
@@ -372,7 +372,7 @@ function renderVersiones(versiones) {
     el.innerHTML = versiones.map(v => {
         const cfg = ESTADO_COLORS[v.estado] || ESTADO_COLORS.borrador;
         const items = (v.items_snapshot || []).map(i =>
-            `<li class="text-xs text-gray-500">${i.descripcion} ×${i.cantidad} — ${fmt(i.precio_total)}</li>`
+            `<li class="text-xs text-gray-500">${escHtml(i.descripcion)} ×${escHtml(i.cantidad)} — ${fmt(i.precio_total)}</li>`
         ).join("");
         return `
             <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
@@ -381,9 +381,9 @@ function renderVersiones(versiones) {
                     <span class="px-2 py-0.5 rounded-full text-xs font-bold ${cfg.bg} ${cfg.text}">${cfg.label}</span>
                 </div>
                 <p class="text-xs text-gray-400 mb-2">
-                    ${v.usuario_nombre || "—"} &bull; ${new Date(v.fecha).toLocaleString("es-AR", { hour12: false })}
+                    ${escHtml(v.usuario_nombre || "—")} &bull; ${new Date(v.fecha).toLocaleString("es-AR", { hour12: false })}
                 </p>
-                ${v.notas ? `<p class="text-xs italic text-gray-500 mb-2">"${v.notas}"</p>` : ""}
+                ${v.notas ? `<p class="text-xs italic text-gray-500 mb-2">"${escHtml(v.notas)}"</p>` : ""}
                 ${items ? `<ul class="space-y-0.5 list-disc list-inside">${items}</ul>` : ""}
             </div>`;
     }).join("");
@@ -407,7 +407,7 @@ function _rebuildCatSelect() {
     if (!sel) return;
     const current = sel.value;
     sel.innerHTML = _ppCategories.map(c =>
-        `<option value="${c}" ${c === current ? "selected" : ""}>${c}</option>`
+        `<option value="${escHtml(c)}" ${c === current ? "selected" : ""}>${escHtml(c)}</option>`
     ).join("");
     if (!sel.value) sel.value = _ppCategories[0] || "General";
 }
@@ -421,10 +421,10 @@ function _renderCatFilterPills(items) {
     wrap.innerHTML = cats.map(c => {
         const active = _ppActiveCatFilter === c;
         const label  = c === "" ? "Todas" : c;
-        return `<button type="button" data-cat="${c}"
+        return `<button type="button" data-cat="${escHtml(c)}"
             class="pp-cat-pill px-3 py-1 rounded-full text-xs font-semibold border transition
                 ${active ? "bg-emerald-600 text-white border-emerald-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}">
-            ${label}
+            ${escHtml(label)}
         </button>`;
     }).join("");
     wrap.querySelectorAll(".pp-cat-pill").forEach(btn => {
@@ -451,12 +451,12 @@ function _renderPlantillaRows(items) {
         <div class="flex items-center px-5 py-3.5 hover:bg-gray-50 transition gap-4" data-id="${p.id}">
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-semibold text-gray-800">${p.nombre}</span>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">${p.categoria || "General"}</span>
+                    <span class="text-sm font-semibold text-gray-800">${escHtml(p.nombre)}</span>
+                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">${escHtml(p.categoria || "General")}</span>
                     ${!p.activo ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-500 font-bold">inactivo</span>' : ""}
                     ${p.producto_nombre ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">📦 ${escHtml(p.producto_nombre)}</span>` : ""}
                 </div>
-                <p class="text-xs text-gray-400 mt-0.5 truncate">${p.descripcion}</p>
+                <p class="text-xs text-gray-400 mt-0.5 truncate">${escHtml(p.descripcion)}</p>
                 <p class="text-xs text-gray-500 mt-0.5">
                     <span class="text-gray-400">Costo:</span> <strong>${fmt(p.costo_interno)}</strong>
                     &nbsp;·&nbsp;
@@ -536,8 +536,8 @@ function _renderCatsModalList() {
     }
     list.innerHTML = _ppCategories.map(c => `
         <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-            <span class="text-sm font-medium text-gray-700">${c}</span>
-            ${c !== "General" ? `<button type="button" class="del-cat-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-cat="${c}">Eliminar</button>` : '<span class="text-xs text-gray-300">predeterminada</span>'}
+            <span class="text-sm font-medium text-gray-700">${escHtml(c)}</span>
+            ${c !== "General" ? `<button type="button" class="del-cat-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-cat="${escHtml(c)}">Eliminar</button>` : '<span class="text-xs text-gray-300">predeterminada</span>'}
         </div>`).join("");
     list.querySelectorAll(".del-cat-btn").forEach(btn => {
         btn.onclick = () => {

@@ -10,3 +10,6 @@ uploads/
 
 # Entorno
 .env
+
+# Clave de sesión generada por la app si no hay SECRET_KEY
+secret_key

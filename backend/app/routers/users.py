@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth
+from .auth import email_en_uso
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -17,15 +18,19 @@ def list_users(
 ):
     return db.query(models.Usuario).all()
 
-@router.get("/tecnicos", response_model=List[schemas.User])
+@router.get("/tecnicos")
 def list_tecnicos(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    return db.query(models.Usuario).filter(
+    tecnicos = db.query(models.Usuario).filter(
         models.Usuario.rol == models.UserRole.TECNICO,
         models.Usuario.activo == True
     ).all()
+    if current_user.rol == models.UserRole.CLIENTE:
+        # Al cliente, sin datos de contacto del personal
+        return [{"id": u.id, "nombre": u.nombre, "rol": u.rol} for u in tecnicos]
+    return [schemas.User.model_validate(u) for u in tecnicos]
 
 @router.patch("/{user_id}", response_model=schemas.User)
 def update_user(
@@ -46,6 +51,10 @@ def update_user(
     if user_update.rol and user_update.rol not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Rol inválido: {sorted(valid_roles)}")
     data = user_update.model_dump(exclude_unset=True)
+    if "email" in data:
+        data["email"] = (data["email"] or "").strip().lower() or None
+        if data["email"] and email_en_uso(db, data["email"], excepto_id=user_id):
+            raise HTTPException(status_code=400, detail="El email ya está en uso por otro usuario")
     for k, v in data.items():
         setattr(db_user, k, v)
     db.commit()
@@ -68,15 +77,9 @@ def update_user_profile(
     data = profile.model_dump(exclude_unset=True)
     # Sin email = NULL (los clientes de mostrador pueden no tener; "" chocaría entre ellos)
     if "email" in data:
-        data["email"] = (data["email"] or "").strip() or None
-    # Check email uniqueness if changing
-    if data.get("email"):
-        exists = db.query(models.Usuario).filter(
-            models.Usuario.email == data["email"],
-            models.Usuario.id != user_id
-        ).first()
-        if exists:
-            raise HTTPException(status_code=400, detail="El email ya está en uso por otro usuario")
+        data["email"] = (data["email"] or "").strip().lower() or None
+    if data.get("email") and email_en_uso(db, data["email"], excepto_id=user_id):
+        raise HTTPException(status_code=400, detail="El email ya está en uso por otro usuario")
     # Validate telefono format
     if "telefono" in data and data["telefono"]:
         import re as _re
@@ -106,6 +109,7 @@ def reset_password(
     temp_pw = _gen_temp_password()
     db_user.password_hash       = auth.get_password_hash(temp_pw)
     db_user.must_change_password = True
+    db_user.token_version = (db_user.token_version or 0) + 1   # cierra sus sesiones abiertas
     # The plain temp password is only returned in this response; it is never stored.
     db.commit()
     return {"temp_password": temp_pw, "username": db_user.username,
@@ -131,8 +135,11 @@ def change_password(
         raise HTTPException(status_code=400, detail="La nueva contraseña debe ser distinta de la actual")
     current_user.password_hash       = auth.get_password_hash(new_pw)
     current_user.must_change_password = False
+    # Las demás sesiones (y un token robado) dejan de valer; esta sigue con un token nuevo
+    current_user.token_version = (current_user.token_version or 0) + 1
     db.commit()
-    return {"message": "Contraseña actualizada correctamente"}
+    return {"message": "Contraseña actualizada correctamente", "access_token": auth.token_para(current_user),
+            "token_type": "bearer"}
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(

@@ -81,3 +81,11 @@ def upload(client):
         return client.post(f"/tickets/{ticket_id}/attachments", headers=headers,
                            files={"file": (name, content, "text/plain")})
     return _upload
+
+
+@pytest.fixture(autouse=True)
+def _limite_de_registros():
+    """El límite de altas públicas por IP es en memoria: se reinicia en cada test."""
+    from backend.app.routers import auth as auth_router
+    auth_router.reiniciar_limites()
+    yield

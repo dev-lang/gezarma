@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import bcrypt
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from . import database, models
@@ -47,7 +47,27 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+def token_para(user: models.Usuario) -> str:
+    """JWT de sesión. Lleva la versión de token del usuario: al cambiar o
+    resetear la clave se incrementa y los tokens anteriores dejan de valer."""
+    return create_access_token({"sub": user.username, "role": user.rol, "tv": user.token_version or 0})
+
+
+def _usuario_del_token(payload: dict, db: Session):
+    username = payload.get("sub")
+    if not username:
+        return None
+    user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
+    if user is None or payload.get("tv", 0) != (user.token_version or 0):
+        return None
+    return user
+
+
+# Lo único que puede hacer quien tiene que cambiar la clave (reset o primer ingreso)
+RUTAS_CON_CLAVE_VENCIDA = ("/users/change-password",)
+
+
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -55,13 +75,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        role: str = payload.get("role")
-        if username is None:
-            raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
+    user = _usuario_del_token(payload, db)
     if user is None:
         raise credentials_exception
     # A disabled account must lose access right away, not when its token expires
@@ -71,6 +87,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             detail="Cuenta deshabilitada. Contactá al administrador.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Con clave temporal o por defecto, solo se puede cambiar la clave (no basta con la UI)
+    if user.must_change_password and request.url.path not in RUTAS_CON_CLAVE_VENCIDA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Tenés que cambiar tu contraseña antes de seguir.")
     return user
 
 def check_role(required_roles: list):
@@ -87,15 +107,12 @@ def decode_token_user(token: str, db):
     """Decode a raw JWT token string and return the user (or None)."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if not username:
-            return None
-        user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
-        if user is None or not user.activo:
-            return None
-        return user
     except Exception:
         return None
+    user = _usuario_del_token(payload, db)
+    if user is None or not user.activo or user.must_change_password:
+        return None
+    return user
 
 # Optional auth — returns None instead of raising 401
 from fastapi.security import OAuth2PasswordBearer as _OAuth2

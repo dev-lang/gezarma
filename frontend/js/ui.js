@@ -169,7 +169,7 @@ const ui = {
             const sel  = document.getElementById('ef-add-tag');
             if (sel) {
                 sel.innerHTML = '<option value="">Agregar etiqueta...</option>' +
-                    tags.map(t => `<option value="${t.nombre}" style="color:${t.color}">${t.nombre}</option>`).join('');
+                    tags.map(t => `<option value="${esc(t.nombre)}" style="color:${colorSeguro(t.color)}">${esc(t.nombre)}</option>`).join('');
             }
         } catch {}
     },
@@ -486,7 +486,7 @@ const ui = {
             const select = document.getElementById('tk-producto-id');
             if (!select) return;
             select.innerHTML = '<option value="">Seleccione un producto...</option>'
-                + products.map(p => `<option value="${p.id}">${p.marca} ${p.modelo} (${p.categoria})</option>`).join('');
+                + products.map(p => `<option value="${p.id}">${esc(p.marca)} ${esc(p.modelo)} (${esc(p.categoria)})</option>`).join('');
         } catch (err) { console.error(err); }
     },
 
@@ -496,14 +496,14 @@ const ui = {
             const partSelect = document.getElementById('update-part');
             if (partSelect) {
                 partSelect.innerHTML = '<option value="">Ninguno / Sin repuestos</option>'
-                    + parts.map(p => `<option value="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>${p.nombre} (${p.stock} disp.)</option>`).join('');
+                    + parts.map(p => `<option value="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>${esc(p.nombre)} (${p.stock} disp.)</option>`).join('');
             }
             // Populate both tag selects from the same source
             ['update-tags', 'ef-add-tag'].forEach(selId => {
                 const sel = document.getElementById(selId);
                 if (!sel) return;
                 sel.innerHTML = '<option value="">Seleccione etiqueta...</option>'
-                    + tags.map(t => `<option value="${t.nombre}" style="color:${t.color}">${t.nombre}</option>`).join('');
+                    + tags.map(t => `<option value="${esc(t.nombre)}" style="color:${colorSeguro(t.color)}">${esc(t.nombre)}</option>`).join('');
             });
         } catch (err) { console.error(err); }
     },
@@ -514,7 +514,7 @@ const ui = {
             const select = document.getElementById('assign-tech');
             if (!select) return;
             select.innerHTML = '<option value="">Sin asignar</option>'
-                + techs.map(t => `<option value="${t.id}" ${t.id === currentId ? 'selected' : ''}>${t.nombre}</option>`).join('');
+                + techs.map(t => `<option value="${t.id}" ${t.id === currentId ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('');
         } catch (err) { console.error(err); }
     },
 
@@ -546,6 +546,13 @@ const ui = {
         if (tbody) tbody.innerHTML = users.length
             ? users.map(components.userRow).join('')
             : `<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">No hay usuarios con esos filtros.</td></tr>`;
+    },
+
+    // Los botones "Editar" pasan solo el id (antes iba el usuario entero como JSON
+    // dentro del onclick: un nombre con comillas podía romperlo e inyectar código)
+    openUserEditModalById(id) {
+        const u = [...(this._adminUsersCache || []), ...(this._usersCache || [])].find(x => x.id === id);
+        if (u) this.openUserEditModal(u);
     },
 
     openUserEditModal(u) {
@@ -689,7 +696,7 @@ const ui = {
         const sel = document.getElementById('product-filter-categoria');
         if (!sel) return;
         sel.innerHTML = '<option value="">Todas las categorías</option>'
-            + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+            + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
         const cards = document.getElementById('product-category-cards');
         if (!cards) return;
@@ -764,11 +771,11 @@ const ui = {
                      data-ticket-id="${t.id}">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-mono font-bold text-blue-700">${t.numero_rma}</span>
-                            <span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase ${statusCls}">${t.estado}</span>
+                            <span class="font-mono font-bold text-blue-700">${esc(t.numero_rma)}</span>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase ${statusCls}">${esc(t.estado)}</span>
                         </div>
-                        <p class="text-sm text-gray-700 mt-0.5 font-medium truncate">${t.producto}</p>
-                        <p class="text-xs text-gray-400">${t.usuario_nombre || '—'} · ${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p>
+                        <p class="text-sm text-gray-700 mt-0.5 font-medium truncate">${esc(t.producto)}</p>
+                        <p class="text-xs text-gray-400">${esc(t.usuario_nombre || '—')} · ${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p>
                     </div>
                     <button type="button" class="fav-remove-btn shrink-0 text-yellow-400 hover:text-gray-300 text-2xl transition"
                         data-ticket-id="${t.id}" title="Quitar de favoritos">★</button>
@@ -931,14 +938,14 @@ const ui = {
         const sel = document.getElementById('admin-product-filter-cat');
         if (sel) {
             sel.innerHTML = '<option value="">Todas las categorías</option>'
-                + Object.keys(cats).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+                + Object.keys(cats).sort().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
         }
         const pills = document.getElementById('admin-product-cats');
         if (pills) {
             pills.innerHTML = Object.entries(cats).sort().map(([c,n]) =>
-                `<button onclick="document.getElementById('admin-product-filter-cat').value='${c}'; ui.adminRenderProducts();"
+                `<button data-cat="${esc(c)}" onclick="document.getElementById('admin-product-filter-cat').value=this.dataset.cat; ui.adminRenderProducts();"
                     class="px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition border border-green-200">
-                    ${c} <span class="opacity-60">${n}</span>
+                    ${esc(c)} <span class="opacity-60">${n}</span>
                 </button>`
             ).join('') || '<span class="text-xs text-gray-400 italic">Sin categorías</span>';
         }
@@ -1116,7 +1123,7 @@ const ui = {
         const current = sel.value;
         const active = list.filter(s => s.activo);
         sel.innerHTML = active.map(s =>
-            `<option value="${s.valor}" ${s.valor === current ? 'selected' : ''}>${s.etiqueta}</option>`
+            `<option value="${esc(s.valor)}" ${s.valor === current ? 'selected' : ''}>${esc(s.etiqueta)}</option>`
         ).join('');
     },
 
@@ -1138,7 +1145,7 @@ const ui = {
             const efSel = document.getElementById('ef-add-tag');
             if (efSel) {
                 efSel.innerHTML = '<option value="">Agregar etiqueta...</option>' +
-                    tags.map(t => `<option value="${t.nombre}">${t.nombre}</option>`).join('');
+                    tags.map(t => `<option value="${esc(t.nombre)}">${esc(t.nombre)}</option>`).join('');
             }
         } catch(e) { console.warn('Error cargando etiquetas:', e); }
     },
@@ -1198,13 +1205,13 @@ const ui = {
         const partSel = document.getElementById('admin-stock-filter-part');
         if (partSel) {
             partSel.innerHTML = '<option value="">Todos los repuestos</option>'
-                + parts.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+                + parts.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
         }
         const catSel = document.getElementById('admin-stock-filter-cat');
         if (catSel) {
             const cats = [...new Set(parts.map(p => p.categoria || 'General'))].sort();
             catSel.innerHTML = '<option value="">Todas las categorías</option>'
-                + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
         }
     },
 
@@ -1320,11 +1327,11 @@ const ui = {
             if (!container) return;
             container.innerHTML = configs.map(c => `
                 <div class="bg-white border border-gray-100 shadow rounded-xl p-5">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${c.label}</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${esc(c.label)}</p>
                     <div class="flex items-center gap-2 mt-2">
                         <input type="number" min="1"
                             id="rl-${c.clave}"
-                            value="${c.valor}"
+                            value="${esc(c.valor)}"
                             class="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         <button type="button"
                             data-clave="${c.clave}"
@@ -1376,10 +1383,10 @@ const ui = {
             list.innerHTML = rows.map(r => `
                 <div class="flex items-center justify-between bg-red-50 border border-red-100 px-4 py-2 rounded-lg">
                     <div>
-                        <span class="font-mono font-bold text-red-700">${r.ip}</span>
+                        <span class="font-mono font-bold text-red-700">${esc(r.ip)}</span>
                         <span class="ml-3 text-xs text-red-500">${r.intentos} intentos fallidos</span>
                     </div>
-                    <button type="button" data-ip="${r.ip}"
+                    <button type="button" data-ip="${esc(r.ip)}"
                         class="unblock-ip-btn text-xs text-red-400 hover:text-red-600 font-semibold border border-red-200 px-2 py-1 rounded hover:bg-red-100 transition">
                         Desbloquear
                     </button>

@@ -34,7 +34,7 @@ const toast = (() => {
         el.className = `pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[280px] max-w-sm toast-enter ${STYLES[type]}`;
         el.innerHTML = `
             <span class="${ICON_STYLES[type]} shrink-0 mt-0.5">${ICONS[type]}</span>
-            <p class="text-sm font-medium flex-1 leading-snug">${message}</p>
+            <p class="text-sm font-medium flex-1 leading-snug">${esc(message)}</p>
             <button class="text-gray-300 hover:text-gray-500 shrink-0 ml-2 mt-0.5 text-lg leading-none" onclick="this.closest('.toast-enter, .pointer-events-auto').remove()">×</button>
         `;
 

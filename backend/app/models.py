@@ -78,6 +78,9 @@ class Usuario(Base):
     # Feature 1: forced password change
     must_change_password = Column(Boolean, default=False)
     # (temp_password_plain was removed: temp passwords are never stored in plain text)
+    # Va dentro del JWT: al cambiar o resetear la clave se incrementa y los
+    # tokens anteriores dejan de valer
+    token_version   = Column(Integer, nullable=False, default=0, server_default="0")
 
     tickets_creados   = relationship("Ticket", back_populates="cliente",  foreign_keys="Ticket.usuario_id")
     tickets_asignados = relationship("Ticket", back_populates="tecnico",  foreign_keys="Ticket.tecnico_asignado")
@@ -134,6 +137,7 @@ class TicketStatusConfig(Base):
 class RmaCounter(Base):
     """Persistent counter for sequential RMA number generation (Feature 12)."""
     __tablename__ = "rma_counters"
+    __table_args__ = (UniqueConstraint("year", "rol_prefix", name="uq_rma_counters_year_prefix"),)
     id          = Column(Integer, primary_key=True, index=True)
     year        = Column(Integer, index=True)
     rol_prefix  = Column(String)   # e.g. "CL", "TC", "AD"
@@ -272,9 +276,15 @@ class StockMovimiento(Base):
     stock_nuevo    = Column(Integer)
     nota           = Column(String, nullable=True)
     fecha          = Column(DateTime, default=utcnow)
+    # Recepción de un pedido a proveedor (para poder anularla corrigiendo el pedido)
+    pedido_item_id = Column(Integer, ForeignKey("pedido_items.id"), nullable=True)
+    # Los movimientos no se borran: se anulan con un movimiento inverso
+    anula_id       = Column(Integer, ForeignKey("stock_movimientos.id"), nullable=True)
+    anulado        = Column(Boolean, nullable=False, default=False, server_default="0")
     repuesto = relationship("Repuesto")
     ticket   = relationship("Ticket")
     usuario  = relationship("Usuario")
+    pedido_item = relationship("PedidoItem")
 
 class HistorialEstado(Base):
     """Full audit trail — records every meaningful change on a ticket."""

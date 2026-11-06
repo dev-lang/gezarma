@@ -130,7 +130,8 @@ def crear_cliente(db: Session, nombre: str, telefono: str, email: str, tipo_clie
             _error("Teléfono inválido: usá solo números, opcionalmente con + al inicio.")
     if email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         _error("Email inválido.")
-    if email and db.query(models.Usuario).filter(models.Usuario.email == email).first():
+    from ..routers.auth import email_en_uso
+    if email and email_en_uso(db, email):
         _error("Ya hay un cliente con ese email: buscalo y elegilo de la lista.")
     if tipo_cliente not in {t.value for t in models.UserType}:
         _error("Tipo de cliente inválido.")

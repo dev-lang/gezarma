@@ -150,6 +150,9 @@ def get_presupuesto(
 
     if not ticket.presupuesto:
         raise HTTPException(404, "Este ticket no tiene presupuesto")
+    # El borrador es del taller: el cliente lo ve recién cuando se lo envían
+    if current_user.rol == models.UserRole.CLIENTE and ticket.presupuesto.estado == models.PresupuestoEstado.BORRADOR:
+        raise HTTPException(404, "Este ticket no tiene presupuesto")
 
     return _presupuesto_out(ticket.presupuesto, current_user)
 

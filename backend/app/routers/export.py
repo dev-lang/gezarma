@@ -24,6 +24,19 @@ ALIASES   = {"users": "usuarios", "products": "productos", "parts": "repuestos"}
 FORMATOS  = {"csv", "xlsx"}
 
 
+def _celda_segura(v):
+    """Texto que empieza con = + - @ (o tab/CR) se exporta con un apóstrofo adelante:
+    si no, Excel/LibreOffice lo toman como fórmula (p. ej. =HYPERLINK(...) en la
+    descripción de un ticket)."""
+    if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + v
+    return v
+
+
+def _seguras(rows: list) -> list:
+    return [[_celda_segura(v) for v in r] for r in rows]
+
+
 def _to_xlsx(headers: list, rows: list, sheet_name: str) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -38,7 +51,7 @@ def _to_xlsx(headers: list, rows: list, sheet_name: str) -> bytes:
         cell.fill      = PatternFill("solid", fgColor="1D4ED8")
         cell.alignment = Alignment(horizontal="center")
 
-    for row in rows:
+    for row in _seguras(rows):
         ws.append(row)
 
     # Auto-width (approximate)
@@ -55,7 +68,7 @@ def _to_csv(headers: list, rows: list) -> str:
     buf = io.StringIO()
     w = csv.writer(buf, quoting=csv.QUOTE_ALL)
     w.writerow(headers)
-    w.writerows(rows)
+    w.writerows(_seguras(rows))
     return buf.getvalue()
 
 
