@@ -14,7 +14,8 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket.
 - **Stock de repuestos** con historial de movimientos, **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
 - **Seguimiento público** sin login: el cliente consulta el estado con su N° de RMA y N° de serie (o escaneando el QR de su orden de ingreso).
-- **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, y **etiqueta 62 × 29 mm** con QR y código de barras para pegar en el equipo.
+- **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
+- **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
 - **Notificaciones por email**: cambios de estado y presupuestos al cliente (con el PDF adjunto), asignaciones al técnico, stock bajo y SLA al taller.
 - **Alertas de SLA**: tickets vencidos o por vencer en el dashboard y aviso automático, una sola vez por ticket.
 - **Tablero Kanban** por estado: arrastrar una tarjeta a otra columna le cambia el estado.
@@ -66,7 +67,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Aprobar / rechazar presupuesto | los suyos | ✅ | ✅ |
 | Dashboard con estadísticas, alertas de SLA y stock, tablero Kanban, favoritos | — | ✅ | ✅ |
 | Documentos: orden de ingreso, remito, presupuesto | los suyos | ✅ | ✅ |
-| Etiqueta del equipo | — | ✅ | ✅ |
+| Etiqueta del equipo y comprobantes de ticketera | — | ✅ | ✅ |
 | Exportar tickets, productos y repuestos | — | ✅ | ✅ |
 | Administrar usuarios, productos, repuestos, stock, etiquetas, estados y plantillas | — | — | ✅ |
 | Finanzas, seguridad del login, ajustes, exportar usuarios | — | — | ✅ |
@@ -141,16 +142,36 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 - **General**: nombre y datos de contacto que salen en documentos y mails, URL pública y si el seguimiento público está habilitado.
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
 - **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
+- **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
 - **SLA**: con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el SLA más corto, 24 h) y cada cuántos minutos revisar.
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
 
-### Etiquetas
+### Impresoras térmicas
 
-La etiqueta está pensada para impresoras de etiquetas de **62 × 29 mm** (Brother QL y similares). Al imprimir, elegí ese tamaño de papel y **escala 100 % / tamaño real**: el código de barras se genera con el ancho exacto de barra para 300 dpi y deja de leerse si se achica.
+Desde el detalle del ticket, *Documentos* ofrece la **etiqueta** del equipo y los **comprobantes de ingreso y de entrega** para ticketera. Se imprimen con el driver de la impresora, como cualquier documento: no hace falta instalar nada más en el sistema.
+
+**Etiqueta** (*Ajustes → Impresoras térmicas*: tamaño y dpi de la etiquetadora)
+
+| Tamaño | 203 dpi | 300 dpi |
+|---|---|---|
+| 62 × 29 mm (Brother QL y similares) | QR + código de barras | QR + código de barras |
+| 100 × 50 mm | QR + código de barras | QR + código de barras |
+| 58 × 40 mm | solo QR | QR + código de barras |
+| 50 × 25 mm | solo QR | QR + código de barras |
+| 40 × 30 mm | solo QR | solo QR |
 
 - El **QR** abre el ticket en el sistema (después de iniciar sesión, si hace falta).
 - El **código de barras** tiene el N° de RMA: con un lector USB, escanearlo en el buscador encuentra el ticket.
+- El texto (RMA, equipo, serie, cliente, fecha de ingreso) se acomoda al tamaño; si no entra todo, se omiten las últimas líneas.
+
+**Comprobantes para ticketera** (*Ajustes → Impresoras térmicas*: rollo de 58 u 80 mm y dpi)
+
+- **Ingreso**: datos del cliente y del equipo, falla informada, QR al seguimiento público y código de barras del RMA. Se lo lleva el cliente.
+- **Entrega**: trabajo realizado, repuestos, datos de envío y lugar para la firma de conformidad.
+- Salen en una sola tira con el largo justo para el contenido. En rollos de 58 mm a 203 dpi el código de barras no entra (lleva solo el QR).
+
+**Al imprimir**, elegí el tamaño de papel de la etiqueta o del rollo y **escala 100 % / tamaño real**, y la misma resolución configurada en *Ajustes*. Cada barra del código mide un número entero de puntos de la impresora: así todas las barras salen parejas. Por eso el código de barras aparece solo si entra legible en el tamaño elegido; si se achica o se imprime a otra resolución, puede dejar de leerse. El QR se lee siempre.
 
 ## Deploy
 
@@ -209,7 +230,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones. Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 
@@ -224,7 +245,7 @@ backend/
     auth.py            contraseñas (bcrypt), JWT y permisos por rol
     routers/           endpoints por área (tickets, presupuestos, stock, …)
     ajustes.py         ajustes editables desde el panel (secretos cifrados)
-    services/          lógica: tickets, stock, documentos, email, SLA, avisos
+    services/          lógica: tickets, stock, documentos, impresión térmica, email, SLA, avisos
     templates/         plantillas de documentos (PDF/impresión) y de mails
   migrations/          migraciones de Alembic
 frontend/
