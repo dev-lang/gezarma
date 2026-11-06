@@ -28,8 +28,11 @@ def mis_equipos(db: Session = Depends(database.get_db),
                 current_user: models.Usuario = Depends(auth.get_current_user)):
     """Los equipos del usuario (agrupados por N° de serie), de la reparación más reciente a la más vieja."""
     estados = {e.valor: e for e in db.query(models.TicketStatusConfig).all()}
-    tickets = (db.query(models.Ticket).filter(models.Ticket.usuario_id == current_user.id)
-               .order_by(models.Ticket.fecha_creacion.desc()).all())
+    from sqlalchemy.orm import joinedload, selectinload
+    T = models.Ticket
+    tickets = (db.query(T).options(joinedload(T.presupuesto), joinedload(T.encuesta), selectinload(T.firmas))
+               .filter(T.usuario_id == current_user.id)
+               .order_by(T.fecha_creacion.desc()).all())
     equipos, pendientes = {}, []
     for t in tickets:
         cfg = estados.get(t.estado)

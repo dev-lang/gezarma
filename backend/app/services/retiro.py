@@ -39,7 +39,8 @@ def al_cambiar_estado(db: Session, t: models.Ticket, ahora: datetime = None) -> 
 
 
 def pendientes(db: Session) -> list:
-    return (db.query(models.Ticket)
+    from sqlalchemy.orm import joinedload
+    return (db.query(models.Ticket).options(joinedload(models.Ticket.cliente))
             .filter(models.Ticket.estado == estado_retiro(db), models.Ticket.fecha_listo.isnot(None))
             .order_by(models.Ticket.fecha_listo.asc()).all())
 

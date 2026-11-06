@@ -10,6 +10,19 @@ SQLALCHEMY_DATABASE_URL = DATABASE_URL
 # antes de fallar con "database is locked".
 _connect_args = {"check_same_thread": False, "timeout": 30} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=_connect_args)
+
+if DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _claves_foraneas(conexion, _registro):
+        """SQLite no controla las claves foráneas si no se lo pide: sin esto se
+        podían borrar filas dejando referencias rotas, y los ON DELETE CASCADE no
+        actuaban (en PostgreSQL sí, así que el comportamiento cambiaba al migrar).
+        Las migraciones usan su propia conexión, sin esto (Alembic recrea tablas)."""
+        cur = conexion.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

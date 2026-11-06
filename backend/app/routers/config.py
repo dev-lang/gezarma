@@ -235,8 +235,10 @@ def guardar_ajustes(
             errores[clave] = str(e)
     if errores:
         db.rollback()
+        ajustes_mod.invalidar_cache()
         raise HTTPException(400, {"mensaje": "Hay valores inválidos", "errores": errores})
     db.commit()
+    ajustes_mod.invalidar_cache()   # que el resto de la app vea los valores nuevos ya mismo
     return ajustes_mod.listado(db)
 
 

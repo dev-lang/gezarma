@@ -9,7 +9,7 @@ from ..services import email
 from ..services import sla as sla_service
 from ..services import retiro as retiro_service, avisos
 from .. import ajustes
-from ._tickets_comun import ticket_o_404
+from ._tickets_comun import con_relaciones, ticket_o_404
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -64,11 +64,14 @@ def get_dashboard_stats(
     cerrados  = db.query(models.Ticket).filter(models.Ticket.estado.in_(finales - {cancelado})).count()
     reparacion= db.query(models.Ticket).filter(models.Ticket.estado == models.TicketStatus.REPARACION).count()
     # Promedio de reparación: solo los terminados (un cancelado no es una reparación)
-    closed    = db.query(models.Ticket).filter(models.Ticket.fecha_cierre != None,  # noqa: E711
-                                               models.Ticket.estado.in_(finales - {cancelado})).all()
+    # Solo las dos fechas (no los tickets enteros); la resta en Python funciona
+    # igual en SQLite y PostgreSQL
+    closed    = db.query(models.Ticket.fecha_creacion, models.Ticket.fecha_cierre).filter(
+        models.Ticket.fecha_cierre != None,  # noqa: E711
+        models.Ticket.estado.in_(finales - {cancelado})).all()
     avg_time  = 0
     if closed:
-        total_time = sum([(t.fecha_cierre - t.fecha_creacion).total_seconds() for t in closed])
+        total_time = sum((cierre - creacion).total_seconds() for creacion, cierre in closed)
         avg_time   = (total_time / len(closed)) / 3600
     products  = db.query(models.Ticket.producto, func.count(models.Ticket.id)).group_by(models.Ticket.producto).all()
     states    = db.query(models.Ticket.estado, func.count(models.Ticket.id)).group_by(models.Ticket.estado).all()
@@ -121,27 +124,35 @@ def retiro_pendientes(
     return out
 
 # ── Global search ─────────────────────────────────────────────────────────────
+def _parecido(columna, q: str):
+    """Contiene `q` sin distinguir mayúsculas (igual en SQLite y en PostgreSQL),
+    tomando % y _ como texto y no como comodines."""
+    texto = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return columna.ilike(f"%{texto}%", escape="\\")
+
+
 @router.get("/search/global")
 def global_search(
-    q: str = Query(...),
+    q: str = Query(..., max_length=200),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
+    from sqlalchemy import select
+    T, C = models.Ticket, models.Comentario
     es_cliente = current_user.rol == models.UserRole.CLIENTE
     # El cliente no busca dentro de las notas internas (se podría deducir su texto)
-    union = models.Ticket.id == models.Comentario.ticket_id
+    union = T.id == C.ticket_id
     if es_cliente:
-        union = union & (models.Comentario.is_internal == False)  # noqa: E712
-    query = db.query(models.Ticket).outerjoin(models.Comentario, union).filter(
-        (models.Ticket.numero_rma.contains(q))   |
-        (models.Ticket.numero_serie.contains(q)) |
-        (models.Ticket.producto.contains(q))     |
-        (models.Ticket.descripcion.contains(q))  |
-        (models.Comentario.comentario.contains(q))
-    ).distinct()
+        union = union & (C.is_internal == False)  # noqa: E712
+    coinciden = (select(T.id).outerjoin(C, union)
+                 .where(_parecido(T.numero_rma, q) | _parecido(T.numero_serie, q) | _parecido(T.producto, q)
+                        | _parecido(T.descripcion, q) | _parecido(C.comentario, q)))
     if es_cliente:
-        query = query.filter(models.Ticket.usuario_id == current_user.id)
-    return [schemas.Ticket.for_viewer(t, current_user) for t in query.all()]
+        coinciden = coinciden.where(T.usuario_id == current_user.id)
+    tickets = (con_relaciones(db.query(T)).filter(T.id.in_(coinciden))
+               .order_by(T.fecha_creacion.desc(), T.id.desc()).limit(limit).all())
+    return [schemas.Ticket.for_viewer(t, current_user) for t in tickets]
 
 # ── List ──────────────────────────────────────────────────────────────────────
 @router.get("/", response_model=List[schemas.Ticket])
@@ -149,17 +160,17 @@ def list_tickets(
     status: Optional[str] = None,
     tecnico_id: Optional[int] = None,
     usuario_id: Optional[int] = None,
-    skip: int = 0, limit: int = 100,
+    skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    query = db.query(models.Ticket)
+    query = con_relaciones(db.query(models.Ticket))
     if current_user.rol == models.UserRole.CLIENTE:
         query = query.filter(models.Ticket.usuario_id == current_user.id)
     if status:     query = query.filter(models.Ticket.estado     == status)
     if tecnico_id: query = query.filter(models.Ticket.tecnico_asignado == tecnico_id)
     if usuario_id: query = query.filter(models.Ticket.usuario_id == usuario_id)
-    tickets = query.order_by(models.Ticket.fecha_creacion.desc()).offset(skip).limit(limit).all()
+    tickets = query.order_by(models.Ticket.fecha_creacion.desc(), models.Ticket.id.desc()).offset(skip).limit(limit).all()
     return [schemas.Ticket.for_viewer(t, current_user) for t in tickets]
 
 # ── Get single ────────────────────────────────────────────────────────────────

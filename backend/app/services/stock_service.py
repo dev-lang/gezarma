@@ -117,5 +117,8 @@ def anular_movimiento(db: Session, mov: models.StockMovimiento, usuario: models.
 
 
 def alertas(db: Session) -> list:
-    """Repuestos en o bajo su mínimo, o con stock negativo."""
-    return [r for r in db.query(models.Repuesto).order_by(models.Repuesto.nombre).all() if esta_bajo_minimo(r)]
+    """Repuestos en o bajo su mínimo, o con stock negativo (filtrado en la base)."""
+    from sqlalchemy import and_, or_
+    R = models.Repuesto
+    return (db.query(R).filter(or_(R.stock < 0, and_(R.stock_minimo > 0, R.stock <= R.stock_minimo)))
+            .order_by(R.nombre).all())

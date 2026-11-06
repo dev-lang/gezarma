@@ -449,15 +449,19 @@ def get_financial_stats(
         auth.check_role([models.UserRole.ADMINISTRADOR])
     ),
 ):
-    # Get presupuestos aprobados linked to closed tickets
-    presupuestos = (
-        db.query(models.Presupuesto)
-        .join(models.Ticket, models.Presupuesto.ticket_id == models.Ticket.id)
-        .filter(
-            models.Presupuesto.estado == models.PresupuestoEstado.APROBADO,
-        )
-        .all()
-    )
+    # Totales por presupuesto aprobado sumados en la base (una consulta, sin cargar
+    # cada presupuesto con sus ítems). El agrupado por mes queda en Python porque
+    # el mes es el de la hora local del negocio.
+    from sqlalchemy import func
+    P, I = models.Presupuesto, models.PresupuestoItem
+    filas = (db.query(P.id, P.fecha_actualizacion,
+                      func.coalesce(func.sum(I.cantidad * I.costo_interno), 0.0),
+                      func.coalesce(func.sum(I.cantidad * I.precio_cliente), 0.0))
+             .join(models.Ticket, P.ticket_id == models.Ticket.id)
+             .outerjoin(I, I.presupuesto_id == P.id)
+             .filter(P.estado == models.PresupuestoEstado.APROBADO)
+             .group_by(P.id, P.fecha_actualizacion).all())
+    presupuestos = filas
 
     total_ganancia = 0.0
     total_costo = 0.0
@@ -466,15 +470,13 @@ def get_financial_stats(
     ingresos_por_mes: dict = {}
     costos_por_mes: dict = {}
 
-    for p in presupuestos:
-        g = p.ganancia
-        c = p.costo_total
-        i = p.precio_total
+    for _id, fecha, c, i in filas:
+        g = i - c
         total_ganancia += g
         total_costo += c
         total_ingreso += i
 
-        mes_key = utc_to_local(p.fecha_actualizacion).strftime("%Y-%m")
+        mes_key = utc_to_local(fecha).strftime("%Y-%m")
         ganancias_por_mes[mes_key] = ganancias_por_mes.get(mes_key, 0.0) + g
         ingresos_por_mes[mes_key] = ingresos_por_mes.get(mes_key, 0.0) + i
         costos_por_mes[mes_key] = costos_por_mes.get(mes_key, 0.0) + c

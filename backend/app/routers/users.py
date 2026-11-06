@@ -1,5 +1,6 @@
 import secrets, string
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth
@@ -155,6 +156,15 @@ def delete_user(
     db.query(models.Ticket).filter(models.Ticket.tecnico_asignado == user_id).update(
         {models.Ticket.tecnico_asignado: None}
     )
+    # Lo suyo que no es historia del taller se borra con el usuario
+    db.query(models.Notificacion).filter(models.Notificacion.usuario_id == user_id).delete()
+    db.query(models.TicketFavorito).filter(models.TicketFavorito.usuario_id == user_id).delete()
     db.delete(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Tiene tickets, comentarios, historial…: borrarlo dejaría registros sin autor
+        db.rollback()
+        raise HTTPException(status_code=400, detail="El usuario tiene actividad registrada (tickets, comentarios, "
+                                                    "historial…). Deshabilitalo en lugar de eliminarlo.")
     return None

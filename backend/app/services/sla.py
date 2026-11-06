@@ -25,7 +25,8 @@ NIVELES = {"por_vencer": 1, "vencido": 2}
 def _tickets_con_sla(db: Session):
     finales = {e.valor for e in db.query(models.TicketStatusConfig).filter_by(es_final=True).all()}
     finales |= {models.TicketStatus.CERRADO.value, models.TicketStatus.CANCELADO.value}
-    return (db.query(models.Ticket)
+    from sqlalchemy.orm import joinedload
+    return (db.query(models.Ticket).options(joinedload(models.Ticket.tecnico))
             .filter(models.Ticket.deadline_sla.isnot(None), models.Ticket.estado.notin_(finales))
             .order_by(models.Ticket.deadline_sla.asc()).all())
 

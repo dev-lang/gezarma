@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth
@@ -87,5 +88,10 @@ def delete_part(
         )
 
     db.delete(db_part)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="El repuesto tiene movimientos de stock, presupuestos o pedidos: "
+                                                    "no se puede eliminar (podés dejarlo con stock 0).")
     return None

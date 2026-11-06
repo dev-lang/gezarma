@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Float, Boolean, Table, JSON, LargeBinary, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import deferred, relationship
 import enum
 from .database import Base
 from .timeutils import utcnow
@@ -15,8 +15,8 @@ class TicketRepuesto(Base):
 
 ticket_tags = Table(
     "ticket_tags", Base.metadata,
-    Column("ticket_id", Integer, ForeignKey("tickets.id")),
-    Column("tag_id",    Integer, ForeignKey("tags.id"))
+    Column("ticket_id", Integer, ForeignKey("tickets.id"), primary_key=True),
+    Column("tag_id",    Integer, ForeignKey("tags.id"), primary_key=True)
 )
 
 # ── Enums ────────────────────────────────────────────────────────────────────
@@ -147,23 +147,23 @@ class Ticket(Base):
     __tablename__ = "tickets"
     id              = Column(Integer, primary_key=True, index=True)
     numero_rma      = Column(String, unique=True, index=True)
-    usuario_id      = Column(Integer, ForeignKey("usuarios.id"))
+    usuario_id      = Column(Integer, ForeignKey("usuarios.id"), index=True)
     producto_id     = Column(Integer, ForeignKey("productos.id"), nullable=True)
     producto        = Column(String)
     numero_serie    = Column(String, index=True)
     fecha_compra    = Column(DateTime)
     en_garantia     = Column(Boolean, default=True)
     descripcion     = Column(Text)
-    estado          = Column(String, default=TicketStatus.NUEVO)
+    estado          = Column(String, default=TicketStatus.NUEVO, index=True)
     prioridad       = Column(String, default="Normal")
     diagnostico     = Column(Text, nullable=True)
-    tecnico_asignado= Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    tecnico_asignado= Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     # SLA y Tiempos
-    fecha_creacion      = Column(DateTime, default=utcnow)
+    fecha_creacion      = Column(DateTime, default=utcnow, index=True)
     fecha_actualizacion = Column(DateTime, default=utcnow, onupdate=utcnow)
     fecha_cierre        = Column(DateTime, nullable=True)
-    deadline_sla        = Column(DateTime, nullable=True)
+    deadline_sla        = Column(DateTime, nullable=True, index=True)
     # Último aviso de SLA enviado: para qué vencimiento y de qué nivel
     # ("por_vencer" o "vencido"), así cada aviso sale una sola vez
     sla_aviso_deadline  = Column(DateTime, nullable=True)
@@ -255,7 +255,7 @@ class TicketFavorito(Base):
 class Comentario(Base):
     __tablename__ = "comentarios"
     id          = Column(Integer, primary_key=True, index=True)
-    ticket_id   = Column(Integer, ForeignKey("tickets.id"))
+    ticket_id   = Column(Integer, ForeignKey("tickets.id"), index=True)
     usuario_id  = Column(Integer, ForeignKey("usuarios.id"))
     comentario  = Column(Text)
     is_internal = Column(Boolean, default=False)
@@ -266,8 +266,8 @@ class Comentario(Base):
 class StockMovimiento(Base):
     __tablename__ = "stock_movimientos"
     id             = Column(Integer, primary_key=True, index=True)
-    repuesto_id    = Column(Integer, ForeignKey("repuestos.id"))
-    ticket_id      = Column(Integer, ForeignKey("tickets.id"),   nullable=True)
+    repuesto_id    = Column(Integer, ForeignKey("repuestos.id"), index=True)
+    ticket_id      = Column(Integer, ForeignKey("tickets.id"),   nullable=True, index=True)
     usuario_id     = Column(Integer, ForeignKey("usuarios.id"))
     tipo           = Column(String)
     cantidad       = Column(Integer)
@@ -289,7 +289,7 @@ class HistorialEstado(Base):
     """Full audit trail — records every meaningful change on a ticket."""
     __tablename__ = "historial_estados"
     id              = Column(Integer, primary_key=True, index=True)
-    ticket_id       = Column(Integer, ForeignKey("tickets.id"))
+    ticket_id       = Column(Integer, ForeignKey("tickets.id"), index=True)
     tipo_evento     = Column(String, default=EventoHistorial.CAMBIO_ESTADO)
     estado_anterior = Column(String, nullable=True)
     estado_nuevo    = Column(String, nullable=True)
@@ -305,7 +305,7 @@ class HistorialEstado(Base):
 class Adjunto(Base):
     __tablename__ = "adjuntos"
     id              = Column(Integer, primary_key=True, index=True)
-    ticket_id       = Column(Integer, ForeignKey("tickets.id"))
+    ticket_id       = Column(Integer, ForeignKey("tickets.id"), index=True)
     nombre_archivo  = Column(String)          # original filename shown to user
     nombre_guardado = Column(String)          # UUID-prefixed safe filename on disk
     ruta_archivo    = Column(String)          # full path on disk
@@ -378,7 +378,9 @@ class Firma(Base):
     id             = Column(Integer, primary_key=True, index=True)
     ticket_id      = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
     momento        = Column(String, nullable=False)
-    imagen         = Column(LargeBinary, nullable=False)   # PNG en blanco y negro
+    # PNG en blanco y negro. Diferida: solo se lee al mostrar o imprimir la firma
+    # (los listados de tickets cargan las firmas para saber si están, no la imagen)
+    imagen         = deferred(Column(LargeBinary, nullable=False))
     ancho          = Column(Integer, nullable=False)
     alto           = Column(Integer, nullable=False)
     aclaracion     = Column(String, nullable=True)
@@ -397,7 +399,7 @@ class PresupuestoEstado(str, enum.Enum):
 class PresupuestoItem(Base):
     __tablename__ = "presupuesto_items"
     id              = Column(Integer, primary_key=True, index=True)
-    presupuesto_id  = Column(Integer, ForeignKey("presupuestos.id", ondelete="CASCADE"))
+    presupuesto_id  = Column(Integer, ForeignKey("presupuestos.id", ondelete="CASCADE"), index=True)
     descripcion     = Column(String)
     cantidad        = Column(Float, default=1)
     costo_interno   = Column(Float, default=0.0)
@@ -418,7 +420,7 @@ class PresupuestoItem(Base):
 class Presupuesto(Base):
     __tablename__ = "presupuestos"
     id              = Column(Integer, primary_key=True, index=True)
-    ticket_id       = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"))
+    ticket_id       = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), index=True)
     estado          = Column(String, default=PresupuestoEstado.BORRADOR)
     version         = Column(Integer, default=1)
     notas           = Column(Text, nullable=True)
@@ -523,6 +525,6 @@ class LoginAttempt(Base):
     __tablename__ = "login_attempts"
     id         = Column(Integer, primary_key=True, index=True)
     ip_address = Column(String, index=True)
-    username   = Column(String)
+    username   = Column(String, index=True)
     fecha      = Column(DateTime, default=utcnow)
     exitoso    = Column(Boolean, default=False)

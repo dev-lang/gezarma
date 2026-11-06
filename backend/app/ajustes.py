@@ -197,14 +197,34 @@ def politica_retiro(db: Session) -> str:
     return texto.replace("{dias}", str(get(db, "retiro_dias_guarda")))
 
 
+# Caché de los valores guardados: get() se llama muchas veces por request (en
+# listados, una o más veces por ticket). Se recarga entera cada pocos segundos
+# (por si otro proceso cambió algo) y se vacía al guardar un ajuste.
+_CACHE_SEGUNDOS = 5
+_cache = {"hasta": 0.0, "valores": {}}
+
+
+def invalidar_cache() -> None:
+    _cache["hasta"] = 0.0
+
+
+def _guardados(db: Session) -> dict:
+    import time
+    ahora = time.monotonic()
+    if ahora >= _cache["hasta"]:
+        _cache["valores"] = {r.clave: r.valor for r in db.query(models.ConfigSistema).all()}
+        _cache["hasta"] = ahora + _CACHE_SEGUNDOS
+    return _cache["valores"]
+
+
 def get(db: Session, clave: str):
     d = DEFS[clave]
-    row = db.query(models.ConfigSistema).filter_by(clave=clave).first()
-    if row is None or row.valor is None:
+    valor = _guardados(db).get(clave)
+    if valor is None:
         return d["default"]
     if d["tipo"] == "secret":
-        return _decrypt(row.valor) if row.valor else ""
-    return _parse(d, row.valor)
+        return _decrypt(valor) if valor else ""
+    return _parse(d, valor)
 
 
 def set(db: Session, clave: str, value) -> None:
@@ -222,6 +242,7 @@ def set(db: Session, clave: str, value) -> None:
         row.valor = stored
     else:
         db.add(models.ConfigSistema(clave=clave, valor=stored))
+    invalidar_cache()
 
 
 def listado(db: Session) -> list:

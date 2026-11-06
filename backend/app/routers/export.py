@@ -88,7 +88,11 @@ def export_data(
 
     # ── TICKETS ────────────────────────────────────────────────────────────────
     if entidad == "tickets":
-        items = db.query(models.Ticket).order_by(models.Ticket.fecha_creacion.desc()).all()
+        from sqlalchemy.orm import joinedload
+        T = models.Ticket
+        items = (db.query(T).options(joinedload(T.cliente), joinedload(T.tecnico), joinedload(T.origen),
+                                     joinedload(T.relacionado))
+                 .order_by(T.fecha_creacion.desc()).all())
         headers = ["ID", "RMA", "Producto", "Nº Serie", "Estado", "Prioridad",
                    "Cliente", "Técnico", "Garantía", "Descripción", "Diagnóstico",
                    "Transporte", "Tracking", "Clonado de", "Relacionado con",

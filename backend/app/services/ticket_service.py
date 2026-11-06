@@ -111,6 +111,9 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
     en mostrador, el taller lo carga a nombre de `cliente` (el N° de RMA y la
     prioridad automática salen del cliente, el historial registra quién lo cargó)."""
     duenio = cliente or current_user
+    if ticket.producto_id is not None and not db.get(models.Producto, ticket.producto_id):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="El producto elegido no existe")
     rma_num = generate_rma_number(db, duenio.rol)
 
     # Auto-priority
