@@ -56,6 +56,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
     if user is None:
         raise credentials_exception
+    # A disabled account must lose access right away, not when its token expires
+    if not user.activo:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cuenta deshabilitada. Contactá al administrador.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 def check_role(required_roles: list):
@@ -75,7 +82,10 @@ def decode_token_user(token: str, db):
         username: str = payload.get("sub")
         if not username:
             return None
-        return db.query(models.Usuario).filter(models.Usuario.username == username).first()
+        user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
+        if user is None or not user.activo:
+            return None
+        return user
     except Exception:
         return None
 

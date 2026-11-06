@@ -10,6 +10,10 @@ const api = {
         if (token) headers["Authorization"] = `Bearer ${token}`;
         const res = await fetch(this.baseUrl + endpoint.replace(/^\//, ""), { ...options, headers });
         if (!res.ok) {
+            // Expired/invalid token or disabled account → back to login
+            if (res.status === 401 && token && typeof auth !== "undefined") {
+                auth.logout();
+            }
             let msg = `Error ${res.status}`;
             try { const d = await res.json(); msg = d.detail || msg; } catch {}
             throw new Error(msg);
