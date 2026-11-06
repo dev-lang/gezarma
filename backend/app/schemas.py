@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, PlainSerializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator
 from typing import Annotated, Optional, List, Dict
 from datetime import datetime
 
@@ -235,6 +235,14 @@ class TicketSetTags(BaseModel):
     """Replace all tags on a ticket (for editing)."""
     tag_nombres: List[str]
 
+class TicketPartQty(BaseModel):
+    cantidad: int = Field(..., ge=1, le=100000)
+
+
+class TicketDiagnostic(BaseModel):
+    diagnostico: str = Field(..., max_length=20000)
+
+
 class TicketAddPart(BaseModel):
     part_id:  int
     cantidad: int = 1
@@ -380,6 +388,8 @@ class StockMovimientoOut(BaseModel):
     stock_nuevo:    int
     nota:           Optional[str] = None
     fecha:          UTCDateTime
+    anulado:        bool = False
+    anula_id:       Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 class StockMovimientoUpdate(BaseModel):

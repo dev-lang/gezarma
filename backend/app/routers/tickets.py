@@ -105,11 +105,16 @@ def get_dashboard_stats(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
+    finales   = {e.valor for e in db.query(models.TicketStatusConfig).filter_by(es_final=True).all()} \
+                or {models.TicketStatus.CERRADO.value, models.TicketStatus.CANCELADO.value}
+    cancelado = models.TicketStatus.CANCELADO.value
     total     = db.query(models.Ticket).count()
-    abiertos  = db.query(models.Ticket).filter(models.Ticket.estado != models.TicketStatus.CERRADO).count()
-    cerrados  = db.query(models.Ticket).filter(models.Ticket.estado == models.TicketStatus.CERRADO).count()
+    abiertos  = db.query(models.Ticket).filter(models.Ticket.estado.notin_(finales)).count()
+    cerrados  = db.query(models.Ticket).filter(models.Ticket.estado.in_(finales - {cancelado})).count()
     reparacion= db.query(models.Ticket).filter(models.Ticket.estado == models.TicketStatus.REPARACION).count()
-    closed    = db.query(models.Ticket).filter(models.Ticket.fecha_cierre != None).all()
+    # Promedio de reparación: solo los terminados (un cancelado no es una reparación)
+    closed    = db.query(models.Ticket).filter(models.Ticket.fecha_cierre != None,  # noqa: E711
+                                               models.Ticket.estado.in_(finales - {cancelado})).all()
     avg_time  = 0
     if closed:
         total_time = sum([(t.fecha_cierre - t.fecha_creacion).total_seconds() for t in closed])
@@ -267,7 +272,13 @@ def update_ticket_status(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    if update.estado not in VALID_ESTADOS:
+    # Los estados se configuran en Administración → Estados (no solo los de fábrica)
+    cfgs = {e.valor: e for e in db.query(models.TicketStatusConfig).all()}
+    cfg = cfgs.get(update.estado)
+    if cfgs:
+        if not cfg or not cfg.activo:
+            raise HTTPException(status_code=400, detail="Estado inválido o desactivado")
+    elif update.estado not in VALID_ESTADOS:
         raise HTTPException(status_code=400, detail="Estado inválido")
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
     if not ticket:
@@ -278,8 +289,11 @@ def update_ticket_status(
     estado_ant = ticket.estado
     ticket.estado = update.estado
     ticket.fecha_actualizacion = utcnow()
-    if update.estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO):
+    es_final = cfg.es_final if cfg else update.estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO)
+    if es_final:
         ticket.fecha_cierre = utcnow()
+    else:
+        ticket.fecha_cierre = None   # reabierto: deja de contar como cerrado (promedios, garantía)
     ticket.deadline_sla = calculate_sla_deadline(update.estado)
     if retiro_service.al_cambiar_estado(db, ticket) and ticket.cliente:
         avisos.notificar(db, [ticket.cliente], models.TipoNotificacion.CAMBIO_ESTADO,
@@ -494,7 +508,7 @@ def add_ticket_part(
 def update_ticket_part(
     ticket_id: int,
     part_id: int,
-    payload: dict,
+    payload: schemas.TicketPartQty,
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.check_role([
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
@@ -509,15 +523,12 @@ def update_ticket_part(
     ).first()
     if not assoc:
         raise HTTPException(status_code=404, detail="Repuesto no asignado a este ticket")
-    part = db.query(models.Repuesto).filter(models.Repuesto.id == part_id).first()
-    nueva_cantidad = int(payload.get("cantidad", assoc.cantidad))
-    if nueva_cantidad < 1:
-        raise HTTPException(status_code=400, detail="La cantidad debe ser al menos 1")
+    part = assoc.repuesto
+    nueva_cantidad = payload.cantidad
     diff = nueva_cantidad - assoc.cantidad  # positive = need more stock, negative = return stock
-    if diff > 0 and part.stock < diff:
-        raise HTTPException(status_code=400, detail=f"Stock insuficiente para aumentar (disponible: {part.stock})")
-    stock_anterior = part.stock
-    part.stock -= diff
+    if diff == 0:
+        return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
+    stock_anterior, _ = stock_service.ajustar(db, part, -diff, minimo_cero=True)
     stock_service.revisar_minimo(db, part, stock_anterior)
     assoc.cantidad = nueva_cantidad
     mov = models.StockMovimiento(
@@ -553,9 +564,8 @@ def remove_ticket_part(
     ).first()
     if not assoc:
         raise HTTPException(status_code=404, detail="Repuesto no asignado a este ticket")
-    part = db.query(models.Repuesto).filter(models.Repuesto.id == part_id).first()
-    stock_anterior = part.stock
-    part.stock += assoc.cantidad  # return stock
+    part = assoc.repuesto
+    stock_anterior, _ = stock_service.ajustar(db, part, assoc.cantidad)  # vuelve al stock
     mov = models.StockMovimiento(
         repuesto_id=part_id, ticket_id=ticket_id,
         usuario_id=current_user.id, tipo="devolucion",
@@ -595,7 +605,7 @@ def get_ticket_history(
 @router.put("/{ticket_id}/diagnostic", response_model=schemas.Ticket)
 def update_diagnostic(
     ticket_id: int,
-    data: dict,
+    data: schemas.TicketDiagnostic,
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.check_role([
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
@@ -605,7 +615,7 @@ def update_diagnostic(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     old_diag = ticket.diagnostico
-    new_diag = data.get("diagnostico", "")
+    new_diag = data.diagnostico   # obligatorio: antes, sin el campo se borraba el diagnóstico
     if old_diag != new_diag:
         log_event(db, ticket_id, current_user.id, models.EventoHistorial.CAMPO_EDITADO,
                   campo="diagnostico", val_ant=old_diag, val_nuevo=new_diag,
@@ -621,6 +631,7 @@ def update_diagnostic(
 def clone_ticket(
     ticket_id: int,
     payload: schemas.TicketClone,
+    request: Request,
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.check_role([
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
@@ -630,34 +641,25 @@ def clone_ticket(
     if not orig:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
 
-    from ..services.ticket_service import generate_rma_number
-    rma_num = generate_rma_number(db, orig.cliente.rol if orig.cliente else "cliente")
-
-    clone = models.Ticket(
-        numero_rma=rma_num,
-        usuario_id=orig.usuario_id,
-        producto_id=orig.producto_id,
-        producto=orig.producto,
-        numero_serie=orig.numero_serie,
-        fecha_compra=orig.fecha_compra,
-        en_garantia=orig.en_garantia,
-        descripcion=orig.descripcion,
-        prioridad=orig.prioridad,
-        estado=models.TicketStatus.NUEVO,
-        clonado_de=orig.id,
-        ticket_relacionado=orig.id if payload.relacionar else None,
-        fecha_actualizacion=utcnow(),
-    )
-    db.add(clone)
-    db.flush()
-
+    # Por el alta normal: N° de RMA, SLA, garantía (de compra y de reparación),
+    # prioridad automática y auditoría, igual que cualquier ticket nuevo
+    datos = schemas.TicketCreate(
+        producto_id=orig.producto_id, producto=orig.producto, numero_serie=orig.numero_serie or "",
+        fecha_compra=orig.fecha_compra, descripcion=orig.descripcion or "",
+        prioridad=orig.prioridad if orig.prioridad in schemas.PRIORIDADES else "Normal")
+    clone = process_ticket_creation(db, datos, current_user, ip_address=request.client.host if request.client else None,
+                                    cliente=orig.cliente,
+                                    detalle_alta=f"Ticket creado como clon de {orig.numero_rma} por {current_user.nombre}")
+    clone.clonado_de = orig.id
+    if payload.relacionar and not clone.ticket_relacionado:
+        clone.ticket_relacionado = orig.id
     for t in orig.tags:
         clone.tags.append(t)
 
     log_event(db, clone.id, current_user.id, models.EventoHistorial.TICKET_CLONADO,
               detalle=f"Clonado de {orig.numero_rma}")
     log_event(db, orig.id, current_user.id, models.EventoHistorial.TICKET_RELACIONADO,
-              detalle=f"Clonado como {rma_num}")
+              detalle=f"Clonado como {clone.numero_rma}")
     db.commit()
     db.refresh(clone)
     return schemas.Ticket.from_orm_with_tecnico(clone, current_user.id)

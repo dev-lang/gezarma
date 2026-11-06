@@ -52,8 +52,17 @@ def update_part(
     if part.stock_minimo < 0:
         raise HTTPException(status_code=400, detail="El stock mínimo no puede ser negativo")
     stock_anterior = db_part.stock
-    for key, value in part.model_dump().items():
+    datos = part.model_dump()
+    nuevo_stock = datos.pop("stock", None)
+    for key, value in datos.items():
         setattr(db_part, key, value)
+    # Un cambio de stock a mano queda como movimiento de ajuste (si no, el
+    # historial no cierra con el stock real)
+    if nuevo_stock is not None and nuevo_stock != stock_anterior:
+        anterior, nuevo = stock_service.ajustar(db, db_part, nuevo_stock - stock_anterior)
+        db.add(models.StockMovimiento(repuesto_id=db_part.id, usuario_id=current_user.id, tipo="ajuste",
+                                      cantidad=nuevo - anterior, stock_anterior=anterior, stock_nuevo=nuevo,
+                                      nota=f"Ajuste manual de stock por {current_user.nombre}"))
     stock_service.revisar_minimo(db, db_part, stock_anterior)
 
     db.commit()

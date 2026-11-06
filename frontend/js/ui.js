@@ -1222,9 +1222,7 @@ const ui = {
             tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-gray-400 italic text-sm">Sin movimientos registrados.</td></tr>`;
             return;
         }
-        const latestByPart = {};
-        movs.forEach(m => { if (!(m.repuesto_id in latestByPart)) latestByPart[m.repuesto_id] = m.id; });
-        tbody.innerHTML = movs.map(m => components.stockMovRow(m, latestByPart[m.repuesto_id] === m.id)).join('');
+        tbody.innerHTML = movs.map(m => components.stockMovRow(m)).join('');
         tbody.querySelectorAll('.stock-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const nota = btn.dataset.nota || '';
@@ -1236,7 +1234,7 @@ const ui = {
         tbody.querySelectorAll('.stock-del-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = parseInt(btn.dataset.id);
-                confirmDialog('¿Eliminar movimiento?', 'Se revertirá el stock al valor anterior.')
+                confirmDialog('¿Anular este movimiento?', 'Se registra un movimiento inverso y, si era de un ticket o un pedido, se corrige también ahí.', 'Anular')
                     .then(ok => { if (ok) ui._deleteStockMov(id); });
             });
         });
@@ -1254,7 +1252,7 @@ const ui = {
             this._adminPartsCache = updated;
             this.adminRenderParts(); this.adminCheckStockAlerts(updated);
             await this.loadStockHistory();
-            toast.success('Movimiento eliminado y stock revertido.');
+            toast.success('Movimiento anulado y stock corregido.');
         } catch(e) { toast.error(e.message); }
     },
 

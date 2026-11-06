@@ -162,8 +162,11 @@ const components = (() => {
         </div>`;
     }
 
-    function stockMovRow(m, isLast = false) {
-        const isConsumo = m.tipo === 'consumo';
+    const TIPOS_MOV = { consumo: 'Consumo', reposicion: 'Reposición', devolucion: 'Devolución',
+                        ajuste: 'Ajuste', anulacion: 'Anulación' };
+
+    function stockMovRow(m) {
+        const isConsumo = m.cantidad < 0;
         const cls   = isConsumo ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
         const sign  = isConsumo ? '−' : '+';
         const fecha = new Date(m.fecha).toLocaleString('es-AR', { hour12: false });
@@ -176,19 +179,21 @@ const components = (() => {
         const tipoCls  = isConsumo
             ? 'bg-red-50 text-red-700 border border-red-200'
             : 'bg-green-50 text-green-700 border border-green-200';
-        const actions = isLast
-            ? `<td class="px-4 py-2.5 text-center">
+        // Los movimientos no se borran: se anulan con uno inverso (que corrige
+        // también el ticket o el pedido de donde vinieron)
+        const anulable = !m.anulado && !m.anula_id && !(m.ticket_id && m.tipo !== 'consumo');
+        const actions = `<td class="px-4 py-2.5 text-center">
                 <div class="flex items-center justify-center gap-2">
-                    <button type="button" class="stock-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold" data-id="${m.id}" data-nota="${esc(m.nota)}">Editar</button>
-                    <button type="button" class="stock-del-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-id="${m.id}">Eliminar</button>
+                    <button type="button" class="stock-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold" data-id="${m.id}" data-nota="${esc(m.nota)}">Nota</button>
+                    ${anulable ? `<button type="button" class="stock-del-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-id="${m.id}">Anular</button>` : ''}
+                    ${m.anulado ? '<span class="text-[10px] font-bold text-gray-400 uppercase">anulado</span>' : ''}
                 </div>
-               </td>`
-            : `<td class="px-4 py-2.5 text-center text-gray-200 text-xs">—</td>`;
-        return `<tr class="hover:bg-gray-50 transition text-sm">
+               </td>`;
+        return `<tr class="hover:bg-gray-50 transition text-sm ${m.anulado ? 'line-through opacity-50' : ''}">
             <td class="px-4 py-2.5 text-gray-400 text-xs whitespace-nowrap">${fecha}</td>
             <td class="px-4 py-2.5">${repuesto}</td>
             <td class="px-4 py-2.5">${ticketLink}</td>
-            <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoCls}">${isConsumo ? 'Consumo' : 'Reposición'}</span></td>
+            <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${tipoCls}">${TIPOS_MOV[m.tipo] || esc(m.tipo)}</span></td>
             <td class="px-4 py-2.5 ${cls} text-center">${sign}${Math.abs(m.cantidad)}</td>
             <td class="px-4 py-2.5 text-center text-gray-600 font-semibold">${m.stock_nuevo}</td>
             <td class="px-4 py-2.5 text-gray-400 text-xs max-w-xs truncate">${esc(m.nota || '—')}</td>

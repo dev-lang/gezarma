@@ -98,11 +98,10 @@ def recibir(db: Session, pedido: models.PedidoProveedor, cantidades: dict, usuar
         if not cant:
             continue
         r = item.repuesto
-        anterior = r.stock
-        r.stock += cant
+        anterior, nuevo = stock_service.ajustar(db, r, cant)
         item.recibido += cant
         db.add(models.StockMovimiento(repuesto_id=r.id, usuario_id=usuario.id, tipo="reposicion", cantidad=cant,
-                                      stock_anterior=anterior, stock_nuevo=r.stock,
+                                      stock_anterior=anterior, stock_nuevo=nuevo, pedido_item_id=item.id,
                                       nota=f"Pedido N° {pedido.id} a {pedido.proveedor}"))
         total += cant
     if not total:

@@ -56,24 +56,8 @@ def delete_stock_mov(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))
 ):
-    """Only allowed if this is the latest movement for that repuesto."""
-    mov = db.query(models.StockMovimiento).filter_by(id=mov_id).first()
-    if not mov:
-        raise HTTPException(status_code=404, detail="Movimiento no encontrado")
-    last = (db.query(models.StockMovimiento)
-            .filter_by(repuesto_id=mov.repuesto_id)
-            .order_by(models.StockMovimiento.fecha.desc())
-            .first())
-    if last.id != mov_id:
-        raise HTTPException(status_code=400,
-            detail="Solo se puede eliminar el último movimiento de un repuesto")
-    # Revert stock
-    part = db.query(models.Repuesto).filter_by(id=mov.repuesto_id).first()
-    if part:
-        part.stock = mov.stock_anterior
-    db.delete(mov)
-    db.commit()
-    return {"deleted": mov_id, "stock_revertido": mov.stock_anterior}
+    """Anula el movimiento (ver anular_stock_movimiento). Se mantiene por compatibilidad."""
+    return anular_stock_movimiento(mov_id, db, current_user)
 
 @router.post("/reposicion", response_model=schemas.StockMovimientoOut)
 def reponer_stock(
@@ -86,8 +70,7 @@ def reponer_stock(
         raise HTTPException(status_code=404, detail="Repuesto no encontrado")
     if cantidad <= 0:
         raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a 0")
-    stock_anterior = part.stock
-    part.stock += cantidad
+    stock_anterior, _ = stock_service.ajustar(db, part, cantidad)
     mov = models.StockMovimiento(
         repuesto_id=repuesto_id, ticket_id=None, usuario_id=current_user.id,
         tipo="reposicion", cantidad=cantidad,
@@ -121,35 +104,19 @@ def update_stock_movimiento(
     return out
 
 
-@router.delete("/history/{mov_id}", status_code=204)
-def delete_stock_movimiento(
+@router.delete("/history/{mov_id}", response_model=schemas.StockMovimientoOut)
+@router.post("/history/{mov_id}/anular", response_model=schemas.StockMovimientoOut)
+def anular_stock_movimiento(
     mov_id: int,
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))
 ):
-    """Only the most recent movement for a given repuesto can be deleted."""
+    """Los movimientos no se borran: se anulan con uno inverso, que también corrige
+    el ticket o el pedido de donde vinieron (antes, borrar desfasaba el stock)."""
     mov = db.query(models.StockMovimiento).filter(models.StockMovimiento.id == mov_id).first()
     if not mov:
         raise HTTPException(status_code=404, detail="Movimiento no encontrado")
-
-    # Check it is the latest for this repuesto
-    latest = (
-        db.query(models.StockMovimiento)
-        .filter(models.StockMovimiento.repuesto_id == mov.repuesto_id)
-        .order_by(models.StockMovimiento.fecha.desc(), models.StockMovimiento.id.desc())
-        .first()
-    )
-    if not latest or latest.id != mov_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Solo se puede eliminar el último movimiento de un repuesto"
-        )
-
-    # Revert stock
-    part = db.query(models.Repuesto).filter(models.Repuesto.id == mov.repuesto_id).first()
-    if part:
-        part.stock = mov.stock_anterior  # restore previous balance
-
-    db.delete(mov)
+    inverso = stock_service.anular_movimiento(db, mov, current_user)
     db.commit()
-    return None
+    db.refresh(inverso)
+    return _enrich(inverso)

@@ -78,17 +78,25 @@ def revisar(db: Session, ahora: datetime = None) -> int:
 
 
 def _una_vuelta() -> int:
-    """Una revisión completa con su propia sesión (corre en un hilo aparte).
+    """Una revisión completa (corre en un hilo aparte). Cada tarea tiene su propia
+    sesión y su propio manejo de errores: si una falla, las otras igual corren.
     Devuelve los minutos a esperar hasta la próxima."""
+    from . import retiro
+    tareas = (("SLA", revisar, "se avisó sobre %d ticket(s)"),
+              ("Retiro", retiro.revisar, "%d aviso(s) de equipos sin retirar"))
+    for nombre, tarea, mensaje in tareas:
+        db = database.SessionLocal()
+        try:
+            n = tarea(db)
+            if n:
+                log.info(f"{nombre}: {mensaje}", n)
+        except Exception:
+            db.rollback()
+            log.exception("Error en la tarea periódica %s", nombre)
+        finally:
+            db.close()
     db = database.SessionLocal()
     try:
-        n = revisar(db)
-        if n:
-            log.info("SLA: se avisó sobre %d ticket(s)", n)
-        from . import retiro
-        r = retiro.revisar(db)
-        if r:
-            log.info("Retiro: %d aviso(s) de equipos sin retirar", r)
         return ajustes.get(db, "sla_intervalo_minutos")
     finally:
         db.close()

@@ -76,6 +76,10 @@ def create_estado(s: schemas.StatusConfigCreate,
     db.add(obj); db.commit(); db.refresh(obj)
     return obj
 
+# Estados que usa el propio sistema (alta, retiro, envío, cierre, encuesta…)
+ESTADOS_DEL_SISTEMA = {e.value for e in models.TicketStatus}
+
+
 @router.patch("/estados/{sid}", response_model=schemas.StatusConfig)
 def update_estado(sid: int, s: schemas.StatusConfigCreate,
                   db: Session = Depends(database.get_db),
@@ -84,6 +88,19 @@ def update_estado(sid: int, s: schemas.StatusConfigCreate,
     obj = db.query(models.TicketStatusConfig).filter_by(id=sid).first()
     if not obj:
         raise HTTPException(404, "Estado no encontrado")
+    if s.valor != obj.valor:
+        # El valor es lo que queda guardado en cada ticket: cambiarlo los dejaría
+        # con un estado inexistente. Los de fábrica además los usa el sistema
+        # (retiro, encuesta, garantía…). La etiqueta sí se puede cambiar siempre.
+        if obj.valor in ESTADOS_DEL_SISTEMA:
+            raise HTTPException(400, "El valor de un estado del sistema no se puede cambiar (sí su etiqueta, color y orden)")
+        if db.query(models.Ticket).filter(models.Ticket.estado == obj.valor).first():
+            raise HTTPException(400, f"Hay tickets con el estado '{obj.etiqueta}': no se puede cambiar su valor")
+        if db.query(models.TicketStatusConfig).filter(models.TicketStatusConfig.valor == s.valor,
+                                                      models.TicketStatusConfig.id != sid).first():
+            raise HTTPException(400, "Ya existe un estado con ese valor")
+    if obj.valor in ESTADOS_DEL_SISTEMA and s.es_final != obj.es_final:
+        raise HTTPException(400, "No se puede cambiar si un estado del sistema es final")
     for k, v in s.model_dump().items():
         setattr(obj, k, v)
     db.commit(); db.refresh(obj)
@@ -96,6 +113,8 @@ def delete_estado(sid: int, db: Session = Depends(database.get_db),
     obj = db.query(models.TicketStatusConfig).filter_by(id=sid).first()
     if not obj:
         raise HTTPException(404, "Estado no encontrado")
+    if obj.valor in ESTADOS_DEL_SISTEMA:
+        raise HTTPException(400, "Los estados del sistema no se eliminan: se pueden desactivar")
     # Prevent deleting if tickets are using this status
     in_use = db.query(models.Ticket).filter(models.Ticket.estado == obj.valor).first()
     if in_use:

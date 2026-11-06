@@ -30,26 +30,49 @@ def _next_serie(current: str) -> str:
     raise ValueError("RMA counter exhausted for this year/prefix")
 
 def generate_rma_number(db: Session, user_rol: str, year: int = None) -> str:
+    """Siguiente N° de RMA, sin repetidos aunque haya dos altas a la vez.
+
+    El incremento se hace en la base (UPDATE ... SET last_seq = last_seq + 1
+    RETURNING): la segunda alta espera a que la primera confirme y recibe el
+    número siguiente. (Leer el contador y escribirlo desde Python daba el mismo
+    número a las dos: en SQLite with_for_update no bloquea nada.)
+    """
+    from sqlalchemy import update
+    from sqlalchemy.exc import IntegrityError
+    C = models.RmaCounter
     year = year or now_local().year
     prefix = ROLE_PREFIX.get(user_rol, "OT")
+    for _ in range(5):
+        fila = db.execute(
+            update(C).where(C.year == year, C.rol_prefix == prefix)
+            .values(last_seq=C.last_seq + 1)
+            .returning(C.id, C.serie, C.last_seq)
+            .execution_options(synchronize_session=False)
+        ).first()
+        if fila is None:
+            # Primer RMA del año para ese prefijo. La restricción única (año, prefijo)
+            # hace que, si otra alta lo crea al mismo tiempo, esta lo reintente.
+            try:
+                with db.begin_nested():
+                    db.add(C(year=year, rol_prefix=prefix, serie="AA", last_seq=0))
+            except IntegrityError:
+                pass
+            continue
+        cid, serie, seq = fila
+        if seq > 999:
+            serie, seq = _next_serie(serie), 1
+            db.execute(update(C).where(C.id == cid).values(serie=serie, last_seq=seq)
+                       .execution_options(synchronize_session=False))
+        return f"RMA-{year}-{prefix}{serie}{seq:03d}"
+    raise RuntimeError("No se pudo generar el N° de RMA")
 
-    counter = (
-        db.query(models.RmaCounter)
-        .filter_by(year=year, rol_prefix=prefix)
-        .with_for_update()
-        .first()
-    )
-    if counter is None:
-        counter = models.RmaCounter(year=year, rol_prefix=prefix, serie="AA", last_seq=0)
-        db.add(counter)
+def sumar_meses(fecha: datetime, meses: int) -> datetime:
+    """fecha + meses de calendario (31/01 + 1 mes = 28 o 29/02)."""
+    import calendar
+    m = fecha.month - 1 + meses
+    anio, mes = fecha.year + m // 12, m % 12 + 1
+    return fecha.replace(year=anio, month=mes, day=min(fecha.day, calendar.monthrange(anio, mes)[1]))
 
-    counter.last_seq += 1
-    if counter.last_seq > 999:
-        counter.serie  = _next_serie(counter.serie)
-        counter.last_seq = 1
-
-    db.flush()
-    return f"RMA-{year}-{prefix}{counter.serie}{counter.last_seq:03d}"
 
 # ── SLA helpers ──────────────────────────────────────────────────────────────
 def calculate_sla_deadline(status: str):
@@ -83,7 +106,7 @@ def log_event(db: Session, ticket_id: int, usuario_id: int,
 # ── Ticket creation ───────────────────────────────────────────────────────────
 def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
                              current_user: models.Usuario, ip_address: str = None,
-                             cliente: models.Usuario = None, checklist: dict = None):
+                             cliente: models.Usuario = None, checklist: dict = None, detalle_alta: str = None):
     """Crea el ticket. Por defecto queda a nombre de quien lo carga; en el ingreso
     en mostrador, el taller lo carga a nombre de `cliente` (el N° de RMA y la
     prioridad automática salen del cliente, el historial registra quién lo cargó)."""
@@ -100,11 +123,15 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="La fecha de compra no puede ser una fecha futura.")
 
-    is_warranty = True
-    if fecha_compra_naive < now_local() - timedelta(days=365):
-        is_warranty = False
-        if priority != "Alta":
-            priority = "Baja"
+    # Garantía de compra: la del producto (periodo_garantia_meses); sin producto, 12 meses
+    meses = 12
+    if ticket.producto_id:
+        prod = db.get(models.Producto, ticket.producto_id)
+        if prod and prod.periodo_garantia_meses is not None:
+            meses = prod.periodo_garantia_meses
+    is_warranty = now_local() <= sumar_meses(fecha_compra_naive, meses)
+    if not is_warranty and priority != "Alta":
+        priority = "Baja"
 
     # La prioridad elegida a mano solo vale si la carga el taller; la del cliente es automática
     if current_user.rol != models.UserRole.CLIENTE and ticket.prioridad and ticket.prioridad != "Normal":
@@ -134,7 +161,7 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
 
     log_event(db, new_ticket.id, current_user.id,
               models.EventoHistorial.CAMBIO_ESTADO,
-              detalle=("Ticket creado con estado Nuevo" if duenio is current_user
+              detalle=detalle_alta or ("Ticket creado con estado Nuevo" if duenio is current_user
                        else f"Ingreso en mostrador para {duenio.nombre}, cargado por {current_user.nombre}"),
               estado_ant=None, estado_nuevo=models.TicketStatus.NUEVO)
 

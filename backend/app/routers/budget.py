@@ -124,12 +124,27 @@ def _descontar_repuestos(db: Session, ticket: models.Ticket, presupuesto: models
                          usuario_id: int) -> None:
     """Al aprobarse: los ítems vinculados a repuestos se agregan al ticket y se
     descuentan del stock. Si no alcanza, el stock queda negativo y se avisa
-    (no se le rechaza la aprobación al cliente)."""
+    (no se le rechaza la aprobación al cliente).
+
+    Si el técnico ya había cargado ese repuesto en el ticket, se descuenta solo
+    lo que falta: el presupuesto dice cuántos lleva la reparación en total, no
+    cuántos más (antes se descontaba dos veces)."""
+    pedidos = {}
     for item in presupuesto.items:
         if item.repuesto_id and item.repuesto:
+            r = pedidos.setdefault(item.repuesto_id, [item.repuesto, 0])
+            r[1] += int(item.cantidad)
+    for repuesto_id, (repuesto, cantidad) in pedidos.items():
+        assoc = db.query(models.TicketRepuesto).filter_by(ticket_id=ticket.id, repuesto_id=repuesto_id).first()
+        ya = assoc.cantidad if assoc else 0
+        falta = cantidad - ya
+        if falta > 0:
             stock_service.agregar_al_ticket(
-                db, ticket, item.repuesto, int(item.cantidad), usuario_id, permitir_negativo=True,
-                nota=f"Presupuesto aprobado ({ticket.numero_rma})")
+                db, ticket, repuesto, falta, usuario_id, permitir_negativo=True,
+                nota=f"Presupuesto aprobado ({ticket.numero_rma})" + (f"; ya había {ya} en el ticket" if ya else ""))
+        else:
+            log_event(db, ticket.id, usuario_id, models.EventoHistorial.REPUESTO_AGREGADO,
+                      detalle=f"Presupuesto aprobado: {repuesto.nombre} × {cantidad} ya estaba cargado en el ticket")
 
 
 # ── Ticket Presupuesto CRUD ───────────────────────────────────────────────────
