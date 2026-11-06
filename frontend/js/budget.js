@@ -322,7 +322,7 @@ function renderVersiones(versiones) {
                     <span class="px-2 py-0.5 rounded-full text-xs font-bold ${cfg.bg} ${cfg.text}">${cfg.label}</span>
                 </div>
                 <p class="text-xs text-gray-400 mb-2">
-                    ${v.usuario_nombre || "—"} &bull; ${new Date(v.fecha).toLocaleString("es-AR")}
+                    ${v.usuario_nombre || "—"} &bull; ${new Date(v.fecha).toLocaleString("es-AR", { hour12: false })}
                 </p>
                 ${v.notas ? `<p class="text-xs italic text-gray-500 mb-2">"${v.notas}"</p>` : ""}
                 ${items ? `<ul class="space-y-0.5 list-disc list-inside">${items}</ul>` : ""}

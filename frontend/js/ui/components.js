@@ -152,7 +152,7 @@ const components = (() => {
                 <span class="font-bold text-sm flex items-center flex-wrap gap-1 ${headerCls}">
                     ${icon}${c.usuario_nombre || 'Usuario #' + c.usuario_id}${badge}
                 </span>
-                <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString('es-AR')}</span>
+                <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString('es-AR', { hour12: false })}</span>
             </div>
             <p class="text-sm leading-relaxed ${isInternal ? 'text-violet-900 dark:text-violet-200 italic' : 'text-gray-700'}">${c.comentario}</p>
         </div>`;
@@ -162,7 +162,7 @@ const components = (() => {
         const isConsumo = m.tipo === 'consumo';
         const cls   = isConsumo ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
         const sign  = isConsumo ? '−' : '+';
-        const fecha = new Date(m.fecha).toLocaleString('es-AR');
+        const fecha = new Date(m.fecha).toLocaleString('es-AR', { hour12: false });
         const ticketLink = m.ticket_rma
             ? `<span class="font-mono text-blue-600 text-xs">${m.ticket_rma}</span>`
             : '<span class="text-gray-300 text-xs">—</span>';
@@ -260,7 +260,7 @@ const components = (() => {
 
     function historyEntry(h) {
         const ev      = EVENTO_ICON[h.tipo_evento] || { icon: "•", color: "gray" };
-        const fecha   = new Date(h.fecha).toLocaleString("es-AR");
+        const fecha   = new Date(h.fecha).toLocaleString("es-AR", { hour12: false });
         const usuario = h.usuario_nombre || "Sistema";
         let body = "";
         if (h.tipo_evento === "cambio_estado" && h.estado_anterior && h.estado_nuevo) {
