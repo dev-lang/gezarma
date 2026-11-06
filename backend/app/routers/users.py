@@ -1,4 +1,4 @@
-import random, string
+import secrets, string
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 def _gen_temp_password(length=10) -> str:
     chars = string.ascii_letters + string.digits
-    return "".join(random.choices(chars, k=length))
+    return "".join(secrets.choice(chars) for _ in range(length))
 
 @router.get("/", response_model=List[schemas.User])
 def list_users(
@@ -103,7 +103,7 @@ def reset_password(
     temp_pw = _gen_temp_password()
     db_user.password_hash       = auth.get_password_hash(temp_pw)
     db_user.must_change_password = True
-    db_user.temp_password_plain  = temp_pw  # displayed once, then cleared by change-password
+    # The plain temp password is only returned in this response; it is never stored.
     db.commit()
     return {"temp_password": temp_pw, "username": db_user.username,
             "message": f"Contraseña temporal generada. El usuario deberá cambiarla en el próximo login."}
@@ -120,7 +120,6 @@ def change_password(
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
     current_user.password_hash       = auth.get_password_hash(new_pw)
     current_user.must_change_password = False
-    current_user.temp_password_plain  = None
     db.commit()
     return {"message": "Contraseña actualizada correctamente"}
 

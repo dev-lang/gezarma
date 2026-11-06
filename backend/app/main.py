@@ -53,8 +53,19 @@ DEFAULT_TAGS = [
     ("Sin falla",        "#22c55e"),
 ]
 
+def _purge_plain_temp_passwords():
+    """Older databases have a usuarios.temp_password_plain column with plain-text
+    temp passwords. The app no longer uses it; wipe any value left there."""
+    from sqlalchemy import inspect, text
+    cols = {c["name"] for c in inspect(engine).get_columns("usuarios")}
+    if "temp_password_plain" in cols:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE usuarios SET temp_password_plain = NULL "
+                              "WHERE temp_password_plain IS NOT NULL"))
+
 @app.on_event("startup")
 def seed_data():
+    _purge_plain_temp_passwords()
     db = SessionLocal()
     if not db.query(models.Usuario).filter_by(username="admin").first():
         admin = models.Usuario(

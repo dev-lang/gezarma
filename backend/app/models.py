@@ -74,7 +74,7 @@ class Usuario(Base):
     telefono        = Column(String,  nullable=True)   # ← nuevo
     # Feature 1: forced password change
     must_change_password = Column(Boolean, default=False)
-    temp_password_plain  = Column(String,  nullable=True)  # displayed once, then cleared
+    # (temp_password_plain was removed: temp passwords are never stored in plain text)
 
     tickets_creados   = relationship("Ticket", back_populates="cliente",  foreign_keys="Ticket.usuario_id")
     tickets_asignados = relationship("Ticket", back_populates="tecnico",  foreign_keys="Ticket.tecnico_asignado")
