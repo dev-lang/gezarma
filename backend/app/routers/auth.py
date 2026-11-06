@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
+from typing import Optional
 from .. import database, models, schemas, auth as auth_module
 
 router = APIRouter(tags=["auth"])
@@ -94,7 +95,24 @@ def login(
     }
 
 @router.post("/register", response_model=schemas.User)
-def register(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
+def register(
+    user_data: schemas.UserCreate,
+    db: Session = Depends(database.get_db),
+    current_user: Optional[models.Usuario] = Depends(auth_module.get_current_user_optional),
+):
+    """Public self-registration always creates a 'cliente'.
+    Only a logged-in administrator (admin panel → Nuevo usuario) may set another role."""
+    if current_user is not None and current_user.rol == models.UserRole.ADMINISTRADOR:
+        valid_roles = {r.value for r in models.UserRole}
+        if user_data.rol not in valid_roles:
+            raise HTTPException(status_code=400, detail=f"Rol inválido: {sorted(valid_roles)}")
+        rol = user_data.rol
+    else:
+        rol = models.UserRole.CLIENTE.value
+    valid_tipos = {t.value for t in models.UserType}
+    if user_data.tipo_cliente not in valid_tipos:
+        raise HTTPException(status_code=400, detail=f"Tipo de cliente inválido: {sorted(valid_tipos)}")
+
     if db.query(models.Usuario).filter_by(username=user_data.username).first():
         raise HTTPException(status_code=400, detail="El nombre de usuario ya está en uso")
     if db.query(models.Usuario).filter_by(email=user_data.email).first():
@@ -104,7 +122,7 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(database.get_d
         password_hash=auth_module.get_password_hash(user_data.password),
         nombre=user_data.nombre,
         email=user_data.email,
-        rol=user_data.rol,
+        rol=rol,
         tipo_cliente=user_data.tipo_cliente,
     )
     db.add(new_user)
