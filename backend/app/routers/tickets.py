@@ -546,9 +546,11 @@ def get_ticket_history(
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acceso denegado")
-    entries = db.query(models.HistorialEstado)\
-                .filter_by(ticket_id=ticket_id)\
-                .order_by(models.HistorialEstado.fecha.desc()).all()
+    query = db.query(models.HistorialEstado).filter_by(ticket_id=ticket_id)
+    if current_user.rol == models.UserRole.CLIENTE:
+        # Las notas internas se registran en el historial con su texto: no son para el cliente
+        query = query.filter(models.HistorialEstado.tipo_evento != models.EventoHistorial.NOTA_INTERNA)
+    entries = query.order_by(models.HistorialEstado.fecha.desc()).all()
     return _historial_out(entries)
 
 # ── Diagnostic ───────────────────────────────────────────────────────────────
