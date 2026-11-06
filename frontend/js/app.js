@@ -352,11 +352,6 @@ const app = {
             await ui.loadStockHistory(e.target.value ? parseInt(e.target.value) : null);
         });
 
-        // Export tab buttons
-        on('admin-export-tickets-btn', 'click', () => ui.exportTicketsToCSV());
-        on('admin-export-parts-btn',   'click', () => ui.exportPartsToCSV());
-        on('admin-export-users-btn',   'click', () => ui.exportUsersToCSV());
-
         // ── Users page (standalone, legacy) ───────────────────────────────
         on('back-to-dashboard-from-users', 'click', () => ui.initDashboard());
         on('user-filter-rol', 'change', () => ui.renderUsers());

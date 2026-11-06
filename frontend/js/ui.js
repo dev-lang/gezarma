@@ -1214,38 +1214,6 @@ const ui = {
         } catch(e) { toast.error(e.message); }
     },
 
-    // ── Admin: Export CSVs ────────────────────────────────────────────────────
-
-    exportPartsToCSV() {
-        const parts = this._adminPartsCache;
-        if (!parts.length) { toast.warning('No hay repuestos para exportar.'); return; }
-        const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-        const headers = ['ID','Código','Nombre','Proveedor','Stock','Precio'];
-        const rows = parts.map(p => [p.id, p.codigo, p.nombre, p.proveedor, p.stock, p.precio]);
-        const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const link = Object.assign(document.createElement('a'), { href: url, download: `repuestos_${new Date().toISOString().split('T')[0]}.csv` });
-        document.body.appendChild(link); link.click();
-        document.body.removeChild(link); URL.revokeObjectURL(url);
-        toast.success('Repuestos exportados.');
-    },
-
-    exportUsersToCSV() {
-        const users = this._adminUsersCache;
-        if (!users.length) { toast.warning('No hay usuarios para exportar.'); return; }
-        const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-        const headers = ['ID','Usuario','Nombre','Email','Rol','Tipo','Activo','Fecha Creación'];
-        const rows = users.map(u => [u.id, u.username, u.nombre, u.email, u.rol, u.tipo_cliente, u.activo ? 'Sí' : 'No', new Date(u.fecha_creacion).toLocaleDateString('es-AR')]);
-        const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const link = Object.assign(document.createElement('a'), { href: url, download: `usuarios_${new Date().toISOString().split('T')[0]}.csv` });
-        document.body.appendChild(link); link.click();
-        document.body.removeChild(link); URL.revokeObjectURL(url);
-        toast.success('Usuarios exportados.');
-    },
-
     // ── Advanced stats ─────────────────────────────────────────────────────
 
     async loadAdvancedStats() {
@@ -1288,32 +1256,6 @@ const ui = {
                 options: opts,
             });
         } catch (err) { console.error(err); }
-    },
-
-    // ── CSV export ─────────────────────────────────────────────────────────
-
-    async exportTicketsToCSV() {
-        try {
-            const tickets = await api.getTickets();
-            const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const headers = ['ID','RMA','Producto','Serie','Estado','Prioridad','Técnico','Garantía','Fecha Creación'];
-            const rows = tickets.map(t => [
-                t.id, t.numero_rma, t.producto, t.numero_serie,
-                t.estado, t.prioridad,
-                t.tecnico_nombre || 'Sin asignar',
-                t.en_garantia ? 'Sí' : 'No',
-                new Date(t.fecha_creacion).toLocaleDateString('es-AR'),
-            ]);
-            const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url  = URL.createObjectURL(blob);
-            const link = Object.assign(document.createElement('a'), { href: url, download: `tickets_rma_${new Date().toISOString().split('T')[0]}.csv` });
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            toast.success('CSV exportado correctamente.');
-        } catch (err) { toast.error(err.message); }
     },
 
     // ── Helpers ────────────────────────────────────────────────────────────
