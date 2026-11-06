@@ -4,23 +4,23 @@
             <h2 class="text-2xl font-bold text-gray-800">Panel de Control</h2>
             <p class="text-gray-500" id="role-badge"></p>
         </div>
-        <div id="action-buttons" class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div id="action-buttons" class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <button type="button" id="favorites-nav-btn"
-                class="hidden items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold shadow transition">
+                class="justify-center hidden items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold shadow transition">
                 ⭐ Favoritos
             </button>
             <button type="button" id="admin-panel-btn"
-                class="hidden items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
+                class="justify-center hidden items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
                 Administración
             </button>
             <button type="button" id="mostrador-btn"
-                class="hidden items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
+                class="justify-center hidden items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
                 🧾 Ingreso en mostrador
             </button>
-            <button type="button" id="create-ticket-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">Nuevo Ticket</button>
+            <button type="button" id="create-ticket-btn" class="text-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">Nuevo Ticket</button>
         </div>
     </div>
 
@@ -28,7 +28,7 @@
     <div id="guia-panel" class="hidden mb-8"></div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="stats-container"></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8" id="stats-container"></div>
 
     <!-- Advanced Stats (Admin) -->
     <div id="advanced-stats" class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 hidden">

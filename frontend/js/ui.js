@@ -913,6 +913,8 @@ const ui = {
         document.querySelectorAll('.admin-tab-btn').forEach(btn => {
             const isActive = btn.dataset.tab === tab;
             btn.classList.toggle('active-tab', isActive);
+            if (isActive) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
+            if (isActive && window.innerWidth < 1024) btn.scrollIntoView({ block: 'nearest', inline: 'center' });
         });
         document.querySelectorAll('.admin-tab-content').forEach(el => {
             el.classList.toggle('hidden', !el.id.endsWith(tab));

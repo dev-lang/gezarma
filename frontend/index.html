@@ -133,6 +133,39 @@
             /* La búsqueda se abre con la lupa y ocupa toda la fila de abajo */
             #search-container:not(.abierto) { display: none !important; }
             #search-container.abierto { order: 3; flex-basis: 100%; width: 100%; margin: 4px 0 6px; max-width: none; }
+            /* Administración: los encabezados de cada sección (título + buscador + botones) bajan de renglón */
+            .admin-tab-content .justify-between { flex-wrap: wrap; row-gap: .75rem; }
+            .admin-tab-content .justify-between > * { min-width: 0; }
+            .admin-tab-content .justify-between > .flex { flex-wrap: wrap; }
+            .admin-tab-content .justify-between select { flex: 1 1 9rem; min-width: 0; }
+            .admin-tab-content .justify-between input[type=text],
+            .admin-tab-content .justify-between input[type=search] { flex: 1 1 9rem; width: auto; min-width: 0; }
+            .admin-tab-content .p-5, .admin-tab-content .p-6 { padding-left: 1rem; padding-right: 1rem; }
+            /* Tarjetas grandes: menos relleno, más lugar para el contenido */
+            #detail-section .p-8, #mostrador-section .p-8, #dashboard-section .p-6 { padding: 1.1rem; }
+        }
+        /* Táctil o pantalla chica: los botones de solo texto (Editar, Eliminar, Ver…) tienen poca altura; más zona para tocar */
+        @media (pointer: coarse), (max-width: 639px) {
+            button:not([class*=" py-"]):not([class^="py-"]):not([class*=" p-"]):not([class^="p-"]):not([class*=" h-"]):not([class^="h-"]):not([class*=" w-"]):not([class^="w-"]) {
+                padding-top: .45rem; padding-bottom: .45rem;
+            }
+            button.py-0\.5, button.py-1 { padding-top: .35rem; padding-bottom: .35rem; }
+            button[id^="close"], button[aria-label="Cerrar"], button[data-cerrar] { min-width: 2.25rem; min-height: 2.25rem; }
+        }
+        /* Las tablas del panel nunca ensanchan la página: se desplazan dentro de su tarjeta */
+        .admin-tab-content table { min-width: 36rem; }
+        .admin-tab-content :has(> table) { overflow-x: auto; }
+        @media (max-width: 1023px) {
+            /* La columna de acciones (Editar, Eliminar, Ver) queda siempre a la vista al desplazar la tabla */
+            .admin-tab-content table tr > :last-child, #ticket-list-wrap table tr > :last-child, #parts-section table tr > :last-child {
+                position: sticky; right: 0; background: #fff; box-shadow: -8px 0 8px -8px rgba(15, 23, 42, .25);
+            }
+            .admin-tab-content thead tr > :last-child, #ticket-list-wrap thead tr > :last-child { background: #f9fafb; }
+            .dark .admin-tab-content table tr > :last-child, .dark #ticket-list-wrap table tr > :last-child,
+            .dark #parts-section table tr > :last-child { background: #1e293b; }
+            /* El menú de Administración se desplaza de costado: el borde se desvanece para que se note */
+            #admin-menu nav { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); scrollbar-width: none; }
+            #admin-menu nav::-webkit-scrollbar { display: none; }
         }
     </style>
 </head>

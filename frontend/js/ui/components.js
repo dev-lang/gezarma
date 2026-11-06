@@ -156,13 +156,13 @@ const components = (() => {
             check:  `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>`,
         };
         return `
-        <div class="bg-white p-6 rounded-xl shadow border-l-4 ${colors[color] || colors.blue}">
+        <div class="bg-white p-4 md:p-6 rounded-xl shadow border-l-4 ${colors[color] || colors.blue}">
             <div class="flex justify-between items-start">
                 <div>
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">${label}</p>
                     <p class="text-3xl font-black text-gray-800 mt-1">${value}</p>
                 </div>
-                ${icon ? `<svg class="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[icon] || ''}</svg>` : ''}
+                ${icon ? `<svg class="hidden sm:block w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[icon] || ''}</svg>` : ''}
             </div>
         </div>`;
     }
