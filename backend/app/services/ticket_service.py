@@ -129,6 +129,9 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
     db.add(new_ticket)
     db.flush()
 
+    from . import garantia
+    garantia.revisar_reingreso(db, new_ticket, current_user)
+
     log_event(db, new_ticket.id, current_user.id,
               models.EventoHistorial.CAMBIO_ESTADO,
               detalle=("Ticket creado con estado Nuevo" if duenio is current_user

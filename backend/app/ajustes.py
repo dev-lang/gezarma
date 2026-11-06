@@ -85,6 +85,8 @@ DEFS = {
                       label="Al taller: SLA vencido o por vencer"),
     "email_stock_bajo": dict(grupo="email_eventos", tipo="bool", default=True,
                              label="A los administradores: repuesto bajo el stock mínimo"),
+    "email_reingreso": dict(grupo="email_eventos", tipo="bool", default=True,
+                            label="Al técnico que lo reparó: reingreso en garantía de la reparación"),
     "email_cliente_retiro": dict(grupo="email_eventos", tipo="bool", default=True,
                                  label="Al cliente: equipo listo para retirar y recordatorios"),
     "email_cliente_encuesta": dict(grupo="email_eventos", tipo="bool", default=True,
@@ -111,6 +113,15 @@ DEFS = {
     "encuesta_activa": dict(grupo="retiro", tipo="bool", default=True,
                             label="Encuesta de satisfacción al cerrar",
                             ayuda="El cliente califica la reparación de 1 a 5 desde el seguimiento o su cuenta."),
+    # ── Gestión del taller ───────────────────────────────────────────────────
+    "garantia_reparacion_dias": dict(grupo="taller", tipo="int", default=90, minimo=0,
+                                     label="Garantía de la reparación (días)",
+                                     ayuda="Si el mismo equipo (N° de serie) vuelve dentro de este plazo desde que se "
+                                           "cerró, el ticket se marca como reingreso en garantía, sube la prioridad y se "
+                                           "avisa al técnico que lo reparó. 0 = desactivado."),
+    "tarifa_hora": dict(grupo="taller", tipo="int", default=0, minimo=0,
+                        label="Costo de la hora de trabajo ($)",
+                        ayuda="Para calcular el costo de mano de obra con el tiempo registrado. 0 = no se calcula."),
     # ── SLA ──────────────────────────────────────────────────────────────────
     "sla_alertas": dict(grupo="sla", tipo="bool", default=True, label="Avisar SLA vencidos y por vencer"),
     "sla_aviso_horas": dict(grupo="sla", tipo="int", default=4, minimo=1,

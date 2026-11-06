@@ -22,7 +22,7 @@ const Kanban = (() => {
                 <span class="font-bold text-blue-600 text-sm">#${t.id}</span>
                 ${components.priorityBadge(t.prioridad)}
             </div>
-            <p class="font-mono text-[10px] text-gray-400">${esc(t.numero_rma)}</p>
+            <p class="font-mono text-[10px] text-gray-400">${esc(t.numero_rma)}${t.reingreso_garantia ? ' <span class="font-sans font-bold text-amber-700" title="Reingreso en garantía de la reparación">↩ reingreso</span>' : ''}</p>
             <p class="text-sm font-semibold text-gray-800 mt-1 leading-tight">${esc(t.producto)}</p>
             <p class="text-xs text-gray-500 truncate">${esc(t.usuario_nombre || '')}</p>
             <div class="flex items-center justify-between mt-2 gap-1">

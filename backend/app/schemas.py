@@ -256,6 +256,9 @@ class Ticket(TicketBase):
     ticket_relacionado:   Optional[int]  = None
     rma_clonado_de:       Optional[str]  = None
     rma_relacionado:      Optional[str]  = None
+    reingreso_de:         Optional[int]  = None
+    reingreso_garantia:   bool           = False
+    rma_reingreso_de:     Optional[str]  = None
     tags:                 List[Tag]              = []
     repuestos_usados:     List[SparePartWithQty] = []
     checklist_ingreso:    Optional[ChecklistIngreso] = None
@@ -276,6 +279,8 @@ class Ticket(TicketBase):
             data.rma_clonado_de = obj.origen.numero_rma
         if obj.relacionado:
             data.rma_relacionado = obj.relacionado.numero_rma
+        if obj.reingreso_origen:
+            data.rma_reingreso_de = obj.reingreso_origen.numero_rma
         if current_user_id is not None:
             data.es_favorito = any(
                 f.usuario_id == current_user_id for f in (obj.favoritos or [])

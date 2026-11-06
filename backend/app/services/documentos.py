@@ -144,6 +144,7 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
         "firma_ingreso": _firma(t, "ingreso", 60, 18),
         "firma_entrega": _firma(t, "entrega", 60, 18),
         "politica_retiro": ajustes.politica_retiro(db),
+        "reingreso": (t.reingreso_origen.numero_rma if t.reingreso_garantia and t.reingreso_origen else None),
     }
 
 
@@ -183,6 +184,8 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
         if t.tracking_number or t.empresa_transporte:
             bloques.append(B("par", f"{t.empresa_transporte or ''} {t.tracking_number or ''}".strip(), etiqueta="Envío"))
     else:
+        if ctx["reingreso"]:
+            bloques.append(B("texto", f"Reingreso en garantía de la reparación {ctx['reingreso']}", negrita=True))
         bloques += [B("texto", "Falla informada:", negrita=True), B("texto", t.descripcion or "")]
         if ctx["checklist"]:
             bloques.append(B("texto", "Recepción del equipo:", negrita=True))

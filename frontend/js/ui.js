@@ -308,6 +308,10 @@ const ui = {
                 cloneBadgeEl.classList.remove('hidden');
             } else { cloneBadgeEl.classList.add('hidden'); }
         }
+        if (ticket.reingreso_garantia && cloneBadgeEl) {
+            cloneBadgeEl.insertAdjacentHTML('beforebegin',
+                `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800" title="El mismo equipo volvió dentro de la garantía de la reparación">↩ Reingreso en garantía de ${ticket.rma_reingreso_de || 'una reparación anterior'}</span>`);
+        }
         const relContainer = document.getElementById('detail-related-container');
         const relLink      = document.getElementById('related-ticket-link');
         const unlinkBtn    = document.getElementById('unlink-related-btn');

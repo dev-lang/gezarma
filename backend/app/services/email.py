@@ -295,6 +295,25 @@ def tecnico_asignado(db: Session, ticket: models.Ticket, tecnico_id: int, asigna
     programar(db, trabajo)
 
 
+def reingreso(db: Session, ticket: models.Ticket, anterior: models.Ticket) -> None:
+    """Al técnico que reparó el equipo: volvió dentro de la garantía de la reparación."""
+    if not evento_activo(db, "email_reingreso"):
+        return
+    ticket_id, anterior_id, base = ticket.id, anterior.id, ajustes.public_url(db)
+
+    def trabajo(s):
+        t, prev = s.get(models.Ticket, ticket_id), s.get(models.Ticket, anterior_id)
+        tec = prev.tecnico
+        enviar(s, [_mail_usuario(tec)], f"Reingreso en garantía: {t.numero_rma}", "Volvió un equipo que reparaste",
+               [f"Hola {tec.nombre},",
+                f"El {t.producto} (SN {t.numero_serie}) que reparaste en {prev.numero_rma} volvió dentro de la "
+                f"garantía de la reparación. Nuevo ticket: {t.numero_rma}.",
+                f"Falla informada: {t.descripcion}",
+                f"Diagnóstico anterior: {prev.diagnostico or 'sin diagnóstico cargado'}"],
+               ("Abrir el ticket", f"{base}/#ticket={t.id}"))
+    programar(db, trabajo)
+
+
 def stock_bajo(db: Session, repuesto, destinatarios, titulo: str, mensaje: str) -> None:
     if not evento_activo(db, "email_stock_bajo"):
         return

@@ -3,6 +3,8 @@
 {% block contenido %}
 {% include "_datos.html" %}
 
+{% if reingreso %}<div class="box" style="margin-top: 8px;"><b>Reingreso en garantía de la reparación {{ reingreso }}.</b></div>{% endif %}
+
 <h2>Falla informada por el cliente</h2>
 <div class="box">{{ t.descripcion }}</div>
 

@@ -186,11 +186,16 @@ class Ticket(Base):
     retiro_recordatorios   = Column(Integer, nullable=False, default=0, server_default="0")
     retiro_vencido_avisado = Column(Boolean, nullable=False, default=False, server_default="0")
 
+    # Reingreso del mismo equipo dentro de la garantía de la reparación
+    reingreso_de       = Column(Integer, ForeignKey("tickets.id"), nullable=True)
+    reingreso_garantia = Column(Boolean, nullable=False, default=False, server_default="0")
+
     cliente      = relationship("Usuario", back_populates="tickets_creados",  foreign_keys=[usuario_id])
     tecnico      = relationship("Usuario", back_populates="tickets_asignados", foreign_keys=[tecnico_asignado])
     producto_obj = relationship("Producto", back_populates="tickets")
     origen       = relationship("Ticket", foreign_keys=[clonado_de],         remote_side="Ticket.id", uselist=False)
     relacionado  = relationship("Ticket", foreign_keys=[ticket_relacionado],  remote_side="Ticket.id", uselist=False)
+    reingreso_origen = relationship("Ticket", foreign_keys=[reingreso_de],    remote_side="Ticket.id", uselist=False)
 
     comentarios          = relationship("Comentario",      back_populates="ticket")
     historial            = relationship("HistorialEstado", back_populates="ticket")

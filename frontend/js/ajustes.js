@@ -11,6 +11,7 @@ const Ajustes = (() => {
         { id: 'email',         titulo: 'Email (SMTP)',            desc: 'Servidor de correo para las notificaciones.' },
         { id: 'email_eventos', titulo: 'Qué notificar por email', desc: 'Además de las notificaciones dentro del sistema.' },
         { id: 'retiro',        titulo: 'Retiro y encuesta',       desc: 'Aviso de equipo listo para retirar, plazo de guarda y encuesta de satisfacción.' },
+        { id: 'taller',        titulo: 'Gestión del taller',      desc: 'Garantía de las reparaciones y costo de la hora de trabajo.' },
         { id: 'sla',           titulo: 'Alertas de SLA',          desc: 'Avisos de tickets vencidos o por vencer.' },
     ];
     // Campos SMTP que solo tienen sentido si la configuración se toma del panel
