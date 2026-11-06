@@ -4,6 +4,7 @@ sqlalchemy
 alembic
 bcrypt
 python-jose[cryptography]
+cryptography  # cifrado de secretos guardados en la base (ajustes.py)
 python-multipart
 pydantic[email]
 python-dotenv

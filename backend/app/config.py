@@ -47,6 +47,16 @@ except Exception as exc:  # nombre inválido o falta la base de zonas (pip insta
     raise RuntimeError(f"TIMEZONE inválida: {TIMEZONE!r}. Usá un nombre IANA, "
                        f"p. ej. America/Argentina/Buenos_Aires") from exc
 
+# ── URL pública y email ──────────────────────────────────────────────────────
+# Ambas cosas también se pueden configurar desde el panel de administración.
+PUBLIC_URL = (os.getenv("PUBLIC_URL") or "").rstrip("/")
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT") or 587)
+SMTP_SECURITY = os.getenv("SMTP_SECURITY", "starttls")   # starttls | ssl | ninguna
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "")
+
 # ── Datos ────────────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rma_system.db")
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")

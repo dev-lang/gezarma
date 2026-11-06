@@ -871,6 +871,9 @@ const ui = {
         if (tab === 'finanzas' && typeof Budget !== 'undefined') {
             Budget.initFinancialStats();
         }
+        if (tab === 'ajustes' && typeof Ajustes !== 'undefined') {
+            Ajustes.cargar();
+        }
     },
 
     // ── Admin: Users ──────────────────────────────────────────────────────────

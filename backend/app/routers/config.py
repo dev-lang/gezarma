@@ -6,7 +6,7 @@ config.py — Admin-configurable items:
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from .. import database, models, schemas, auth
+from .. import database, models, schemas, auth, ajustes as ajustes_mod
 from ..timeutils import utcnow
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -187,3 +187,43 @@ def get_login_attempts_stats(
         .all()
     )
     return [{"ip": r.ip_address, "intentos": r.intentos} for r in rows]
+
+
+# ── Ajustes del sistema (documentos, email, SLA, seguimiento) ────────────────
+@router.get("/ajustes")
+def listar_ajustes(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR])),
+):
+    return ajustes_mod.listado(db)
+
+
+@router.put("/ajustes")
+def guardar_ajustes(
+    body: dict,
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR])),
+):
+    """Recibe {clave: valor, ...}. Valida todo antes de guardar: o se guarda todo o nada."""
+    errores = {}
+    for clave, valor in body.items():
+        if clave not in ajustes_mod.DEFS:
+            errores[clave] = "Ajuste desconocido"
+            continue
+        try:
+            ajustes_mod.set(db, clave, valor)
+        except ValueError as e:
+            errores[clave] = str(e)
+    if errores:
+        db.rollback()
+        raise HTTPException(400, {"mensaje": "Hay valores inválidos", "errores": errores})
+    db.commit()
+    return ajustes_mod.listado(db)
+
+
+@router.get("/ajustes/publicos")
+def ajustes_publicos(db: Session = Depends(database.get_db),
+                     current_user: models.Usuario = Depends(auth.get_current_user)):
+    """Lo que el frontend necesita saber sin ser admin."""
+    return {"pdf_modo": ajustes_mod.get(db, "pdf_modo"),
+            "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico")}
