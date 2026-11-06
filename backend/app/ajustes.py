@@ -85,6 +85,32 @@ DEFS = {
                       label="Al taller: SLA vencido o por vencer"),
     "email_stock_bajo": dict(grupo="email_eventos", tipo="bool", default=True,
                              label="A los administradores: repuesto bajo el stock mínimo"),
+    "email_cliente_retiro": dict(grupo="email_eventos", tipo="bool", default=True,
+                                 label="Al cliente: equipo listo para retirar y recordatorios"),
+    "email_cliente_encuesta": dict(grupo="email_eventos", tipo="bool", default=True,
+                                   label="Al cliente: encuesta de satisfacción al cerrar el ticket"),
+    # ── Retiro de equipos ────────────────────────────────────────────────────
+    "retiro_estado": dict(grupo="retiro", tipo="choice", default="Reparado",
+                          opciones={e.value: e.value for e in models.TicketStatus
+                                    if e.name not in ("NUEVO", "ENVIADO", "CERRADO", "CANCELADO")},
+                          label="Estado en el que el equipo queda listo para retirar",
+                          ayuda="Al pasar a este estado se avisa al cliente y empieza a correr el plazo de guarda."),
+    "retiro_dias_guarda": dict(grupo="retiro", tipo="int", default=90, minimo=1,
+                               label="Plazo para retirar (días)",
+                               ayuda="Desde el aviso. Pasado el plazo, el equipo figura en las alertas del taller."),
+    "retiro_recordatorio_dias": dict(grupo="retiro", tipo="int", default=7, minimo=0,
+                                     label="Recordarle al cliente cada (días)",
+                                     ayuda="0 = sin recordatorios. Se mandan mientras el equipo siga sin retirar y "
+                                           "dentro del plazo."),
+    "retiro_politica": dict(grupo="retiro", tipo="text",
+                            default="Retirá tu equipo dentro de los {dias} días desde que te avisamos que está listo. "
+                                    "Pasado ese plazo se aplica la política de guarda del taller.",
+                            label="Texto sobre el plazo de retiro",
+                            ayuda="Sale en la orden de ingreso, el comprobante y los avisos. {dias} se reemplaza por el plazo."),
+    # ── Encuesta ─────────────────────────────────────────────────────────────
+    "encuesta_activa": dict(grupo="retiro", tipo="bool", default=True,
+                            label="Encuesta de satisfacción al cerrar",
+                            ayuda="El cliente califica la reparación de 1 a 5 desde el seguimiento o su cuenta."),
     # ── SLA ──────────────────────────────────────────────────────────────────
     "sla_alertas": dict(grupo="sla", tipo="bool", default=True, label="Avisar SLA vencidos y por vencer"),
     "sla_aviso_horas": dict(grupo="sla", tipo="int", default=4, minimo=1,
@@ -155,6 +181,11 @@ def _validate(clave: str, value) -> str:
 
 
 # ── API para el resto del código ─────────────────────────────────────────────
+def politica_retiro(db: Session) -> str:
+    texto = get(db, "retiro_politica") or ""
+    return texto.replace("{dias}", str(get(db, "retiro_dias_guarda")))
+
+
 def get(db: Session, clave: str):
     d = DEFS[clave]
     row = db.query(models.ConfigSistema).filter_by(clave=clave).first()

@@ -10,6 +10,8 @@ from .. import database, models, schemas, auth, config
 from ..timeutils import utcnow, to_utc_naive, iso_utc
 from ..services import stock_service, email
 from ..services import sla as sla_service
+from ..services import retiro as retiro_service, avisos
+from .. import ajustes
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -139,6 +141,26 @@ def sla_alertas(
         "horas_restantes": sla_service.horas_restantes(t, ahora),
     } for t in sla_service.alertas(db, ahora)]
 
+@router.get("/retiro/pendientes")
+def retiro_pendientes(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([
+        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
+    ]))
+):
+    """Equipos listos para retirar, del que más espera al que menos."""
+    ahora = utcnow()
+    out = []
+    for t in retiro_service.pendientes(db):
+        i = retiro_service.info(db, t, ahora)
+        out.append({"id": t.id, "numero_rma": t.numero_rma, "producto": t.producto,
+                    "cliente": t.cliente.nombre if t.cliente else None,
+                    "telefono": t.cliente.telefono if t.cliente else None,
+                    "listo_desde": iso_utc(i["listo_desde"]), "vence": iso_utc(i["vence"]),
+                    "dias_esperando": i["dias_esperando"], "dias_restantes": i["dias_restantes"],
+                    "vencido": i["vencido"], "recordatorios": i["recordatorios"]})
+    return out
+
 # ── Global search ─────────────────────────────────────────────────────────────
 @router.get("/search/global")
 def global_search(
@@ -251,6 +273,10 @@ def update_ticket_status(
     if update.estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO):
         ticket.fecha_cierre = utcnow()
     ticket.deadline_sla = calculate_sla_deadline(update.estado)
+    if retiro_service.al_cambiar_estado(db, ticket) and ticket.cliente:
+        avisos.notificar(db, [ticket.cliente], models.TipoNotificacion.CAMBIO_ESTADO,
+                         f"Listo para retirar: {ticket.numero_rma}",
+                         f"Tu {ticket.producto} está listo. {ajustes.politica_retiro(db)}", ticket_id=ticket.id)
     log_event(db, ticket_id, current_user.id,
               models.EventoHistorial.CAMBIO_ESTADO,
               detalle=f"Estado: {estado_ant} → {update.estado}",

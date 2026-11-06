@@ -186,9 +186,13 @@ def _pdf(db, ticket, tipo, base_url):
 
 
 def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
-    if not evento_activo(db, "email_cliente_estado"):
-        return
     if not ticket.cliente or ticket.cliente.rol != models.UserRole.CLIENTE:
+        return
+    from . import retiro
+    if ticket.estado == retiro.estado_retiro(db) and evento_activo(db, "email_cliente_retiro"):
+        cliente_retiro(db, ticket)   # en lugar del aviso genérico de cambio de estado
+        return
+    if not evento_activo(db, "email_cliente_estado"):
         return
     ticket_id, base = ticket.id, ajustes.public_url(db)
 
@@ -208,6 +212,36 @@ def cliente_cambio_estado(db: Session, ticket: models.Ticket) -> None:
                 parrafos.append("Te adjuntamos el remito de entrega.")
         enviar(s, [_mail_usuario(t.cliente)], f"{t.numero_rma}: {etiqueta}", f"Tu equipo está «{etiqueta}»",
                parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)), adjuntos)
+    programar(db, trabajo)
+
+
+def cliente_retiro(db: Session, ticket: models.Ticket, recordatorio: bool = False) -> None:
+    """Equipo listo para retirar (o recordatorio), con el plazo de guarda."""
+    if not evento_activo(db, "email_cliente_retiro"):
+        return
+    if not ticket.cliente or ticket.cliente.rol != models.UserRole.CLIENTE:
+        return
+    ticket_id, base = ticket.id, ajustes.public_url(db)
+
+    def trabajo(s):
+        t = s.get(models.Ticket, ticket_id)
+        from . import documentos, retiro
+        from ..timeutils import utc_to_local
+        v = retiro.vence(s, t)
+        hasta = utc_to_local(v).strftime("%d/%m/%Y") if v else ""
+        parrafos = [f"Hola {t.cliente.nombre},"]
+        if recordatorio:
+            parrafos.append(f"Te recordamos que tu equipo {t.producto} (RMA {t.numero_rma}) está listo para retirar "
+                            f"desde el {utc_to_local(t.fecha_listo).strftime('%d/%m/%Y')}.")
+        else:
+            parrafos.append(f"¡Tu equipo {t.producto} (RMA {t.numero_rma}) está listo para retirar!")
+        if hasta:
+            parrafos.append(f"Podés retirarlo hasta el {hasta}. {ajustes.politica_retiro(s)}")
+        parrafos.append("Traé el comprobante de ingreso o tu N° de RMA.")
+        asunto = f"{t.numero_rma}: " + ("recordatorio, tu equipo te espera" if recordatorio else "listo para retirar")
+        enviar(s, [_mail_usuario(t.cliente)], asunto,
+               "Tu equipo te espera" if recordatorio else "Tu equipo está listo para retirar",
+               parrafos, ("Ver el seguimiento", documentos.url_seguimiento(base, t)))
     programar(db, trabajo)
 
 

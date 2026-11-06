@@ -143,6 +143,7 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
         "checklist": checklist_lineas(t),
         "firma_ingreso": _firma(t, "ingreso", 60, 18),
         "firma_entrega": _firma(t, "entrega", 60, 18),
+        "politica_retiro": ajustes.politica_retiro(db),
     }
 
 
@@ -197,6 +198,8 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
         bloques.append(B("firma", "Recibí conforme · firma y aclaración"))
     if not entrega:
         bloques.append(B("texto", "Conservá este comprobante para retirar el equipo.", centro=True))
+        if ctx["politica_retiro"]:
+            bloques.append(B("texto", ctx["politica_retiro"], centro=True))
     return bloques
 
 

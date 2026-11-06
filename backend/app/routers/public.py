@@ -53,6 +53,15 @@ def reiniciar_limites() -> None:   # para tests
 NO_ENCONTRADO = "No encontramos una reparación con ese N° de RMA y N° de serie. Revisá los datos de tu orden de ingreso."
 
 
+def _retiro(db: Session, ticket: models.Ticket):
+    from ..services import retiro
+    if ticket.estado != retiro.estado_retiro(db) or not ticket.fecha_listo:
+        return None
+    i = retiro.info(db, ticket)
+    return {"listo_desde": iso_utc(i["listo_desde"]), "vence": iso_utc(i["vence"]),
+            "politica": ajustes.politica_retiro(db)}
+
+
 @router.get("/seguimiento")
 def seguimiento(
     request: Request,
@@ -102,6 +111,7 @@ def seguimiento(
                   if ticket.tracking_number or ticket.empresa_transporte else None),
         # Solo si hay algo que el cliente tenga que hacer; sin montos
         "presupuesto_pendiente": bool(pres and pres.estado == models.PresupuestoEstado.ENVIADO),
+        "retiro": _retiro(db, ticket),
         "historial": linea,
         "empresa": ajustes.get(db, "empresa_nombre"),
     }

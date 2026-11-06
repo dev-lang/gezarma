@@ -179,6 +179,13 @@ class Ticket(Base):
     # (dict; ver schemas.ChecklistIngreso). La clave de desbloqueo NO se guarda.
     checklist_ingreso = Column(JSON, nullable=True)
 
+    # Retiro: desde cuándo está listo para retirar, último aviso al cliente y
+    # si ya se avisó al taller que venció el plazo de guarda
+    fecha_listo            = Column(DateTime, nullable=True)
+    retiro_ultimo_aviso    = Column(DateTime, nullable=True)
+    retiro_recordatorios   = Column(Integer, nullable=False, default=0, server_default="0")
+    retiro_vencido_avisado = Column(Boolean, nullable=False, default=False, server_default="0")
+
     cliente      = relationship("Usuario", back_populates="tickets_creados",  foreign_keys=[usuario_id])
     tecnico      = relationship("Usuario", back_populates="tickets_asignados", foreign_keys=[tecnico_asignado])
     producto_obj = relationship("Producto", back_populates="tickets")

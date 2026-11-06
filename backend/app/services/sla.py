@@ -85,6 +85,10 @@ def _una_vuelta() -> int:
         n = revisar(db)
         if n:
             log.info("SLA: se avisó sobre %d ticket(s)", n)
+        from . import retiro
+        r = retiro.revisar(db)
+        if r:
+            log.info("Retiro: %d aviso(s) de equipos sin retirar", r)
         return ajustes.get(db, "sla_intervalo_minutos")
     finally:
         db.close()

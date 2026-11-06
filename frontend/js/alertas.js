@@ -1,6 +1,6 @@
 /**
  * alertas.js — Panel de alertas del dashboard (solo taller): SLA vencidos o por
- * vencer y repuestos bajo el stock mínimo. Si no hay alertas, no se muestra.
+ * vencer, equipos listos para retirar y repuestos bajo el stock mínimo. Si no hay alertas, no se muestra.
  */
 const Alertas = (() => {
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -8,6 +8,7 @@ const Alertas = (() => {
     // Clases completas (no armadas con variables) para que Tailwind las detecte siempre
     const COLORES = {
         red:   { head: 'bg-red-50',   text: 'text-red-700',   border: 'border-red-200' },
+        green: { head: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
         amber: { head: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
     };
 
@@ -52,14 +53,27 @@ const Alertas = (() => {
         </li>`;
     }
 
+    function filaRetiro(t) {
+        return `
+        <li class="px-5 py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-gray-50 cursor-pointer"
+            onclick="api.getTicket(${t.id}).then(tk => ui.showTicketDetail(tk))">
+            <span class="min-w-0"><span class="font-semibold text-blue-700">${esc(t.numero_rma)}</span>
+                <span class="text-gray-500 truncate"> · ${esc(t.cliente || '')}${t.telefono ? ' · ' + esc(t.telefono) : ''}</span></span>
+            <span class="shrink-0 text-xs font-bold ${t.vencido ? 'text-red-600' : 'text-emerald-700'}">
+                ${t.vencido ? `plazo vencido · ${t.dias_esperando} días` : `${t.dias_esperando} días · quedan ${t.dias_restantes}`}</span>
+        </li>`;
+    }
+
     async function cargar() {
         const panel = document.getElementById('alertas-panel');
         if (!panel) return;
-        const [sla, stock] = await Promise.all([
+        const [sla, stock, retiro] = await Promise.all([
             api.request('tickets/sla/alertas').catch(() => []),
             api.request('stock/alertas').catch(() => []),
+            api.request('tickets/retiro/pendientes').catch(() => []),
         ]);
         const bloques = [];
+        if (retiro.length) bloques.push(tarjeta('Listos para retirar', 'green', retiro.map(filaRetiro)));
         if (sla.length) bloques.push(tarjeta('SLA vencidos o por vencer', 'red', sla.map(filaSla)));
         if (stock.length) bloques.push(tarjeta('Repuestos bajo el mínimo', 'amber', stock.map(filaStock)));
         panel.innerHTML = bloques.join('');
