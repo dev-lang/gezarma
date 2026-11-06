@@ -8,3 +8,4 @@ python-multipart
 pydantic[email]
 python-dotenv
 openpyxl
+tzdata  # base de zonas horarias para zoneinfo (Windows no la trae)

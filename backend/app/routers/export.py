@@ -10,6 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from .. import database, models, auth
+from ..timeutils import now_local, utc_to_local
+
+
+def _local(dt, fmt="%d/%m/%Y %H:%M"):
+    """Fecha guardada en UTC → texto en la hora local del negocio (TIMEZONE)."""
+    return utc_to_local(dt).strftime(fmt) if dt else ""
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -66,7 +72,7 @@ def export_data(
     if entidad not in ENTIDADES:
         raise HTTPException(status_code=404, detail=f"Entidad inválida. Opciones: {sorted(ENTIDADES)}")
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = now_local().strftime("%Y-%m-%d")
 
     # ── TICKETS ────────────────────────────────────────────────────────────────
     if entidad == "tickets":
@@ -88,9 +94,9 @@ def export_data(
                 t.empresa_transporte or "", t.tracking_number or "",
                 t.origen.numero_rma    if t.origen     else "",
                 t.relacionado.numero_rma if t.relacionado else "",
-                t.fecha_creacion.strftime("%d/%m/%Y %H:%M") if t.fecha_creacion else "",
-                t.fecha_actualizacion.strftime("%d/%m/%Y %H:%M") if t.fecha_actualizacion else "",
-                t.fecha_cierre.strftime("%d/%m/%Y %H:%M") if t.fecha_cierre else "",
+                _local(t.fecha_creacion),
+                _local(t.fecha_actualizacion),
+                _local(t.fecha_cierre),
             ])
         filename = f"tickets_rma_{today}"
 
@@ -118,7 +124,7 @@ def export_data(
         rows = [[
             u.id, u.username, u.nombre, u.email, u.rol,
             u.tipo_cliente, "Sí" if u.activo else "No",
-            u.fecha_creacion.strftime("%d/%m/%Y") if u.fecha_creacion else ""
+            _local(u.fecha_creacion, "%d/%m/%Y")
         ] for u in items]
         filename = f"usuarios_{today}"
 

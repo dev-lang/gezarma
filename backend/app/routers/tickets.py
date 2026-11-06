@@ -7,6 +7,7 @@ from datetime import datetime
 import os, shutil, uuid, re
 
 from .. import database, models, schemas, auth, config
+from ..timeutils import utcnow, to_utc_naive, iso_utc
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
@@ -195,7 +196,7 @@ def edit_ticket_fields(
                       campo=campo, val_ant=valor_anterior, val_nuevo=valor_nuevo)
             setattr(ticket, campo, valor_nuevo)
             changed_labels.append(campo)
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_actualizacion = utcnow()
     if changed_labels:
         notify_ticket_actors(
             db, ticket,
@@ -228,9 +229,9 @@ def update_ticket_status(
         return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
     estado_ant = ticket.estado
     ticket.estado = update.estado
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_actualizacion = utcnow()
     if update.estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO):
-        ticket.fecha_cierre = datetime.now()
+        ticket.fecha_cierre = utcnow()
     ticket.deadline_sla = calculate_sla_deadline(update.estado)
     log_event(db, ticket_id, current_user.id,
               models.EventoHistorial.CAMBIO_ESTADO,
@@ -272,7 +273,7 @@ def assign_technician(
     tecnico_cambio = ant != assignment.tecnico_id   # ← only notify if value actually changed
 
     ticket.tecnico_asignado = assignment.tecnico_id
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_actualizacion = utcnow()
 
     if tecnico_cambio:
         log_event(db, ticket_id, current_user.id,
@@ -316,8 +317,8 @@ def update_shipping(
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     ticket.empresa_transporte  = shipping.empresa_transporte
     ticket.tracking_number     = shipping.tracking_number
-    ticket.fecha_envio         = shipping.fecha_envio or datetime.now()
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_envio         = to_utc_naive(shipping.fecha_envio) if shipping.fecha_envio else utcnow()
+    ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
@@ -341,7 +342,7 @@ def add_ticket_tag(
         db.add(tag); db.flush()
     if tag not in ticket.tags:
         ticket.tags.append(tag)
-        ticket.fecha_actualizacion = datetime.now()
+        ticket.fecha_actualizacion = utcnow()
         log_event(db, ticket_id, current_user.id,
                   models.EventoHistorial.TAG_AGREGADO,
                   detalle=f"Etiqueta agregada: {tag.nombre}")
@@ -381,7 +382,7 @@ def set_ticket_tags(
             ticket.tags.remove(tag)
             log_event(db, ticket_id, current_user.id, models.EventoHistorial.TAG_ELIMINADO,
                       detalle=f"Etiqueta eliminada: {name}")
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
@@ -402,7 +403,7 @@ def remove_ticket_tag(
     tag = db.query(models.Tag).filter_by(nombre=tag_nombre).first()
     if tag and tag in ticket.tags:
         ticket.tags.remove(tag)
-        ticket.fecha_actualizacion = datetime.now()
+        ticket.fecha_actualizacion = utcnow()
         log_event(db, ticket_id, current_user.id, models.EventoHistorial.TAG_ELIMINADO,
                   detalle=f"Etiqueta eliminada: {tag.nombre}")
         db.commit()
@@ -448,7 +449,7 @@ def add_ticket_part(
     db.add(mov)
     log_event(db, ticket_id, current_user.id, models.EventoHistorial.REPUESTO_AGREGADO,
               detalle=f"Repuesto: {part.nombre} × {part_add.cantidad}")
-    db_ticket.fecha_actualizacion = datetime.now()
+    db_ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(db_ticket)
     return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
@@ -492,7 +493,7 @@ def update_ticket_part(
     db.add(mov)
     log_event(db, ticket_id, current_user.id, models.EventoHistorial.CAMPO_EDITADO,
               detalle=f"Repuesto '{part.nombre}' cantidad ajustada a {nueva_cantidad}")
-    db_ticket.fecha_actualizacion = datetime.now()
+    db_ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(db_ticket)
     return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
@@ -529,7 +530,7 @@ def remove_ticket_part(
     log_event(db, ticket_id, current_user.id, models.EventoHistorial.CAMPO_EDITADO,
               detalle=f"Repuesto '{part.nombre}' eliminado del ticket")
     db.delete(assoc)
-    db_ticket.fecha_actualizacion = datetime.now()
+    db_ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(db_ticket)
     return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
@@ -573,7 +574,7 @@ def update_diagnostic(
                   campo="diagnostico", val_ant=old_diag, val_nuevo=new_diag,
                   detalle="Diagnóstico técnico actualizado")
     ticket.diagnostico = new_diag
-    ticket.fecha_actualizacion = datetime.now()
+    ticket.fecha_actualizacion = utcnow()
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
@@ -608,7 +609,7 @@ def clone_ticket(
         estado=models.TicketStatus.NUEVO,
         clonado_de=orig.id,
         ticket_relacionado=orig.id if payload.relacionar else None,
-        fecha_actualizacion=datetime.now(),
+        fecha_actualizacion=utcnow(),
     )
     db.add(clone)
     db.flush()
@@ -664,7 +665,7 @@ def _serialize_adjunto(a: models.Adjunto) -> dict:
         "tamanio":        a.tamanio or 0,
         "mime_type":      a.mime_type or "",
         "ext":            ext,
-        "fecha":          a.fecha.isoformat() if a.fecha else None,
+        "fecha":          iso_utc(a.fecha) if a.fecha else None,
     }
 
 

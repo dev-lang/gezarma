@@ -6,13 +6,21 @@ fijan ANTES de importar la app, porque la config se lee al importarla.
 """
 import os
 import tempfile
+import time
 import uuid
+
+# El reloj del proceso en hora argentina (UTC-3): si el servidor corriera en UTC,
+# los errores de mezclar hora local con UTC no se notarían en los tests.
+os.environ["TZ"] = "America/Argentina/Buenos_Aires"
+if hasattr(time, "tzset"):
+    time.tzset()
 
 _TMP = tempfile.mkdtemp(prefix="gezarma-tests-")
 os.environ["DATABASE_URL"] = f"sqlite:///{os.path.join(_TMP, 'test.db')}"
 os.environ["UPLOAD_DIR"] = os.path.join(_TMP, "uploads")
 os.environ["SECRET_KEY"] = "clave-de-test"
 os.environ["ADMIN_PASSWORD"] = "admin-test-123"
+os.environ["TIMEZONE"] = "America/Argentina/Buenos_Aires"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

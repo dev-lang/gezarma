@@ -1,6 +1,13 @@
-from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Optional, List, Dict
+from pydantic import BaseModel, ConfigDict, PlainSerializer, field_validator
+from typing import Annotated, Optional, List, Dict
 from datetime import datetime
+
+from .timeutils import iso_utc
+
+# Instante guardado en UTC: en el JSON sale con zona ("...Z") para que el
+# navegador lo muestre en la hora local del usuario. (fecha_compra NO usa este
+# tipo: es una fecha de calendario.)
+UTCDateTime = Annotated[datetime, PlainSerializer(iso_utc, return_type=str, when_used="json")]
 
 # ── Tags ─────────────────────────────────────────────────────────────────────
 class TagBase(BaseModel):
@@ -54,7 +61,7 @@ class UserResetPassword(BaseModel):
 class User(UserBase):
     id:                   int
     activo:               bool
-    fecha_creacion:       datetime
+    fecha_creacion:       UTCDateTime
     telefono:             Optional[str] = None
     must_change_password: bool = False
     model_config = ConfigDict(from_attributes=True)
@@ -178,15 +185,15 @@ class Ticket(TicketBase):
     estado:               str
     tecnico_asignado:     Optional[int] = None
     tecnico_nombre:       Optional[str] = None
-    fecha_creacion:       datetime
-    fecha_actualizacion:  datetime
-    fecha_cierre:         Optional[datetime] = None
-    deadline_sla:         Optional[datetime] = None
+    fecha_creacion:       UTCDateTime
+    fecha_actualizacion:  UTCDateTime
+    fecha_cierre:         Optional[UTCDateTime] = None
+    deadline_sla:         Optional[UTCDateTime] = None
     en_garantia:          bool
     diagnostico:          Optional[str] = None
     empresa_transporte:   Optional[str] = None
     tracking_number:      Optional[str] = None
-    fecha_envio:          Optional[datetime] = None
+    fecha_envio:          Optional[UTCDateTime] = None
     clonado_de:           Optional[int]  = None
     ticket_relacionado:   Optional[int]  = None
     rma_clonado_de:       Optional[str]  = None
@@ -239,7 +246,7 @@ class Comment(CommentBase):
     ticket_id:      int
     usuario_id:     int
     usuario_nombre: Optional[str] = None
-    fecha:          datetime
+    fecha:          UTCDateTime
 
     @classmethod
     def from_orm_with_nombre(cls, obj):
@@ -262,7 +269,7 @@ class HistorialEntry(BaseModel):
     valor_nuevo:     Optional[str] = None
     detalle:         Optional[str] = None
     usuario_nombre:  Optional[str] = None
-    fecha:           datetime
+    fecha:           UTCDateTime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -279,7 +286,7 @@ class StockMovimientoOut(BaseModel):
     stock_anterior: int
     stock_nuevo:    int
     nota:           Optional[str] = None
-    fecha:          datetime
+    fecha:          UTCDateTime
     model_config = ConfigDict(from_attributes=True)
 
 class StockMovimientoUpdate(BaseModel):
@@ -350,7 +357,7 @@ class PresupuestoVersionOut(BaseModel):
     notas:          Optional[str] = None
     items_snapshot: Optional[list] = None
     usuario_nombre: Optional[str] = None
-    fecha:          datetime
+    fecha:          UTCDateTime
     model_config = ConfigDict(from_attributes=True)
 
 class PresupuestoOut(BaseModel):
@@ -365,8 +372,8 @@ class PresupuestoOut(BaseModel):
     ganancia:        Optional[float] = None   # None for clients
     versiones:       List[PresupuestoVersionOut] = []   # empty for clients
     creador_nombre:  Optional[str] = None
-    fecha_creacion:  datetime
-    fecha_actualizacion: datetime
+    fecha_creacion:  UTCDateTime
+    fecha_actualizacion: UTCDateTime
     model_config = ConfigDict(from_attributes=True)
 
 # ── Plantilla Presupuesto ─────────────────────────────────────────────────────
@@ -411,7 +418,7 @@ class NotificacionOut(BaseModel):
     titulo:             str
     mensaje:            str
     leida:              bool
-    fecha:              datetime
+    fecha:              UTCDateTime
     origen_nombre:      Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 

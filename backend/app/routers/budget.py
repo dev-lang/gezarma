@@ -14,7 +14,7 @@ import json
 
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
-from ..timeutils import utcnow
+from ..timeutils import utcnow, utc_to_local
 
 router = APIRouter(prefix="/budget", tags=["budget"])
 
@@ -415,7 +415,7 @@ def get_financial_stats(
         total_costo += c
         total_ingreso += i
 
-        mes_key = p.fecha_actualizacion.strftime("%Y-%m")
+        mes_key = utc_to_local(p.fecha_actualizacion).strftime("%Y-%m")
         ganancias_por_mes[mes_key] = ganancias_por_mes.get(mes_key, 0.0) + g
         ingresos_por_mes[mes_key] = ingresos_por_mes.get(mes_key, 0.0) + i
         costos_por_mes[mes_key] = costos_por_mes.get(mes_key, 0.0) + c

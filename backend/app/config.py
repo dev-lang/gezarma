@@ -35,6 +35,18 @@ CORS_ORIGINS = _list(os.getenv("CORS_ORIGINS", "*"))
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or _DEFAULT_ADMIN_PASSWORD
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gezatek.com.ar")
 
+# ── Zona horaria ─────────────────────────────────────────────────────────────
+# Las fechas se guardan en UTC. TIMEZONE es la zona del negocio: se usa para lo
+# que el servidor muestra formateado (exportaciones) y para convertir a UTC los
+# datos viejos que se guardaron en hora local (migración 0003).
+TIMEZONE = os.getenv("TIMEZONE") or "America/Argentina/Buenos_Aires"
+try:
+    from zoneinfo import ZoneInfo
+    ZoneInfo(TIMEZONE)
+except Exception as exc:  # nombre inválido o falta la base de zonas (pip install tzdata)
+    raise RuntimeError(f"TIMEZONE inválida: {TIMEZONE!r}. Usá un nombre IANA, "
+                       f"p. ej. America/Argentina/Buenos_Aires") from exc
+
 # ── Datos ────────────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rma_system.db")
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")

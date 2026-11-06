@@ -11,6 +11,7 @@ RMA format: RMA-{year}-{ROLE_PREFIX}{SERIE}{SEQ:03d}
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from .. import models, schemas
+from ..timeutils import utcnow, now_local
 
 # ── Role prefix map ──────────────────────────────────────────────────────────
 ROLE_PREFIX = {
@@ -29,7 +30,7 @@ def _next_serie(current: str) -> str:
     raise ValueError("RMA counter exhausted for this year/prefix")
 
 def generate_rma_number(db: Session, user_rol: str, year: int = None) -> str:
-    year = year or datetime.now().year
+    year = year or now_local().year
     prefix = ROLE_PREFIX.get(user_rol, "OT")
 
     counter = (
@@ -52,7 +53,7 @@ def generate_rma_number(db: Session, user_rol: str, year: int = None) -> str:
 
 # ── SLA helpers ──────────────────────────────────────────────────────────────
 def calculate_sla_deadline(status: str):
-    now = datetime.now()
+    now = utcnow()
     if status == models.TicketStatus.NUEVO:
         return now + timedelta(hours=24)
     elif status in (models.TicketStatus.REVISION, models.TicketStatus.DIAGNOSTICO):
@@ -90,12 +91,12 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
         priority = "Alta"
 
     fecha_compra_naive = ticket.fecha_compra.replace(tzinfo=None) if ticket.fecha_compra.tzinfo else ticket.fecha_compra
-    if fecha_compra_naive > datetime.now():
+    if fecha_compra_naive > now_local():
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="La fecha de compra no puede ser una fecha futura.")
 
     is_warranty = True
-    if fecha_compra_naive < datetime.now() - timedelta(days=365):
+    if fecha_compra_naive < now_local() - timedelta(days=365):
         is_warranty = False
         if priority != "Alta":
             priority = "Baja"
@@ -117,7 +118,7 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
         estado=models.TicketStatus.NUEVO,
         en_garantia=is_warranty,
         deadline_sla=deadline,
-        fecha_actualizacion=datetime.now(),
+        fecha_actualizacion=utcnow(),
     )
     db.add(new_ticket)
     db.flush()
