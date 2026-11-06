@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block contenido %}
+{% include "_datos.html" %}
+
+<h2>Presupuesto{% if presupuesto %} (versión {{ presupuesto.version }}){% endif %}</h2>
+{% if presupuesto %}
+<table class="items">
+  <tr><th>Descripción</th><th class="right" style="width: 10%;">Cant.</th>
+      <th class="right" style="width: 18%;">Precio unit.</th><th class="right" style="width: 18%;">Subtotal</th></tr>
+  {% for i in presupuesto["items"] %}
+  <tr>
+    <td>{{ i.descripcion }}</td>
+    <td class="right">{{ "%g"|format(i.cantidad) }}</td>
+    <td class="right">{{ i.precio|pesos }}</td>
+    <td class="right">{{ i.subtotal|pesos }}</td>
+  </tr>
+  {% endfor %}
+  <tr class="total">
+    <td colspan="3" class="right">TOTAL</td>
+    <td class="right">{{ presupuesto.total|pesos }}</td>
+  </tr>
+</table>
+{% if presupuesto.notas %}<div class="box small" style="margin-top: 8px;">{{ presupuesto.notas }}</div>{% endif %}
+<p class="small" style="margin-top: 10px;">
+  {% if presupuesto.estado == "aprobado" %}<b>Presupuesto aprobado.</b>
+  {% elif presupuesto.estado == "rechazado" %}<b>Presupuesto rechazado.</b>
+  {% else %}Para aprobarlo o rechazarlo, ingresá al sistema con tu usuario.{% endif %}
+</p>
+{% else %}
+<p class="muted">Este ticket todavía no tiene presupuesto.</p>
+{% endif %}
+
+{% include "_qr.html" %}
+{% endblock %}

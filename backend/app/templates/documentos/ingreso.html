@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block contenido %}
+{% include "_datos.html" %}
+
+<h2>Falla informada por el cliente</h2>
+<div class="box">{{ t.descripcion }}</div>
+
+{% include "_qr.html" %}
+
+<p class="small muted" style="margin-top: 12px;">
+  Conservá este comprobante: lo vas a necesitar para retirar el equipo o consultar su estado.
+  Te avisamos cuando haya novedades o un presupuesto para aprobar.
+</p>
+
+<table style="margin-top: 40px;">
+  <tr>
+    <td style="width: 45%;"><div class="firma">Firma y aclaración del cliente</div></td>
+    <td style="width: 10%;"></td>
+    <td style="width: 45%;"><div class="firma">Recibido por {{ empresa }}</div></td>
+  </tr>
+</table>
+{% endblock %}

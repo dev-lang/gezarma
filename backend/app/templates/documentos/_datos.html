@@ -1,0 +1,23 @@
+<table style="margin-top: 10px;">
+  <tr>
+    <td style="width: 50%; padding-right: 10px;">
+      <h2>Cliente</h2>
+      <table>
+        <tr><td class="label">Nombre</td><td>{{ cliente.nombre }}</td></tr>
+        <tr><td class="label">Tipo</td><td>{{ cliente.tipo }}</td></tr>
+        {% if cliente.email %}<tr><td class="label">Email</td><td>{{ cliente.email }}</td></tr>{% endif %}
+        {% if cliente.telefono %}<tr><td class="label">Teléfono</td><td>{{ cliente.telefono }}</td></tr>{% endif %}
+      </table>
+    </td>
+    <td style="width: 50%;">
+      <h2>Equipo</h2>
+      <table>
+        <tr><td class="label">Producto</td><td>{{ t.producto }}</td></tr>
+        <tr><td class="label">N° de serie</td><td><b>{{ t.numero_serie }}</b></td></tr>
+        {% if fecha_compra %}<tr><td class="label">Fecha de compra</td><td>{{ fecha_compra }}</td></tr>{% endif %}
+        <tr><td class="label">Garantía</td><td>{{ "Sí" if t.en_garantia else "No" }}</td></tr>
+        <tr><td class="label">Ingreso</td><td>{{ fecha_ingreso }}</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>

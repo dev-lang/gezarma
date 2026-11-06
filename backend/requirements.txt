@@ -10,3 +10,9 @@ pydantic[email]
 python-dotenv
 openpyxl
 tzdata  # base de zonas horarias para zoneinfo (Windows no la trae)
+# Documentos (orden de ingreso, remito, presupuesto, etiqueta)
+jinja2
+xhtml2pdf
+qrcode[pil]
+python-barcode
+pillow

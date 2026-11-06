@@ -780,8 +780,8 @@ const app = {
         });
 
         // ── PDF print ─────────────────────────────────────────────────────
-        on('print-pdf-btn',        'click', () => app.printTicketPDF());
-        on('client-print-pdf-btn', 'click', () => app.printTicketPDF());
+        on('print-pdf-btn',        'click', e => Documentos.menu(e.currentTarget));
+        on('client-print-pdf-btn', 'click', e => Documentos.menu(e.currentTarget));
 
         // ── Detail: management save ───────────────────────────────────────
         on('save-mgmt-btn', 'click', async () => {
@@ -1139,120 +1139,6 @@ const app = {
         });
     },
 
-    // ── PDF Generator ─────────────────────────────────────────────────────────
-    printTicketPDF() {
-        const t = ui._ticketCache?.[ui.currentTicketId];
-        if (!t) { window.print(); return; }
-
-        const logo = 'GEZARMA';
-        const now  = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
-        const status = t.estado || '';
-        const garantia = t.en_garantia ? 'SÍ — Dentro del período de garantía' : 'No';
-
-        const parts = t.repuestos_usados?.length
-            ? t.repuestos_usados.map(r => `<li>${r.nombre} × ${r.cantidad}</li>`).join('')
-            : '<li>Ninguno</li>';
-
-        const html = `<!DOCTYPE html><html lang="es"><head>
-        <meta charset="UTF-8">
-        <title>RMA ${t.numero_rma}</title>
-        <style>
-            * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 32px; }
-            .header { display:flex; justify-content:space-between; align-items:center; border-bottom: 3px solid #1d4ed8; padding-bottom: 16px; margin-bottom: 24px; }
-            .logo { font-size: 20pt; font-weight: 900; color: #1d4ed8; letter-spacing: -0.5px; }
-            .logo span { font-weight: 300; color: #6b7280; }
-            .meta { text-align:right; font-size: 9pt; color: #6b7280; }
-            .rma-badge { font-size: 22pt; font-weight: 900; color: #1d4ed8; margin-bottom: 4px; }
-            .status-pill { display:inline-block; padding:3px 10px; border-radius: 20px; font-size:9pt; font-weight:700; text-transform:uppercase; letter-spacing:1px; background:#dbeafe; color:#1e40af; }
-            .section { margin-bottom: 22px; }
-            .section-title { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 10px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
-            .field label { font-size: 8pt; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; }
-            .field p { font-size: 10pt; font-weight: 600; margin-top: 2px; }
-            .desc-box { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; font-size: 10pt; line-height: 1.5; white-space: pre-wrap; }
-            .garantia-yes { color: #15803d; font-weight: 700; }
-            .garantia-no  { color: #6b7280; }
-            .footer { margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 12px; display:flex; justify-content:space-between; font-size: 8pt; color: #9ca3af; }
-            .sign-line { margin-top: 60px; display:grid; grid-template-columns:1fr 1fr; gap: 40px; }
-            .sign-line div { border-top: 1px solid #374151; padding-top: 8px; font-size: 8.5pt; color: #374151; text-align:center; }
-            @media print { body { padding: 20px; } }
-        </style></head><body>
-        <div class="header">
-            <div><div class="logo">GEZARMA</div><div style="font-size:9pt;color:#6b7280;margin-top:2px;">Comprobante de Servicio Técnico</div></div>
-            <div class="meta"><div>Emitido: ${now}</div><div>Documento RMA oficial</div></div>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
-            <div>
-                <div class="rma-badge">${t.numero_rma}</div>
-                <span class="status-pill">${status}</span>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:9pt;color:#6b7280;">Ticket interno</div>
-                <div style="font-weight:700;">#${t.id}</div>
-                <div style="font-size:9pt;margin-top:4px;">Garantía: <span class="${t.en_garantia ? 'garantia-yes' : 'garantia-no'}">${garantia}</span></div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Producto</div>
-            <div class="grid">
-                <div class="field"><label>Producto</label><p>${t.producto_nombre || '—'}</p></div>
-                <div class="field"><label>Número de Serie</label><p>${t.numero_serie}</p></div>
-                <div class="field"><label>Prioridad</label><p>${t.prioridad}</p></div>
-                <div class="field"><label>Fecha de Compra</label><p>${t.fecha_compra ? new Date(t.fecha_compra).toLocaleDateString('es-AR') : '—'}</p></div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Descripción del Problema</div>
-            <div class="desc-box">${t.descripcion_problema}</div>
-        </div>
-
-        ${t.diagnostico ? `<div class="section">
-            <div class="section-title">Diagnóstico / Resolución Técnica</div>
-            <div class="desc-box">${t.diagnostico}</div>
-        </div>` : ''}
-
-        <div class="section">
-            <div class="section-title">Repuestos Utilizados</div>
-            <ul style="list-style:disc;padding-left:18px;font-size:10pt;">${parts}</ul>
-        </div>
-
-        ${t.empresa_envio ? `<div class="section">
-            <div class="section-title">Información de Envío</div>
-            <div class="grid">
-                <div class="field"><label>Transporte</label><p>${t.empresa_envio}</p></div>
-                <div class="field"><label>Nº Tracking</label><p>${t.numero_tracking || '—'}</p></div>
-            </div>
-        </div>` : ''}
-
-        <div class="section">
-            <div class="section-title">Fechas</div>
-            <div class="grid">
-                <div class="field"><label>Creación</label><p>${new Date(t.fecha_creacion).toLocaleDateString('es-AR')}</p></div>
-                <div class="field"><label>Última Actualización</label><p>${new Date(t.fecha_actualizacion).toLocaleDateString('es-AR')}</p></div>
-            </div>
-        </div>
-
-        <div class="sign-line">
-            <div>Firma del Cliente<br><small style="color:#9ca3af">${'_'.repeat(30)}</small></div>
-            <div>Firma del Técnico / Sello<br><small style="color:#9ca3af">${'_'.repeat(30)}</small></div>
-        </div>
-
-        <div class="footer">
-            <span>GEZARMA — Documento generado automáticamente</span>
-            <span>${t.numero_rma} · ${now}</span>
-        </div>
-        </body></html>`;
-
-        const w = window.open('', '_blank', 'width=900,height=700');
-        w.document.write(html);
-        w.document.close();
-        w.focus();
-        setTimeout(() => { w.print(); }, 400);
-    },
 
     // ── Reposición de Stock ───────────────────────────────────────────────────
     openReposicionModal() {

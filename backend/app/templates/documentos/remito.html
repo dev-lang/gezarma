@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block contenido %}
+{% include "_datos.html" %}
+
+<h2>Trabajo realizado</h2>
+<table>
+  <tr><td class="label">Estado</td><td><b>{{ estado }}</b></td></tr>
+  {% if tecnico %}<tr><td class="label">Técnico</td><td>{{ tecnico }}</td></tr>{% endif %}
+</table>
+{% if t.diagnostico %}<div class="box" style="margin-top: 4px;">{{ t.diagnostico }}</div>{% endif %}
+
+{% if repuestos %}
+<h2>Repuestos utilizados</h2>
+<table class="items">
+  <tr><th>Repuesto</th><th style="width: 25%;">Código</th><th class="right" style="width: 12%;">Cant.</th></tr>
+  {% for r in repuestos %}
+  <tr><td>{{ r.nombre }}</td><td class="small">{{ r.codigo }}</td><td class="right">{{ r.cantidad }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if t.empresa_transporte or t.tracking_number %}
+<h2>Envío</h2>
+<table>
+  {% if t.empresa_transporte %}<tr><td class="label">Transporte</td><td>{{ t.empresa_transporte }}</td></tr>{% endif %}
+  {% if t.tracking_number %}<tr><td class="label">N° de seguimiento</td><td><b>{{ t.tracking_number }}</b></td></tr>{% endif %}
+  {% if fecha_envio %}<tr><td class="label">Fecha de envío</td><td>{{ fecha_envio }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+<p class="small muted" style="margin-top: 14px;">
+  El cliente recibe el equipo indicado y presta conformidad con el trabajo realizado.
+</p>
+
+<table style="margin-top: 40px;">
+  <tr>
+    <td style="width: 45%;"><div class="firma">Firma y aclaración del cliente</div></td>
+    <td style="width: 10%;"></td>
+    <td style="width: 45%;"><div class="firma">Entregado por {{ empresa }}</div></td>
+  </tr>
+</table>
+{% endblock %}

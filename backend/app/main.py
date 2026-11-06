@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 from .database import engine, Base, SessionLocal, run_migrations
-from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router
+from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router
 from . import models, auth, config
 
 UPLOAD_DIR  = config.UPLOAD_DIR
@@ -44,6 +44,7 @@ app.include_router(budget_router.router)
 app.include_router(notif_router.router)
 app.include_router(fav_router.router)
 app.include_router(public_router.router)
+app.include_router(documentos_router.router)
 
 @app.get("/")
 def read_index():

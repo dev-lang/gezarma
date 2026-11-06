@@ -2,3 +2,4 @@
 -r backend/requirements.txt
 pytest
 httpx2   # cliente HTTP que usa el TestClient de Starlette
+pypdf    # para leer los PDF generados en los tests

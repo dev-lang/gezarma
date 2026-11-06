@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>{{ titulo }} {{ t.numero_rma }}</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 9.5pt; color: #1f2937; }
+  h1 { font-size: 17pt; margin: 0; color: #1d4ed8; }
+  h2 { font-size: 10pt; margin: 14px 0 4px 0; padding-bottom: 3px; border-bottom: 1px solid #d1d5db;
+       color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { vertical-align: top; padding: 3px 4px; }
+  .muted { color: #6b7280; }
+  .small { font-size: 8pt; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .label { color: #6b7280; font-size: 8pt; width: 30%; }
+  .box { border: 1px solid #d1d5db; padding: 6px 8px; }
+  .items th { background-color: #f3f4f6; font-size: 8pt; text-transform: uppercase; color: #4b5563;
+              border-bottom: 1px solid #d1d5db; text-align: left; }
+  .items td { border-bottom: 1px solid #e5e7eb; }
+  .total td { font-weight: bold; font-size: 11pt; border-top: 2px solid #1f2937; }
+  .firma { border-top: 1px solid #6b7280; padding-top: 3px; text-align: center; font-size: 8pt; color: #6b7280; }
+  .rma { font-family: Courier, monospace; font-size: 12pt; font-weight: bold; }
+  .pie { margin-top: 16px; font-size: 7.5pt; color: #9ca3af; text-align: center; }
+  @media screen { body { max-width: 190mm; margin: 12px auto; } }
+</style>
+</head>
+<body>
+<table>
+  <tr>
+    <td style="width: 60%">
+      <h1>{{ empresa }}</h1>
+      {% for linea in empresa_datos %}<div class="small muted">{{ linea }}</div>{% endfor %}
+    </td>
+    <td class="right">
+      <div style="font-size: 13pt; font-weight: bold;">{{ titulo }}</div>
+      <div class="rma">{{ t.numero_rma }}</div>
+      <div class="small muted">Emitido el {{ hoy }}</div>
+    </td>
+  </tr>
+</table>
+
+{% block contenido %}{% endblock %}
+
+<div class="pie">{{ empresa }} · Documento generado por GEZARMA · {{ t.numero_rma }}</div>
+{% if imprimir %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}
+</body>
+</html>

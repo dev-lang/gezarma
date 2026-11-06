@@ -83,6 +83,7 @@ const ui = {
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         else document.getElementById('alertas-panel')?.classList.add('hidden');
         this.loadTickets();
+        if (typeof Documentos !== 'undefined') Documentos.abrirDesdeHash();
     },
 
     // ── Ticket list ────────────────────────────────────────────────────────
