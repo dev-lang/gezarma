@@ -1,10 +1,10 @@
 <section id="dashboard-section">
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Panel de Control</h2>
             <p class="text-gray-500" id="role-badge"></p>
         </div>
-        <div id="action-buttons" class="flex items-center gap-3">
+        <div id="action-buttons" class="flex flex-wrap items-center gap-2 sm:gap-3">
             <button type="button" id="favorites-nav-btn"
                 class="hidden items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold shadow transition">
                 ⭐ Favoritos
@@ -23,6 +23,9 @@
             <button type="button" id="create-ticket-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">Nuevo Ticket</button>
         </div>
     </div>
+
+    <!-- Guía de primer uso (solo administrador; frontend/js/guia.js) -->
+    <div id="guia-panel" class="hidden mb-8"></div>
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="stats-container"></div>

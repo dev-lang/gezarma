@@ -253,6 +253,48 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
             "encuesta_activa": ajustes_mod.get(db, "encuesta_activa")}
 
 
+# ── Guía de primer uso (dashboard del administrador) ─────────────────────────
+PRODUCTOS_DE_EJEMPLO = {("ASUS", "X515 Laptop"), ("Logitech", "G502 Hero"), ("Samsung", "Odyssey G5")}
+
+
+@router.get("/guia")
+def guia(db: Session = Depends(database.get_db),
+         current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    """Los pasos para dejar el sistema listo, con cuáles ya están hechos."""
+    from .. import config as cfg
+    smtp = (ajustes_mod.get(db, "smtp_host") if ajustes_mod.get(db, "smtp_origen") == "panel" else cfg.SMTP_HOST)
+    productos_propios = any((p.marca, p.modelo) not in PRODUCTOS_DE_EJEMPLO
+                            for p in db.query(models.Producto.marca, models.Producto.modelo).all())
+    tecnico = db.query(models.Usuario.id).filter_by(rol=models.UserRole.TECNICO.value, activo=True).first()
+    pasos = [
+        {"id": "taller", "titulo": "Cargá los datos del taller",
+         "detalle": "Nombre y contacto para los documentos y los mails.",
+         "hecho": (ajustes_mod.get(db, "empresa_nombre") or "GEZARMA") != "GEZARMA" or bool(ajustes_mod.get(db, "empresa_datos"))},
+        {"id": "email", "titulo": "Configurá el email",
+         "detalle": "Para avisarle al cliente cada cambio de estado y mandarle el presupuesto.",
+         "hecho": bool(ajustes_mod.get(db, "email_activo") and smtp)},
+        {"id": "productos", "titulo": "Cargá tus productos",
+         "detalle": "Marca, modelo y garantía de lo que reparás (los que vienen son de ejemplo).",
+         "hecho": productos_propios},
+        {"id": "tecnico", "titulo": "Sumá un técnico",
+         "detalle": "Cada técnico tiene su usuario y ve los tickets que tiene asignados.",
+         "hecho": bool(tecnico)},
+        {"id": "impresora", "titulo": "Probá la impresora",
+         "detalle": "Imprimí una etiqueta de prueba para revisar el tamaño y que el código de barras se lea.",
+         "hecho": bool(ajustes_mod.get(db, "guia_impresion_probada"))},
+    ]
+    return {"oculta": bool(ajustes_mod.get(db, "guia_oculta")), "pasos": pasos,
+            "completa": all(p["hecho"] for p in pasos)}
+
+
+@router.put("/guia")
+def guia_ocultar(data: dict, db: Session = Depends(database.get_db),
+                 current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    ajustes_mod.set(db, "guia_oculta", bool(data.get("oculta")))
+    db.commit()
+    return {"oculta": bool(data.get("oculta"))}
+
+
 # ── Email: prueba y estado ───────────────────────────────────────────────────
 @router.post("/email/prueba")
 def email_prueba(

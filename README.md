@@ -30,6 +30,9 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Notificaciones** in-app, **favoritos**, búsqueda global y **historial/auditoría** de cada cambio.
 - **Panel de administración**: usuarios, productos, repuestos, stock, pedidos a proveedor, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, impresoras, email, retiro y encuesta, taller, SLA, seguimiento) y **exportación** a CSV/Excel.
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
+- **Panel "Para hoy"**: SLA vencidos y por vencer, equipos listos para retirar, presupuestos sin respuesta y repuestos bajo el mínimo, cada uno con su lista.
+- **Guía de primer uso** para el administrador (datos del taller, email, productos, un técnico y una etiqueta de prueba) e **impresión de prueba** de etiqueta y comprobante desde *Ajustes → Impresoras*.
+- **Atajos de teclado** (`?` para verlos: `/` buscar, `N` nuevo ticket, `G` `T` tablero…), barra compacta en el celular, **Deshacer** al quitar etiquetas, repuestos o favoritos, y botones que muestran que están guardando.
 - **Idiomas**: español (Argentina), español (España), inglés y portugués (Brasil). Cada usuario elige el suyo desde la barra superior (o el login); los mails, PDF y comprobantes le llegan al cliente en su idioma.
 
 ## Capturas

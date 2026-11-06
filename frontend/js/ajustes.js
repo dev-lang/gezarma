@@ -60,7 +60,15 @@ const Ajustes = (() => {
         cont.innerHTML = GRUPOS.map(g => {
             const items = _items.filter(a => a.grupo === g.id);
             if (!items.length) return '';
-            const extra = g.id === 'email' ? `
+            const extra = g.id === 'general' ? `
+                <div class="pt-3 mt-2 border-t border-gray-100">
+                    <button type="button" id="aj-guia-btn" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Mostrar la guía de primer uso en el panel</button>
+                </div>` : g.id === 'impresion' ? `
+                <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap gap-2">
+                    <button type="button" id="aj-prueba-etiqueta" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">🏷️ Etiqueta de prueba</button>
+                    <button type="button" id="aj-prueba-ticket" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">🧾 Comprobante de prueba</button>
+                    <p class="w-full text-xs text-gray-400">Con datos de ejemplo, para revisar tamaño y lectura del código de barras. Guardá los cambios antes de probar.</p>
+                </div>` : g.id === 'email' ? `
                 <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap items-center gap-2">
                     <input type="email" id="aj-test-dest" value="${esc(_destinoPrueba)}" placeholder="Mail de destino para la prueba" class="${inputCls} max-w-xs">
                     <button type="button" id="aj-test-btn" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">Enviar mail de prueba</button>
@@ -81,6 +89,14 @@ const Ajustes = (() => {
         estadoEmail();
         document.getElementById('aj-smtp_origen')?.addEventListener('change', toggleSmtp);
         document.getElementById('aj-test-btn')?.addEventListener('click', probarEmail);
+        document.getElementById('aj-prueba-etiqueta')?.addEventListener('click', () => Documentos.abrirUrl('/tickets/impresion-prueba/etiqueta'));
+        document.getElementById('aj-prueba-ticket')?.addEventListener('click', () => Documentos.abrirUrl('/tickets/impresion-prueba/ticket_ingreso'));
+        document.getElementById('aj-guia-btn')?.addEventListener('click', async () => {
+            try {
+                await api.request('config/guia', { method: 'PUT', body: JSON.stringify({ oculta: false }) });
+                toast.success('Listo: la guía vuelve a aparecer en el panel de control (si quedan pasos por hacer).');
+            } catch (e) { toast.error(e.message); }
+        });
         document.getElementById('aj-test-dest')?.addEventListener('input', e => { _destinoPrueba = e.target.value; });
     }
 

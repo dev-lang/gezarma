@@ -127,6 +127,27 @@ def sla_alertas(
         "horas_restantes": sla_service.horas_restantes(t, ahora),
     } for t in sla_service.alertas(db, ahora)]
 
+@router.get("/presupuestos/pendientes")
+def presupuestos_pendientes(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.check_role([
+        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
+    ]))
+):
+    """Presupuestos enviados que el cliente todavía no aprobó ni rechazó, del más viejo al más nuevo."""
+    from sqlalchemy.orm import joinedload
+    P = models.Presupuesto
+    ahora = utcnow()
+    filas = (db.query(P).options(joinedload(P.ticket).joinedload(models.Ticket.cliente))
+             .filter(P.estado == models.PresupuestoEstado.ENVIADO.value)
+             .order_by(P.fecha_actualizacion.asc()).limit(100).all())
+    return [{"id": p.ticket_id, "numero_rma": p.ticket.numero_rma, "producto": p.ticket.producto,
+             "cliente": p.ticket.cliente.nombre if p.ticket.cliente else None,
+             "telefono": p.ticket.cliente.telefono if p.ticket.cliente else None,
+             "total": sum(i.cantidad * i.precio_cliente for i in p.items),
+             "dias_esperando": max(0, (ahora - p.fecha_actualizacion).days) if p.fecha_actualizacion else 0}
+            for p in filas if p.ticket]
+
 @router.get("/retiro/pendientes")
 def retiro_pendientes(
     db: Session = Depends(database.get_db),

@@ -65,7 +65,12 @@ const ui = {
         await this.showSection('dashboard');
 
         const ROLES = { cliente: 'Cliente', tecnico: 'Técnico', administrador: 'Administrador' };
-        document.getElementById('user-info').innerText = `${user.nombre || user.username || user.sub} (${I18N.t(ROLES[user.role] || user.role)})`;
+        const quien = `${user.nombre || user.username || user.sub} (${I18N.t(ROLES[user.role] || user.role)})`;
+        document.getElementById('user-info').innerText = quien;
+        const enMenu = document.getElementById('user-info-menu');
+        if (enMenu) enMenu.innerText = quien;
+        const iniciales = document.getElementById('user-iniciales');
+        if (iniciales) iniciales.textContent = (user.nombre || user.username || '?').split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
         document.getElementById('role-badge').innerText = `Rol: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`;
         document.getElementById('search-container').classList.remove('hidden');
 
@@ -93,6 +98,7 @@ const ui = {
             components.setSlaAvisoHoras(pub.sla_aviso_horas);
         } catch { /* se usa el valor por defecto */ }
         if (isAdmin) this.loadAdvancedStats();
+        if (isAdmin && typeof Guia !== 'undefined') Guia.cargar();
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         if (isTechOrAdmin && typeof Encuesta !== 'undefined') Encuesta.panel();
         if (user.role === 'cliente' && typeof Portal !== 'undefined') Portal.cargar();
@@ -151,11 +157,16 @@ const ui = {
         if (removable) {
             el.querySelectorAll('.tag-remove-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    try {
-                        await api.removeTag(ui.currentTicketId, btn.dataset.nombre);
-                        const updated = await api.getTicket(ui.currentTicketId);
+                    const ticketId = ui.currentTicketId, nombre = btn.dataset.nombre;
+                    const refrescar = async () => {
+                        if (ui.currentTicketId !== ticketId) return;
+                        const updated = await api.getTicket(ticketId);
                         ui._renderTicketTags(updated.tags || [], true);
-                        toast.success('Etiqueta eliminada.');
+                    };
+                    try {
+                        await api.removeTag(ticketId, nombre);
+                        await refrescar();
+                        toast.deshacer('Etiqueta quitada.', async () => { await api.addTag(ticketId, nombre); await refrescar(); });
                     } catch(e) { toast.error(e.message); }
                 });
             });
@@ -549,7 +560,7 @@ const ui = {
         const tbody = document.getElementById('user-list-body');
         if (tbody) tbody.innerHTML = users.length
             ? users.map(components.userRow).join('')
-            : `<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">No hay usuarios con esos filtros.</td></tr>`;
+            : components.vacioFila(6, { icono: '🔎', titulo: 'No hay usuarios con esos filtros.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
     },
 
     // Los botones "Editar" pasan solo el id (antes iba el usuario entero como JSON
@@ -634,7 +645,9 @@ const ui = {
             this._partsCache = parts;
             document.getElementById('parts-list-body').innerHTML = parts.length
                 ? parts.map(components.partRow).join('')
-                : '<tr><td colspan="6" class="py-8 text-center text-gray-400 italic">No hay repuestos cargados</td></tr>';
+                : components.vacioFila(6, { icono: '🔩', titulo: 'No hay repuestos cargados',
+                    texto: 'Cargá los repuestos que usás para descontarlos del stock y presupuestarlos.',
+                    acciones: document.getElementById('new-part-btn') ? [{ texto: 'Nuevo repuesto', clic: 'new-part-btn' }] : [] });
         } catch (err) { toast.error(err.message); }
     },
 
@@ -718,7 +731,10 @@ const ui = {
         const tbody = document.getElementById('product-list-body');
         if (tbody) tbody.innerHTML = prods.length
             ? prods.map(components.productRow).join('')
-            : `<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400 italic">No hay productos con esos criterios.</td></tr>`;
+            : (this._productsCache?.length
+                ? components.vacioFila(5, { icono: '🔎', titulo: 'No hay productos con esos criterios.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
+                : components.vacioFila(5, { icono: '💻', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
+                                            acciones: [{ texto: 'Nuevo producto', clic: 'admin-new-product-btn' }] }));
     },
 
     openNewProductForm() {
@@ -760,12 +776,8 @@ const ui = {
         try {
             const tickets = await api.getFavorites();
             if (!tickets.length) {
-                container.innerHTML = `
-                    <div class="text-center py-16">
-                        <p class="text-5xl mb-3">☆</p>
-                        <p class="text-gray-500 font-medium">No tenés tickets favoritos todavía.</p>
-                        <p class="text-gray-400 text-sm mt-1">Marcá un ticket con ⭐ para verlo aquí.</p>
-                    </div>`;
+                container.innerHTML = components.vacio({ icono: '☆', titulo: 'No tenés tickets favoritos todavía.',
+                    texto: 'Marcá un ticket con ⭐ para verlo aquí.', acciones: [{ texto: 'Volver al listado', clic: 'back-to-list' }] });
                 return;
             }
             container.innerHTML = tickets.map(t => {
@@ -801,9 +813,11 @@ const ui = {
                 btn.addEventListener('click', async e => {
                     e.stopPropagation();
                     const id = parseInt(btn.dataset.ticketId);
-                    await api.removeFavorite(id);
-                    toast.success('Quitado de favoritos.');
-                    await this.initFavorites();
+                    try {
+                        await api.removeFavorite(id);
+                        await this.initFavorites();
+                        toast.deshacer('Quitado de favoritos.', async () => { await api.addFavorite(id); await ui.initFavorites(); });
+                    } catch (err) { toast.error(err.message); }
                 });
             });
         } catch (err) {
@@ -931,7 +945,7 @@ const ui = {
         if (!tbody) return;
         tbody.innerHTML = users.length
             ? users.map(u => components.adminUserRow(u)).join('')
-            : `<tr><td colspan="7" class="px-5 py-10 text-center text-gray-400 italic text-sm">No hay usuarios con esos filtros.</td></tr>`;
+            : components.vacioFila(7, { icono: '🔎', titulo: 'No hay usuarios con esos filtros.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
     },
 
     // ── Admin: Products ───────────────────────────────────────────────────────
@@ -965,7 +979,10 @@ const ui = {
         if (!tbody) return;
         tbody.innerHTML = prods.length
             ? prods.map(p => components.adminProductRow(p)).join('')
-            : `<tr><td colspan="5" class="px-5 py-10 text-center text-gray-400 italic text-sm">Sin resultados.</td></tr>`;
+            : (this._adminProductsCache?.length
+                ? components.vacioFila(5, { icono: '🔎', titulo: 'Sin resultados.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
+                : components.vacioFila(5, { icono: '💻', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
+                                            chico: true, acciones: [{ texto: 'Nuevo producto', clic: 'admin-new-product-btn' }] }));
     },
 
     openAdminEditProduct(id) {
@@ -1041,7 +1058,8 @@ const ui = {
         if (!el) return;
         el.innerHTML = list.length
             ? list.map(p => components.plantillaRow(p)).join('')
-            : '<p class="px-5 py-8 text-gray-400 italic text-sm">No hay plantillas definidas.</p>';
+            : components.vacio({ icono: '📝', titulo: 'No hay plantillas definidas.', texto: 'Textos de diagnóstico que se cargan con un click.', chico: true,
+                                 acciones: [{ texto: 'Nueva plantilla', clic: 'admin-new-plantilla-btn' }] });
         el.querySelectorAll('.plantilla-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('plantilla-form-id').value     = btn.dataset.id;
@@ -1159,7 +1177,8 @@ const ui = {
         if (!container) return;
         container.innerHTML = tags.length
             ? tags.map(t => components.tagCard(t)).join('')
-            : '<p class="text-gray-400 italic text-sm col-span-3">No hay etiquetas definidas.</p>';
+            : `<div class="col-span-3">${components.vacio({ icono: '🏷️', titulo: 'No hay etiquetas definidas.', chico: true,
+                                                         acciones: [{ texto: 'Nueva etiqueta', clic: 'admin-new-tag-btn' }] })}</div>`;
         container.querySelectorAll('.tag-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('tag-form-id').value     = btn.dataset.id;
@@ -1266,7 +1285,14 @@ const ui = {
         try {
             const stats = await api.request('/tickets/stats/dashboard');
             if (!stats) return;
-            document.getElementById('avg-repair-time').innerText = `${stats.tiempo_promedio_reparacion_horas}h`;
+            const promedio = document.getElementById('avg-repair-time');
+            promedio.innerText = stats.cerrados ? `${stats.tiempo_promedio_reparacion_horas}h` : '—';
+            promedio.nextElementSibling.innerText = stats.cerrados ? 'Tiempo prom. reparación' : 'Todavía no hay reparaciones cerradas';
+            // Sin datos: un mensaje en lugar del gráfico vacío
+            const vacio = (id, texto) => {
+                const caja = document.getElementById(id)?.parentElement;
+                if (caja) caja.innerHTML = `<div class="h-full flex items-center justify-center text-center text-sm text-gray-400 px-4">${texto}</div>`;
+            };
 
             ['myChart1','myChart2','myChart3'].forEach(k => {
                 if (window[k] instanceof Chart) window[k].destroy();
@@ -1283,6 +1309,8 @@ const ui = {
             const stateLabels = Object.keys(stats.tickets_por_estado);
             const stateData   = Object.values(stats.tickets_por_estado);
             const stateBgs    = stateLabels.map(l => stateColors[l] || '#94a3b8');
+            if (!stateData.length) vacio('chart-states', 'Todavía no hay tickets');
+            else {
             window.myChart1 = new Chart(document.getElementById('chart-states').getContext('2d'), {
                 type: 'doughnut',
                 data: {
@@ -1291,16 +1319,23 @@ const ui = {
                 },
                 options: { ...opts, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } },
             });
+            }
+            if (!Object.keys(stats.fallas_por_producto).length) vacio('chart-products', 'Sin fallas registradas');
+            else {
             window.myChart2 = new Chart(document.getElementById('chart-products').getContext('2d'), {
                 type: 'bar',
                 data: { labels: Object.keys(stats.fallas_por_producto), datasets: [{ label: I18N.tr('Fallas'), data: Object.values(stats.fallas_por_producto), backgroundColor: '#3b82f6' }] },
                 options: { ...opts, indexAxis: 'y', plugins: { legend: { display: false } } },
             });
+            }
+            if (!Object.keys(stats.tickets_por_tecnico).length) vacio('chart-techs', 'Ningún ticket asignado a un técnico todavía');
+            else {
             window.myChart3 = new Chart(document.getElementById('chart-techs').getContext('2d'), {
                 type: 'pie',
                 data: { labels: Object.keys(stats.tickets_por_tecnico), datasets: [{ data: Object.values(stats.tickets_por_tecnico), backgroundColor: ['#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444'] }] },
                 options: opts,
             });
+            }
         } catch (err) { console.error(err); }
     },
 

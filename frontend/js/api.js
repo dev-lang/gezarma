@@ -1,10 +1,48 @@
 /**
  * api.js — All HTTP calls to the backend.
  */
+// ── Botón ocupado mientras se guarda ─────────────────────────────────────────
+// Cuando un click o un submit dispara un POST/PUT/PATCH/DELETE, ese botón queda
+// deshabilitado con un indicador hasta que termina (evita el doble envío y se ve
+// igual en todas las pantallas). Los que ya manejan su propio estado (disabled) se respetan.
+const _ocupado = (() => {
+    let ultimo = null, cuando = 0;
+    const anotar = b => { if (b && b.tagName === 'BUTTON') { ultimo = b; cuando = Date.now(); } };
+    document.addEventListener('click', e => anotar(e.target.closest?.('button')), true);
+    document.addEventListener('submit', e => anotar(e.submitter || e.target.querySelector('[type=submit]')), true);
+    return {
+        tomar() {
+            const b = ultimo;
+            if (!b || Date.now() - cuando > 1500 || !b.isConnected || b.disabled) return null;
+            b.dataset.pedidos = String((+b.dataset.pedidos || 0) + 1);
+            b.disabled = true;
+            b.classList.add('guardando');
+            b.setAttribute('aria-busy', 'true');
+            return b;
+        },
+        soltar(b) {
+            if (!b) return;
+            const n = (+b.dataset.pedidos || 1) - 1;
+            b.dataset.pedidos = String(n);
+            if (n > 0) return;
+            b.disabled = false;
+            b.classList.remove('guardando');
+            b.removeAttribute('aria-busy');
+        },
+    };
+})();
+
 const api = {
     baseUrl: "/",
 
     async request(endpoint, options = {}) {
+        const escribe = /^(POST|PUT|PATCH|DELETE)$/i.test(options.method || 'GET');
+        const boton = escribe ? _ocupado.tomar() : null;
+        try { return await this._request(endpoint, options); }
+        finally { _ocupado.soltar(boton); }
+    },
+
+    async _request(endpoint, options = {}) {
         const token = localStorage.getItem("token");
         const headers = { "Content-Type": "application/json", "Accept-Language": window.I18N?.codigo || "es-AR",
                           ...(options.headers || {}) };

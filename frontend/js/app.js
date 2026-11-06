@@ -505,6 +505,17 @@ const app = {
             }
         });
 
+        // ── "Limpiar filtros" desde un estado vacío ──────────────────────────
+        document.addEventListener('vacio:limpiar', e => {
+            const en = id => e.target.closest(`#${id}`);
+            const vaciar = ids => ids.forEach(id => { const c = document.getElementById(id); if (c) c.value = ''; });
+            if (en('ticket-list-body'))        { vaciar(['filter-status']); ui.loadTickets(); }
+            if (en('product-list-body'))       { vaciar(['product-search-input', 'product-filter-categoria']); ui.filterProducts(); }
+            if (en('admin-product-list-body')) { vaciar(['admin-product-search', 'admin-product-filter-cat']); ui.adminRenderProducts(); }
+            if (en('admin-user-list-body'))    { vaciar(['admin-user-filter-rol', 'admin-user-filter-activo']); ui.adminRenderUsers(); }
+            if (en('user-list-body'))          { vaciar(['user-filter-rol', 'user-filter-activo']); ui.renderUsers(); }
+        }, sig);
+
         // ── Filters ───────────────────────────────────────────────────────
         on('apply-filters', 'click', () => {
             const status = document.getElementById('filter-status').value;
@@ -700,9 +711,14 @@ const app = {
                 const ok = await confirmDialog('¿Quitar repuesto?', 'El stock será devuelto automáticamente.', 'Quitar');
                 if (!ok) return;
                 try {
+                    const cantidad = (JSON.parse(document.getElementById('detail-parts-list')?.dataset.parts || '[]')
+                                      .find(p => p.id === partId) || {}).cantidad || 1;
                     const updated = await api.removeTicketPart(ticketId, partId);
                     await ui.showTicketDetail(updated);
-                    toast.success('Repuesto quitado del ticket.');
+                    toast.deshacer('Repuesto quitado del ticket (el stock volvió).', async () => {
+                        const t = await api.addPart(ticketId, partId, cantidad);
+                        if (ui.currentTicketId === ticketId) await ui.showTicketDetail(t);
+                    });
                 } catch(err) { toast.error(err.message); }
                 return;
             }
@@ -738,7 +754,10 @@ const app = {
                     try {
                         const updated = await api.removeTicketPart(ticketId, partId);
                         await ui.showTicketDetail(updated);
-                        toast.success('Repuesto quitado del ticket.');
+                        toast.deshacer('Repuesto quitado del ticket (el stock volvió).', async () => {
+                            const t = await api.addPart(ticketId, partId, 1);
+                            if (ui.currentTicketId === ticketId) await ui.showTicketDetail(t);
+                        });
                     } catch(err) { toast.error(err.message); }
                 } else {
                     try {
@@ -883,6 +902,8 @@ const app = {
         // La búsqueda global de la barra superior se conecta una sola vez
         // (frontend/js/busqueda.js): el campo no se recrea al navegar.
         Busqueda.iniciar();
+        Barra.iniciar();
+        Atajos.iniciar();
 
         // ── Search page ────────────────────────────────────────────────────
         on('back-to-dashboard-from-search', 'click', () => ui.initDashboard());

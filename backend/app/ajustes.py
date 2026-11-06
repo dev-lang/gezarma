@@ -129,6 +129,11 @@ DEFS = {
                         label="Costo de la hora de trabajo ($)",
                         ayuda="Para calcular el costo de mano de obra con el tiempo registrado. 0 = no se calcula."),
     # ── SLA ──────────────────────────────────────────────────────────────────
+    # ── Internos (no aparecen en el panel) ───────────────────────────────────
+    "guia_oculta": dict(grupo="interno", tipo="bool", default=False, oculto=True,
+                        label="Guía de primer uso oculta"),
+    "guia_impresion_probada": dict(grupo="interno", tipo="bool", default=False, oculto=True,
+                                   label="Ya se imprimió una etiqueta o un comprobante"),
     "sla_alertas": dict(grupo="sla", tipo="bool", default=True, label="Avisar SLA vencidos y por vencer"),
     "sla_aviso_horas": dict(grupo="sla", tipo="int", default=4, minimo=1,
                             label="Avisar cuando falten menos de (horas)",
@@ -255,6 +260,8 @@ def listado(db: Session) -> list:
     """Todos los ajustes para el panel (los secretos solo indican si están cargados)."""
     out = []
     for clave, d in DEFS.items():
+        if d.get("oculto"):
+            continue
         valor = get(db, clave)
         item = {"clave": clave, "grupo": d["grupo"], "tipo": d["tipo"], "label": d["label"],
                 "ayuda": d.get("ayuda", ""), "default": d["default"]}

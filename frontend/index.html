@@ -9,13 +9,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .hidden { display: none; }
+        /* Respaldo por si no carga Tailwind; :where() no le gana a md:flex & co. */
+        :where(.hidden) { display: none; }
 
         /* Toast */
         @keyframes slideIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOut { from { transform: translateX(0);    opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
         .toast-enter { animation: slideIn  0.3s ease forwards; }
         .toast-leave { animation: slideOut 0.3s ease forwards; }
+        /* Botón mientras se guarda (ver api.js) */
+        @keyframes girar { to { transform: rotate(360deg); } }
+        button.guardando { cursor: wait; opacity: .75; }
+        button.guardando::after { content: ''; display: inline-block; width: .85em; height: .85em; margin-left: .45em;
+            border: 2px solid currentColor; border-right-color: transparent; border-radius: 9999px;
+            animation: girar .6s linear infinite; vertical-align: -.12em; }
 
         /* Skeleton */
         @keyframes shimmer { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -31,9 +38,11 @@
         .dark .bg-gray-800                  { background: #0f172a !important; }
         .dark .text-gray-800, .dark .text-gray-900 { color: #e2e8f0 !important; }
         .dark .text-gray-700                { color: #cbd5e1 !important; }
-        .dark .text-gray-600                { color: #94a3b8 !important; }
-        .dark .text-gray-500                { color: #64748b !important; }
-        .dark .text-gray-400                { color: #475569 !important; }
+        /* Grises de texto con contraste AA (≥ 4,5:1) sobre las tarjetas oscuras */
+        .dark .text-gray-600                { color: #b4c0cf !important; }
+        .dark .text-gray-500                { color: #9aa8bb !important; }
+        .dark .text-gray-400                { color: #8494a9 !important; }
+        .dark .text-gray-300                { color: #7d8ca2 !important; }
         .dark .border-gray-100              { border-color: #1e293b !important; }
         .dark .border-gray-200              { border-color: #334155 !important; }
         .dark .border                       { border-color: #334155 !important; }
@@ -48,7 +57,7 @@
             color: #e2e8f0 !important;
             border-color: #334155 !important;
         }
-        .dark input::placeholder, .dark textarea::placeholder { color: #475569 !important; }
+        .dark input::placeholder, .dark textarea::placeholder { color: #7d8ca2 !important; }
         .dark .hover\:bg-gray-50:hover      { background: #1e293b !important; }
         .dark .hover\:bg-gray-100:hover     { background: #334155 !important; }
         .dark nav                           { background: #0c1628 !important; }
@@ -118,10 +127,12 @@
             .shadow  { box-shadow: none !important; border: 1px solid #ddd; }
             .container { max-width: 100% !important; margin: 0 !important; }
         }
-        @media (max-width: 640px) {
+        @media (max-width: 639px) {
             .container { padding-left: 1rem; padding-right: 1rem; }
-            #search-container { order: 2; width: 100%; margin: 10px 0; max-width: none; }
             nav .container { flex-wrap: wrap; }
+            /* La búsqueda se abre con la lupa y ocupa toda la fila de abajo */
+            #search-container:not(.abierto) { display: none !important; }
+            #search-container.abierto { order: 3; flex-basis: 100%; width: 100%; margin: 4px 0 6px; max-width: none; }
         }
     </style>
 </head>
@@ -129,27 +140,35 @@
 
     <!-- Navigation Bar -->
     <nav id="navbar" class="bg-blue-800 text-white shadow-md hidden">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="container mx-auto px-6 py-3 flex items-center gap-3">
             <h1 class="text-xl font-bold tracking-tight">GEZARMA</h1>
             <div id="search-container" class="hidden flex-1 max-w-md mx-8">
                 <div class="relative">
                     <input type="text" id="global-search"
                         class="w-full bg-blue-900 text-blue-100 px-4 py-2 rounded-lg border border-blue-700 outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                        placeholder="Buscar por serie, RMA o producto... (Enter para ver todos)">
+                        placeholder="Buscar por serie, RMA o producto... (Enter para ver todos)" aria-label="Buscar">
                     <div id="search-results"
                         class="absolute top-full left-0 right-0 bg-white shadow-2xl rounded-b-lg border mt-1 text-gray-800 z-50 hidden max-h-96 overflow-y-auto">
                     </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <span id="user-info" class="text-sm font-medium"></span>
+            <div class="ml-auto flex items-center gap-2 md:gap-3">
+                <!-- Celular: la búsqueda se abre con la lupa -->
+                <button type="button" id="search-toggle" class="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center text-blue-200 hover:bg-blue-700 transition"
+                    aria-label="Buscar" aria-controls="search-container" aria-expanded="false">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/>
+                    </svg>
+                </button>
+
+                <span id="user-info" class="hidden md:inline text-sm font-medium"></span>
 
                 <!-- Idioma -->
-                <span data-idioma-selector="bg-blue-700 text-blue-50 text-xs rounded-lg px-1.5 py-1.5 border-0 focus:ring-2 focus:ring-blue-300"></span>
+                <span class="hidden md:inline-block" data-idioma-selector="bg-blue-700 text-blue-50 text-xs rounded-lg px-1.5 py-1.5 border-0 focus:ring-2 focus:ring-blue-300"></span>
 
                 <!-- Dark mode toggle -->
                 <button type="button" id="dark-toggle"
-                    class="w-9 h-9 rounded-lg flex items-center justify-center text-blue-200 hover:bg-blue-700 transition"
+                    class="hidden md:flex w-9 h-9 rounded-lg items-center justify-center text-blue-200 hover:bg-blue-700 transition"
                     title="Alternar modo oscuro" aria-label="Modo oscuro">
                     <!-- Sun icon (shown in dark mode) -->
                     <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +182,27 @@
                     </svg>
                 </button>
 
-                <button type="button" id="logout-btn" class="text-sm bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded transition">Cerrar Sesión</button>
+                <button type="button" id="logout-btn" class="hidden md:inline-block text-sm bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded transition">Cerrar Sesión</button>
+
+                <!-- Celular: usuario, idioma, modo oscuro y salir en un menú -->
+                <div class="relative md:hidden">
+                    <button type="button" id="user-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="user-menu" aria-label="Menú de usuario"
+                        class="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-sm font-bold transition">
+                        <span id="user-iniciales" translate="no">·</span>
+                    </button>
+                    <div id="user-menu" class="hidden absolute right-0 top-11 z-[95] w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
+                        <div class="px-4 py-3 border-b">
+                            <p id="user-info-menu" class="text-sm font-semibold"></p>
+                        </div>
+                        <div class="px-4 py-3 border-b flex items-center justify-between gap-3">
+                            <span class="text-sm text-gray-600">Idioma</span>
+                            <span data-idioma-selector="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"></span>
+                        </div>
+                        <button type="button" id="menu-dark" class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b">🌓 Modo oscuro</button>
+                        <button type="button" id="menu-atajos" class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b">⌨️ Atajos de teclado</button>
+                        <button type="button" id="menu-logout" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">Cerrar Sesión</button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -213,6 +252,9 @@
     <script src="js/kanban.js"></script>
     <script src="js/adjuntos.js"></script>
     <script src="js/busqueda.js"></script>
+    <script src="js/barra.js"></script>
+    <script src="js/atajos.js"></script>
+    <script src="js/guia.js"></script>
     <script src="js/app.js"></script>
     <script type="module">
         import * as Budget from './js/budget.js';

@@ -13,9 +13,10 @@
     const pila = [];          // [{ el, volver }]
     let _sinTitulo = 0;
 
-    const esModal = el => el.nodeType === 1 && (
-        (el.id && el.id.endsWith('-modal')) || el.hasAttribute('data-modal') ||
-        (el.classList.contains('fixed') && el.classList.contains('inset-0') && el.querySelector(':scope > [role=dialog]')));
+    // Un modal es un overlay (fixed inset-0): ojo, "close-modal" y similares son botones, no modales
+    const esModal = el => el.nodeType === 1 && (el.hasAttribute('data-modal') ||
+        (el.classList.contains('fixed') && el.classList.contains('inset-0') &&
+         ((el.id && el.id.endsWith('-modal')) || el.querySelector(':scope > [role=dialog]'))));
     const visible = el => el.isConnected && !el.classList.contains('hidden');
     const enfocables = el => [...el.querySelectorAll(FOCO)].filter(x => x.offsetParent !== null || x === document.activeElement);
 

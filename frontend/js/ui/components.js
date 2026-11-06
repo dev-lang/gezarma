@@ -98,25 +98,46 @@ const components = (() => {
         </tr>`;
     }
 
+    // ── Estados vacíos: qué pasa y qué se puede hacer ─────────────────────────
+    // acciones: [{ texto, clic: 'id-de-un-botón-existente' }] o [{ texto, foco: 'id-de-un-campo' }]
+    // o [{ texto, limpiar: true }] (dispara el evento "vacio:limpiar" para quitar filtros)
+    function vacio({ titulo, texto = '', acciones = [], icono = '📭', chico = false }) {
+        const botones = acciones.map((a, i) => `
+            <button type="button" ${a.clic ? `data-vacio-clic="${esc(a.clic)}"` : ''} ${a.foco ? `data-vacio-foco="${esc(a.foco)}"` : ''}
+                ${a.limpiar ? 'data-vacio-limpiar' : ''}
+                class="${i === 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'} px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition">${esc(a.texto)}</button>`).join('');
+        return `
+        <div class="flex flex-col items-center text-center gap-2 ${chico ? 'py-6' : 'py-12'} px-4">
+            <span class="${chico ? 'text-3xl' : 'text-5xl'}" aria-hidden="true">${icono}</span>
+            <p class="font-semibold text-gray-600 ${chico ? 'text-sm' : 'text-base'}">${esc(titulo)}</p>
+            ${texto ? `<p class="text-sm text-gray-400 max-w-sm">${esc(texto)}</p>` : ''}
+            ${botones ? `<div class="flex flex-wrap justify-center gap-2 mt-2">${botones}</div>` : ''}
+        </div>`;
+    }
+    const vacioFila = (columnas, opciones) => `<tr><td colspan="${columnas}">${vacio(opciones)}</td></tr>`;
+
+    // Los botones de los estados vacíos (delegado: el HTML se rearma seguido)
+    document.addEventListener('click', e => {
+        const b = e.target.closest('[data-vacio-clic],[data-vacio-foco],[data-vacio-limpiar]');
+        if (!b) return;
+        if (b.dataset.vacioClic) document.getElementById(b.dataset.vacioClic)?.click();
+        if (b.dataset.vacioFoco) { const c = document.getElementById(b.dataset.vacioFoco); c?.scrollIntoView({ block: 'center' }); c?.focus(); }
+        if (b.hasAttribute('data-vacio-limpiar')) b.dispatchEvent(new CustomEvent('vacio:limpiar', { bubbles: true }));
+    });
+
     // ── Ticket table empty state ─────────────────────────────────────────────
     function ticketEmptyState(filtered = false) {
-        return `
-        <tr>
-            <td colspan="5" class="px-6 py-16 text-center">
-                <div class="flex flex-col items-center gap-3 text-gray-400">
-                    <svg class="w-16 h-16 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="font-semibold text-gray-500 text-lg">
-                        ${filtered ? 'Sin resultados para ese filtro' : 'Aún no hay tickets'}
-                    </p>
-                    <p class="text-sm text-gray-400">
-                        ${filtered ? 'Probá con otro estado o limpiá el filtro.' : 'Cuando se cree una solicitud de RMA aparecerá aquí.'}
-                    </p>
-                </div>
-            </td>
-        </tr>`;
+        if (filtered) {
+            return vacioFila(5, { icono: '🔎', titulo: 'Sin resultados para ese filtro', texto: 'Probá con otro estado o limpiá el filtro.',
+                                  acciones: [{ texto: 'Ver todos los tickets', limpiar: true }] });
+        }
+        const rol = auth.getUser()?.role || '';
+        if (rol === 'cliente') {
+            return vacioFila(5, { icono: '🛠️', titulo: 'Todavía no tenés reparaciones', texto: 'Cargá tu equipo y te avisamos cada novedad.',
+                                  acciones: [{ texto: 'Cargar un equipo', clic: 'create-ticket-btn' }] });
+        }
+        return vacioFila(5, { icono: '📋', titulo: 'Aún no hay tickets', texto: 'Cuando llegue un equipo, cargalo desde el mostrador o como ticket.',
+                              acciones: [{ texto: 'Ingreso en mostrador', clic: 'mostrador-btn' }, { texto: 'Nuevo ticket', clic: 'create-ticket-btn' }] });
     }
 
     // ── Stats card ───────────────────────────────────────────────────────────
@@ -244,14 +265,8 @@ const components = (() => {
     }
 
     function commentEmptyState() {
-        return `
-        <div class="flex flex-col items-center py-10 text-gray-300">
-            <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
-            <p class="text-sm">No hay comentarios aún.</p>
-        </div>`;
+        return vacio({ icono: '💬', titulo: 'No hay comentarios aún.', chico: true,
+                       acciones: [{ texto: 'Escribir el primero', foco: 'new-comment' }] });
     }
 
     // ── History entry ────────────────────────────────────────────────────────
@@ -620,7 +635,7 @@ const components = (() => {
 
     return {
         statusClass, slaBadge, setSlaAvisoHoras, priorityBadge,
-        ticketRow, ticketEmptyState,
+        ticketRow, ticketEmptyState, vacio, vacioFila,
         statCard,
         comment, commentEmptyState, stockMovRow, tagCard, creatorBadge, historyEntry,
         attachmentItem,

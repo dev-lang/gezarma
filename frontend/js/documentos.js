@@ -27,12 +27,17 @@ const Documentos = (() => {
         ? `Etiqueta (${tamanoEtiqueta.replace('x', ' × ')} mm)` : t.label;
 
     async function abrir(ticketId, tipo) {
+        return abrirUrl(`/tickets/${ticketId}/documentos/${tipo}`);
+    }
+
+    /** Abre un documento del servidor (con el token, que no va en la URL) en otra pestaña. */
+    async function abrirUrl(ruta) {
         // La pestaña se abre en el mismo click (si no, el navegador la bloquea)
         const w = window.open('', '_blank');
-        if (w) w.document.write('<p style="font-family:sans-serif;color:#6b7280;padding:24px">Generando documento…</p>');
+        if (w) w.document.write(`<p style="font-family:sans-serif;color:#6b7280;padding:24px">${esc(I18N.t('Generando documento…'))}</p>`);
         try {
-            const res = await fetch(`/tickets/${ticketId}/documentos/${tipo}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            const res = await fetch(ruta, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept-Language': I18N.codigo },
             });
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}));
@@ -96,6 +101,6 @@ const Documentos = (() => {
         }
     }
 
-    return { abrir, menu, abrirDesdeHash };
+    return { abrir, abrirUrl, menu, abrirDesdeHash };
 })();
 window.Documentos = Documentos;
