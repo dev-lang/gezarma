@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum, Float, Boolean, Table, JSON, LargeBinary, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Float, Boolean, Table, JSON, LargeBinary, UniqueConstraint
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
 from .database import Base
 from .timeutils import utcnow

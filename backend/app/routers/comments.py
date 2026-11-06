@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors
 from ..timeutils import utcnow

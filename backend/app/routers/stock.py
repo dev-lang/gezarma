@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query as QParam
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
 from .. import database, models, schemas, auth
 from ..services import stock_service
 

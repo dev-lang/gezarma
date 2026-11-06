@@ -5,12 +5,9 @@ budget.py — Presupuesto management for tickets.
   /budget/plantillas                         — admin budget item templates
   /budget/stats/financiero                   — financial statistics
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
-from typing import List, Optional
-from datetime import datetime
-import json
+from typing import List
 
 from .. import database, models, schemas, auth
 from ..services.ticket_service import log_event, notify_ticket_actors

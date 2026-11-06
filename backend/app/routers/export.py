@@ -5,7 +5,6 @@ entidad: tickets | productos | repuestos | usuarios
          (English aliases accepted: users | products | parts — used by the admin panel)
 """
 import io, csv
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session

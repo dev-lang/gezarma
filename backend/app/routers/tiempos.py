@@ -7,7 +7,6 @@ olvidó de iniciarlo). Con el costo de la hora en Ajustes, se calcula la mano
 de obra.
 """
 from datetime import timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field

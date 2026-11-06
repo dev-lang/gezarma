@@ -1,57 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, File, Form, UploadFile, Request
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
-import os, shutil, uuid, re
 
-from .. import database, models, schemas, auth, config
+from .. import database, models, schemas, auth
 from ..timeutils import utcnow, to_utc_naive, iso_utc
-from ..services import stock_service, email
+from ..services import email
 from ..services import sla as sla_service
 from ..services import retiro as retiro_service, avisos
 from .. import ajustes
+from ._tickets_comun import ticket_o_404
 from ..services.ticket_service import (
     process_ticket_creation, calculate_sla_deadline, log_event, notify_ticket_actors
 )
-
-UPLOAD_DIR = config.UPLOAD_DIR
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-
-def _adjunto_path(adj) -> str:
-    """Where an attachment lives on disk. Built from the current UPLOAD_DIR, so files
-    keep working if UPLOAD_DIR changes (e.g. moving to Docker); falls back to the
-    path stored at upload time."""
-    path = os.path.join(UPLOAD_DIR, f"ticket_{adj.ticket_id}", adj.nombre_guardado or "")
-    if adj.nombre_guardado and os.path.exists(path):
-        return path
-    return adj.ruta_archivo
-
-ALLOWED_EXTENSIONS = {"pdf", "txt", "jpg", "jpeg", "png"}
-ALLOWED_MIME_TYPES = {"application/pdf", "text/plain", "image/jpeg", "image/png"}
-MAX_FILE_BYTES         = 10 * 1024 * 1024  # 10 MB per individual file
-MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB total per ticket
-# Tope por cliente entre todos sus tickets: como puede crear tickets, sin esto
-# podría llenar el disco subiendo 10 MB a cada uno
-MAX_CLIENTE_UPLOAD_BYTES = 50 * 1024 * 1024
-
-def _safe_filename(original: str) -> tuple[str, str]:
-    """
-    Returns (safe_display_name, unique_stored_name).
-    - Strips path separators and dangerous characters.
-    - Prefixes with a short UUID to prevent collisions & path traversal.
-    """
-    # Remove any directory components
-    basename = os.path.basename(original).strip()
-    # Keep only safe characters: letters, digits, dots, dashes, underscores
-    safe = re.sub(r"[^\w.\-]", "_", basename)
-    # Prevent hidden files and double-extension tricks
-    if safe.startswith("."):
-        safe = "_" + safe
-    prefix = uuid.uuid4().hex[:8]
-    return safe, f"{prefix}_{safe}"
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -74,16 +35,6 @@ def _historial_out(entries):
             fecha=e.fecha,
         ))
     return result
-
-# ── Helper: load a ticket the current user is allowed to see ─────────────────
-def _get_ticket_for_user(ticket_id: int, current_user: models.Usuario, db: Session) -> models.Ticket:
-    """404 if the ticket doesn't exist, 403 if a client tries to access someone else's ticket."""
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    return ticket
 
 # ── Create ────────────────────────────────────────────────────────────────────
 @router.post("/", response_model=schemas.Ticket)
@@ -218,9 +169,7 @@ def get_ticket(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     return schemas.Ticket.for_viewer(ticket, current_user)
@@ -235,9 +184,7 @@ def edit_ticket_fields(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     data = fields.model_dump(exclude_unset=True)
     changed_labels = []
     for campo, valor_nuevo in data.items():
@@ -280,9 +227,7 @@ def update_ticket_status(
             raise HTTPException(status_code=400, detail="Estado inválido o desactivado")
     elif update.estado not in VALID_ESTADOS:
         raise HTTPException(status_code=400, detail="Estado inválido")
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     # Guard: if the status hasn't actually changed, do nothing — no historial, no notification.
     if ticket.estado == update.estado:
         return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
@@ -325,9 +270,7 @@ def assign_technician(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     if assignment.tecnico_id:
         tech = db.query(models.Usuario).filter(models.Usuario.id == assignment.tecnico_id).first()
         if not tech:
@@ -384,9 +327,7 @@ def update_shipping(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     ticket.empresa_transporte  = shipping.empresa_transporte
     ticket.tracking_number     = shipping.tracking_number
     ticket.fecha_envio         = to_utc_naive(shipping.fecha_envio) if shipping.fecha_envio else utcnow()
@@ -395,193 +336,6 @@ def update_shipping(
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
 
-# ── Tags — add (Feature 4: log event) ────────────────────────────────────────
-@router.post("/{ticket_id}/tags", response_model=schemas.Ticket)
-def add_ticket_tag(
-    ticket_id: int,
-    tag_add: schemas.TicketAddTag,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    tag = db.query(models.Tag).filter_by(nombre=tag_add.tag_nombre).first()
-    if not tag:
-        tag = models.Tag(nombre=tag_add.tag_nombre)
-        db.add(tag); db.flush()
-    if tag not in ticket.tags:
-        ticket.tags.append(tag)
-        ticket.fecha_actualizacion = utcnow()
-        log_event(db, ticket_id, current_user.id,
-                  models.EventoHistorial.TAG_AGREGADO,
-                  detalle=f"Etiqueta agregada: {tag.nombre}")
-        db.commit()
-    db.refresh(ticket)
-    return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
-
-# ── Tags — set (replace all, Feature 4) ──────────────────────────────────────
-@router.put("/{ticket_id}/tags", response_model=schemas.Ticket)
-def set_ticket_tags(
-    ticket_id: int,
-    payload: schemas.TicketSetTags,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-
-    old_nombres = {t.nombre for t in ticket.tags}
-    new_nombres = set(payload.tag_nombres)
-
-    # added
-    for name in new_nombres - old_nombres:
-        tag = db.query(models.Tag).filter_by(nombre=name).first()
-        if not tag:
-            tag = models.Tag(nombre=name); db.add(tag); db.flush()
-        ticket.tags.append(tag)
-        log_event(db, ticket_id, current_user.id, models.EventoHistorial.TAG_AGREGADO,
-                  detalle=f"Etiqueta agregada: {name}")
-    # removed
-    for name in old_nombres - new_nombres:
-        tag = db.query(models.Tag).filter_by(nombre=name).first()
-        if tag and tag in ticket.tags:
-            ticket.tags.remove(tag)
-            log_event(db, ticket_id, current_user.id, models.EventoHistorial.TAG_ELIMINADO,
-                      detalle=f"Etiqueta eliminada: {name}")
-    ticket.fecha_actualizacion = utcnow()
-    db.commit()
-    db.refresh(ticket)
-    return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
-
-# ── Tags — remove single ──────────────────────────────────────────────────────
-@router.delete("/{ticket_id}/tags/{tag_nombre}", response_model=schemas.Ticket)
-def remove_ticket_tag(
-    ticket_id: int,
-    tag_nombre: str,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    tag = db.query(models.Tag).filter_by(nombre=tag_nombre).first()
-    if tag and tag in ticket.tags:
-        ticket.tags.remove(tag)
-        ticket.fecha_actualizacion = utcnow()
-        log_event(db, ticket_id, current_user.id, models.EventoHistorial.TAG_ELIMINADO,
-                  detalle=f"Etiqueta eliminada: {tag.nombre}")
-        db.commit()
-    db.refresh(ticket)
-    return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
-
-# ── Repuestos ────────────────────────────────────────────────────────────────
-@router.post("/{ticket_id}/parts", response_model=schemas.Ticket)
-def add_ticket_part(
-    ticket_id: int,
-    part_add: schemas.TicketAddPart,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    db_ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not db_ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    part = db.query(models.Repuesto).filter(models.Repuesto.id == part_add.part_id).first()
-    if not part:
-        raise HTTPException(status_code=404, detail="Repuesto no encontrado")
-    stock_service.agregar_al_ticket(db, db_ticket, part, part_add.cantidad, current_user.id)
-    db_ticket.fecha_actualizacion = utcnow()
-    db.commit()
-    db.refresh(db_ticket)
-    return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
-
-@router.patch("/{ticket_id}/parts/{part_id}", response_model=schemas.Ticket)
-def update_ticket_part(
-    ticket_id: int,
-    part_id: int,
-    payload: schemas.TicketPartQty,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    """Change the quantity of a part already assigned to a ticket."""
-    db_ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not db_ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    assoc = db.query(models.TicketRepuesto).filter_by(
-        ticket_id=ticket_id, repuesto_id=part_id
-    ).first()
-    if not assoc:
-        raise HTTPException(status_code=404, detail="Repuesto no asignado a este ticket")
-    part = assoc.repuesto
-    nueva_cantidad = payload.cantidad
-    diff = nueva_cantidad - assoc.cantidad  # positive = need more stock, negative = return stock
-    if diff == 0:
-        return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
-    stock_anterior, _ = stock_service.ajustar(db, part, -diff, minimo_cero=True)
-    stock_service.revisar_minimo(db, part, stock_anterior)
-    assoc.cantidad = nueva_cantidad
-    mov = models.StockMovimiento(
-        repuesto_id=part_id, ticket_id=ticket_id,
-        usuario_id=current_user.id, tipo="ajuste",
-        cantidad=-diff,
-        stock_anterior=stock_anterior, stock_nuevo=part.stock,
-        nota=f"Ajuste cantidad en ticket {db_ticket.numero_rma}",
-    )
-    db.add(mov)
-    log_event(db, ticket_id, current_user.id, models.EventoHistorial.CAMPO_EDITADO,
-              detalle=f"Repuesto '{part.nombre}' cantidad ajustada a {nueva_cantidad}")
-    db_ticket.fecha_actualizacion = utcnow()
-    db.commit()
-    db.refresh(db_ticket)
-    return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
-
-@router.delete("/{ticket_id}/parts/{part_id}", response_model=schemas.Ticket)
-def remove_ticket_part(
-    ticket_id: int,
-    part_id: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    """Remove a part from a ticket and return its stock."""
-    db_ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not db_ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    assoc = db.query(models.TicketRepuesto).filter_by(
-        ticket_id=ticket_id, repuesto_id=part_id
-    ).first()
-    if not assoc:
-        raise HTTPException(status_code=404, detail="Repuesto no asignado a este ticket")
-    part = assoc.repuesto
-    stock_anterior, _ = stock_service.ajustar(db, part, assoc.cantidad)  # vuelve al stock
-    mov = models.StockMovimiento(
-        repuesto_id=part_id, ticket_id=ticket_id,
-        usuario_id=current_user.id, tipo="devolucion",
-        cantidad=assoc.cantidad,
-        stock_anterior=stock_anterior, stock_nuevo=part.stock,
-        nota=f"Devuelto al quitar de ticket {db_ticket.numero_rma}",
-    )
-    db.add(mov)
-    log_event(db, ticket_id, current_user.id, models.EventoHistorial.CAMPO_EDITADO,
-              detalle=f"Repuesto '{part.nombre}' eliminado del ticket")
-    db.delete(assoc)
-    db_ticket.fecha_actualizacion = utcnow()
-    db.commit()
-    db.refresh(db_ticket)
-    return schemas.Ticket.from_orm_with_tecnico(db_ticket, current_user.id)
-
 # ── Historial (full, Feature 9) ───────────────────────────────────────────────
 @router.get("/{ticket_id}/history", response_model=List[schemas.HistorialEntry])
 def get_ticket_history(
@@ -589,9 +343,7 @@ def get_ticket_history(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     if current_user.rol == models.UserRole.CLIENTE and ticket.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     query = db.query(models.HistorialEstado).filter_by(ticket_id=ticket_id)
@@ -611,9 +363,7 @@ def update_diagnostic(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    ticket = ticket_o_404(db, ticket_id)
     old_diag = ticket.diagnostico
     new_diag = data.diagnostico   # obligatorio: antes, sin el campo se borraba el diagnóstico
     if old_diag != new_diag:
@@ -637,9 +387,7 @@ def clone_ticket(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    orig = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not orig:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    orig = ticket_o_404(db, ticket_id)
 
     # Por el alta normal: N° de RMA, SLA, garantía (de compra y de reparación),
     # prioridad automática y auditoría, igual que cualquier ticket nuevo
@@ -674,203 +422,18 @@ def set_ticket_relation(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    old_rel = ticket.ticket_relacionado
+    ticket = ticket_o_404(db, ticket_id)
+    nuevo = None
+    if payload.ticket_relacionado_id is not None:
+        nuevo = ticket_o_404(db, payload.ticket_relacionado_id)
+        if nuevo.id == ticket.id:
+            raise HTTPException(status_code=400, detail="Un ticket no se puede relacionar consigo mismo")
+    anterior = ticket.relacionado
     ticket.ticket_relacionado = payload.ticket_relacionado_id
-    tipo = models.EventoHistorial.TICKET_DESASOCIADO if payload.ticket_relacionado_id is None \
-           else models.EventoHistorial.TICKET_RELACIONADO
+    tipo = models.EventoHistorial.TICKET_DESASOCIADO if nuevo is None else models.EventoHistorial.TICKET_RELACIONADO
     log_event(db, ticket_id, current_user.id, tipo,
-              detalle=f"Relación modificada")
+              detalle=(f"Relacionado con {nuevo.numero_rma}" if nuevo
+                       else f"Ya no está relacionado con {anterior.numero_rma}" if anterior else "Relación quitada"))
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
-
-# ── Attachments ───────────────────────────────────────────────────────────────
-
-def _ticket_used_bytes(ticket_id: int, db) -> int:
-    """Sum of stored file sizes for a ticket (based on DB tamanio field)."""
-    adjuntos = db.query(models.Adjunto).filter_by(ticket_id=ticket_id).all()
-    return sum(a.tamanio or 0 for a in adjuntos)
-
-
-def _serialize_adjunto(a: models.Adjunto) -> dict:
-    ext = (a.nombre_archivo or "").rsplit(".", 1)[-1].lower()
-    return {
-        "id":             a.id,
-        "ticket_id":      a.ticket_id,
-        "nombre_archivo": a.nombre_archivo,
-        "tamanio":        a.tamanio or 0,
-        "mime_type":      a.mime_type or "",
-        "ext":            ext,
-        "fecha":          iso_utc(a.fecha) if a.fecha else None,
-        "categoria":      a.categoria,
-    }
-
-
-@router.post("/{ticket_id}/attachments")
-def upload_attachment(
-    ticket_id: int,
-    file: UploadFile = File(...),
-    categoria: Optional[str] = Form(None),
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user)
-):
-    _get_ticket_for_user(ticket_id, current_user, db)
-    # "ingreso" = foto del estado del equipo al recibirlo (la saca el taller)
-    if categoria not in (None, "", "ingreso"):
-        raise HTTPException(status_code=400, detail="Categoría de adjunto inválida")
-    if categoria == "ingreso" and current_user.rol == models.UserRole.CLIENTE:
-        raise HTTPException(status_code=403, detail="Las fotos de ingreso las carga el taller")
-
-    # ── Validate extension ────────────────────────────────────────────────
-    ext = (file.filename or "").rsplit(".", 1)[-1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tipo de archivo no permitido. Solo se aceptan: {', '.join(sorted(ALLOWED_EXTENSIONS)).upper()}"
-        )
-
-    # ── Leer como mucho el límite + 1 byte (no el archivo entero a memoria) ──
-    file_data = file.file.read(MAX_FILE_BYTES + 1)
-    file_size = len(file_data)
-
-    # ── Per-file size limit ───────────────────────────────────────────────
-    if file_size > MAX_FILE_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"El archivo supera el límite individual de 10 MB."
-        )
-
-    # ── Total ticket quota ────────────────────────────────────────────────
-    used_bytes = _ticket_used_bytes(ticket_id, db)
-    if used_bytes + file_size > MAX_TICKET_UPLOAD_BYTES:
-        remaining_mb = round((MAX_TICKET_UPLOAD_BYTES - used_bytes) / (1024 * 1024), 2)
-        raise HTTPException(
-            status_code=400,
-            detail=f"Límite del ticket alcanzado. Espacio disponible: {remaining_mb} MB de 10 MB."
-        )
-
-    if current_user.rol == models.UserRole.CLIENTE:
-        usado_cliente = (db.query(func.coalesce(func.sum(models.Adjunto.tamanio), 0))
-                         .join(models.Ticket, models.Ticket.id == models.Adjunto.ticket_id)
-                         .filter(models.Ticket.usuario_id == current_user.id).scalar())
-        if usado_cliente + file_size > MAX_CLIENTE_UPLOAD_BYTES:
-            raise HTTPException(status_code=400,
-                                detail="Llegaste al límite de archivos de tu cuenta (50 MB). Si necesitás mandar más, consultá al taller.")
-
-    # ── Build safe filename & per-ticket folder ───────────────────────────
-    safe_display, stored_name = _safe_filename(file.filename or "archivo")
-    ticket_dir = os.path.join(UPLOAD_DIR, f"ticket_{ticket_id}")
-    os.makedirs(ticket_dir, exist_ok=True)
-    dest = os.path.join(ticket_dir, stored_name)
-
-    with open(dest, "wb") as f:
-        f.write(file_data)
-
-    # ── Detect MIME from content type header (fallback to extension) ──────
-    mime = file.content_type or ""
-    if mime not in ALLOWED_MIME_TYPES:
-        ext_to_mime = {
-            "pdf": "application/pdf", "txt": "text/plain",
-            "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-        }
-        mime = ext_to_mime.get(ext, "application/octet-stream")
-
-    adj = models.Adjunto(
-        ticket_id=ticket_id,
-        nombre_archivo=safe_display,
-        nombre_guardado=stored_name,
-        ruta_archivo=dest,
-        tamanio=file_size,
-        mime_type=mime,
-        categoria=categoria or None,
-    )
-    db.add(adj)
-    log_event(db, ticket_id, current_user.id,
-              models.EventoHistorial.ARCHIVO_SUBIDO,
-              detalle=(f"Foto de ingreso: {safe_display}" if categoria == "ingreso"
-                       else f"Archivo subido: {safe_display}"))
-    db.commit()
-    db.refresh(adj)
-
-    used_after = used_bytes + file_size
-    return {
-        "adjunto": _serialize_adjunto(adj),
-        "storage": {
-            "used_mb":      round(used_after / (1024 * 1024), 2),
-            "remaining_mb": round((MAX_TICKET_UPLOAD_BYTES - used_after) / (1024 * 1024), 2),
-            "limit_mb":     10,
-        }
-    }
-
-
-@router.get("/{ticket_id}/attachments")
-def list_attachments(
-    ticket_id: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user)
-):
-    _get_ticket_for_user(ticket_id, current_user, db)
-    adjuntos = db.query(models.Adjunto).filter_by(ticket_id=ticket_id).all()
-    used_bytes = sum(a.tamanio or 0 for a in adjuntos)
-    return {
-        "adjuntos": [_serialize_adjunto(a) for a in adjuntos],
-        "storage": {
-            "used_mb":      round(used_bytes / (1024 * 1024), 2),
-            "remaining_mb": round((MAX_TICKET_UPLOAD_BYTES - used_bytes) / (1024 * 1024), 2),
-            "limit_mb":     10,
-        }
-    }
-
-
-@router.get("/{ticket_id}/attachments/{adj_id}/download")
-def download_attachment(
-    ticket_id: int,
-    adj_id: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user),
-):
-    # Auth only via the Authorization header: a token in the URL ends up in
-    # server logs, browser history and Referer headers.
-    _get_ticket_for_user(ticket_id, current_user, db)
-
-    adj = db.query(models.Adjunto).filter_by(id=adj_id, ticket_id=ticket_id).first()
-    if not adj:
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    path = _adjunto_path(adj)
-    if not path or not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado en el servidor")
-    return FileResponse(
-        path=path,
-        filename=adj.nombre_archivo,
-        media_type=adj.mime_type or "application/octet-stream",
-    )
-
-
-@router.delete("/{ticket_id}/attachments/{adj_id}", status_code=204)
-def delete_attachment(
-    ticket_id: int,
-    adj_id: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.check_role([
-        models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
-    ]))
-):
-    adj = db.query(models.Adjunto).filter_by(id=adj_id, ticket_id=ticket_id).first()
-    if not adj:
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    nombre_del_archivo = adj.nombre_archivo
-    # Remove from disk safely
-    try:
-        path = _adjunto_path(adj)
-        if path and os.path.exists(path):
-            os.remove(path)
-    except OSError:
-        pass
-    db.delete(adj)
-    log_event(db, ticket_id, current_user.id,
-              models.EventoHistorial.ARCHIVO_ELIMINADO,
-              detalle=f"Archivo eliminado: {nombre_del_archivo}")
-    db.commit()

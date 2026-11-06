@@ -8,7 +8,7 @@ import uuid
 from openpyxl import load_workbook
 
 from backend.app.config import ROOT_DIR
-from backend.app.routers import tickets as tickets_router
+from backend.app.routers import ticket_adjuntos as tickets_router
 from conftest import login
 
 

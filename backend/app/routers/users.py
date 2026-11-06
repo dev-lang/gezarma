@@ -113,7 +113,7 @@ def reset_password(
     # The plain temp password is only returned in this response; it is never stored.
     db.commit()
     return {"temp_password": temp_pw, "username": db_user.username,
-            "message": f"Contraseña temporal generada. El usuario deberá cambiarla en el próximo login."}
+            "message": "Contraseña temporal generada. El usuario deberá cambiarla en el próximo login."}
 
 @router.post("/change-password")
 def change_password(

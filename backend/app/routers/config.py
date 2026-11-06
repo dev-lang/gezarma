@@ -3,7 +3,7 @@ config.py — Admin-configurable items:
   /config/plantillas  — CRUD for diagnosis templates
   /config/estados     — CRUD for ticket status config
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth, ajustes as ajustes_mod
@@ -190,7 +190,7 @@ def get_login_attempts_stats(
 ):
     """Show IPs with recent failed attempts."""
     from sqlalchemy import func
-    from datetime import datetime, timedelta
+    from datetime import timedelta
     window = int(
         (db.query(models.ConfigSistema).filter_by(clave="login_ventana_segundos").first() or type('', (), {'valor': '300'})()).valor
     )

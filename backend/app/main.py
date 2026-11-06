@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
-from .database import engine, Base, SessionLocal, run_migrations
-from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router
+from .database import SessionLocal, run_migrations
+from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos
 from . import models, auth, config
 from . import ajustes as ajustes_mod
 from .services import sla as sla_service
@@ -43,6 +43,9 @@ async def _recordar_base_url(request, call_next):
 
 app.include_router(auth_router.router)
 app.include_router(tickets.router)
+app.include_router(ticket_tags.router)
+app.include_router(ticket_repuestos.router)
+app.include_router(ticket_adjuntos.router)
 app.include_router(comments.router)
 app.include_router(users.router)
 app.include_router(products.router)
