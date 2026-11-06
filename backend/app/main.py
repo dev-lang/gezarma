@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 from .database import engine, Base, SessionLocal, run_migrations
-from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router
+from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router
 from . import models, auth, config
 
 UPLOAD_DIR  = config.UPLOAD_DIR
@@ -43,10 +43,16 @@ app.include_router(config_router.router)
 app.include_router(budget_router.router)
 app.include_router(notif_router.router)
 app.include_router(fav_router.router)
+app.include_router(public_router.router)
 
 @app.get("/")
 def read_index():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+@app.get("/seguimiento")
+def read_seguimiento():
+    """Página pública de seguimiento de reparaciones (sin login)."""
+    return FileResponse(os.path.join(FRONTEND_DIR, "seguimiento.html"))
 
 app.mount("/js",       StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),       name="js")
 app.mount("/partials", StaticFiles(directory=os.path.join(FRONTEND_DIR, "partials")), name="partials")
