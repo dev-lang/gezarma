@@ -35,6 +35,7 @@ const app = {
 
         // ── Change password (forced after admin reset) ─────────────────────
         on('cp-submit-btn', 'click', async () => {
+            const currentPw = document.getElementById('cp-current-password')?.value || '';
             const newPw     = document.getElementById('cp-new-password')?.value || '';
             const confirmPw = document.getElementById('cp-confirm-password')?.value || '';
             const errEl     = document.getElementById('cp-error');
@@ -46,12 +47,13 @@ const app = {
             };
             if (errEl) errEl.classList.add('hidden');
 
+            if (!currentPw)              { showErr('Ingresá tu contraseña actual.'); return; }
             if (newPw.length < 6)        { showErr('La contraseña debe tener al menos 6 caracteres.'); return; }
             if (newPw !== confirmPw)      { showErr('Las contraseñas no coinciden.'); return; }
 
             try {
                 if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-                await api.changePassword(newPw);
+                await api.changePassword(currentPw, newPw);
                 // Update local session so must_change_password is cleared
                 const user = auth.getUser();
                 if (user) {

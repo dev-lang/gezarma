@@ -167,7 +167,7 @@ const api = {
 
     // ── Users: reset password, profile ──────────────────────────────────────
     resetPassword(userId)  { return this.request(`users/${userId}/reset-password`, { method: "POST" }); },
-    changePassword(newPw)  { return this.request("users/change-password", { method: "POST", body: JSON.stringify({ new_password: newPw }) }); },
+    changePassword(currentPw, newPw) { return this.request("users/change-password", { method: "POST", body: JSON.stringify({ current_password: currentPw, new_password: newPw }) }); },
 
     // ── Tickets: edit fields, clone, relation ─────────────────────────────
     editTicketFields(id, data)   { return this.request(`tickets/${id}/fields`, { method: "PATCH", body: JSON.stringify(data) }); },

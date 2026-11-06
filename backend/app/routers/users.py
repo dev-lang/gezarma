@@ -114,10 +114,16 @@ def change_password(
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    """User changes their own password (forced or voluntary)."""
-    new_pw = data.get("new_password", "")
+    """User changes their own password (forced or voluntary).
+    Requires the current password, so a stolen token alone can't take over the account."""
+    current_pw = data.get("current_password") or ""
+    new_pw     = data.get("new_password") or ""
+    if not auth.verify_password(current_pw, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
     if len(new_pw) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    if new_pw == current_pw:
+        raise HTTPException(status_code=400, detail="La nueva contraseña debe ser distinta de la actual")
     current_user.password_hash       = auth.get_password_hash(new_pw)
     current_user.must_change_password = False
     db.commit()
