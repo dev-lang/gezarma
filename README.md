@@ -11,10 +11,15 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Tickets RMA** con número correlativo, estados configurables, prioridad, SLA, técnico asignado, etiquetas, tickets clonados/relacionados y datos de envío.
 - **Diagnóstico** con plantillas, **repuestos usados** con descuento de stock y **adjuntos** (PDF, TXT, JPG, PNG; hasta 10 MB por ticket).
 - **Comentarios** con el cliente y **notas internas** solo para el taller.
-- **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza.
-- **Stock de repuestos** con historial de movimientos.
+- **Presupuestos** con versiones: el taller ve costo, precio y ganancia; el cliente ve el precio y lo aprueba o rechaza. Los ítems pueden ser repuestos del catálogo: al aprobarse, se descuentan del stock y se agregan al ticket.
+- **Stock de repuestos** con historial de movimientos, **stock mínimo** y aviso a los administradores cuando un repuesto lo cruza.
+- **Seguimiento público** sin login: el cliente consulta el estado con su N° de RMA y N° de serie (o escaneando el QR de su orden de ingreso).
+- **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, y **etiqueta 62 × 29 mm** con QR y código de barras para pegar en el equipo.
+- **Notificaciones por email**: cambios de estado y presupuestos al cliente (con el PDF adjunto), asignaciones al técnico, stock bajo y SLA al taller.
+- **Alertas de SLA**: tickets vencidos o por vencer en el dashboard y aviso automático, una sola vez por ticket.
+- **Tablero Kanban** por estado: arrastrar una tarjeta a otra columna le cambia el estado.
 - **Notificaciones** in-app, **favoritos**, búsqueda global y **historial/auditoría** de cada cambio.
-- **Panel de administración**: usuarios, productos, repuestos, etiquetas, estados, plantillas, finanzas, seguridad del login y **exportación** a CSV/Excel.
+- **Panel de administración**: usuarios, productos, repuestos, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, email, SLA, seguimiento) y **exportación** a CSV/Excel.
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
 
 ## Capturas
@@ -24,9 +29,23 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | ![Detalle visto por el taller](docs/capturas/03-detalle-taller.png) | ![Detalle visto por el cliente](docs/capturas/04-detalle-cliente.png) |
 | Estado, técnico, diagnóstico, repuestos, nota interna y presupuesto con costo y ganancia. | El mismo ticket para el cliente: sin nota interna y el presupuesto solo con el precio. |
 
-| Administración | Login |
+| Tablero Kanban | Seguimiento público (celular) |
 |---|---|
-| ![Panel de administración](docs/capturas/05-admin.png) | ![Login](docs/capturas/01-login.png) |
+| ![Tablero por estado](docs/capturas/06-tablero.png) | ![Seguimiento de una reparación](docs/capturas/07-seguimiento.png) |
+| Arrastrar una tarjeta a otra columna le cambia el estado. | Con el N° de RMA y el N° de serie, o escaneando el QR de la orden de ingreso. |
+
+| Presupuesto en PDF | Etiqueta 62 × 29 mm |
+|---|---|
+| ![Presupuesto en PDF](docs/capturas/08-presupuesto.png) | ![Etiqueta para el equipo](docs/capturas/09-etiqueta.png) |
+| Precios para el cliente (nunca costos) y QR al seguimiento. | QR que abre el ticket en el sistema y código de barras del N° de RMA. |
+
+| Administración | Ajustes |
+|---|---|
+| ![Panel de administración](docs/capturas/05-admin.png) | ![Ajustes del sistema](docs/capturas/10-ajustes.png) |
+
+| Login | |
+|---|---|
+| ![Login](docs/capturas/01-login.png) | |
 
 *(Datos de demostración ficticios.)*
 
@@ -45,10 +64,14 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Crear, editar y enviar presupuestos | — | ✅ | ✅ |
 | Ver costo interno y ganancia | — | ✅ | ✅ |
 | Aprobar / rechazar presupuesto | los suyos | ✅ | ✅ |
-| Dashboard con estadísticas, favoritos | — | ✅ | ✅ |
+| Dashboard con estadísticas, alertas de SLA y stock, tablero Kanban, favoritos | — | ✅ | ✅ |
+| Documentos: orden de ingreso, remito, presupuesto | los suyos | ✅ | ✅ |
+| Etiqueta del equipo | — | ✅ | ✅ |
 | Exportar tickets, productos y repuestos | — | ✅ | ✅ |
 | Administrar usuarios, productos, repuestos, stock, etiquetas, estados y plantillas | — | — | ✅ |
-| Finanzas, seguridad del login, exportar usuarios | — | — | ✅ |
+| Finanzas, seguridad del login, ajustes, exportar usuarios | — | — | ✅ |
+
+El **seguimiento público** (`/seguimiento`) no requiere usuario: lo puede consultar cualquiera que tenga el N° de RMA **y** el N° de serie del equipo, y muestra solo el estado, la línea de tiempo y los datos de envío.
 
 El registro público siempre crea usuarios **cliente**. Los técnicos y administradores los crea un administrador desde *Administración → Usuarios → Nuevo usuario*.
 
@@ -103,10 +126,31 @@ Todo se configura con variables de entorno o con un archivo `.env` en la raíz (
 | `TIMEZONE` | `America/Argentina/Buenos_Aires` | Zona horaria del negocio (nombre IANA). Las fechas se guardan en UTC y cada navegador las muestra en su hora local; esta zona se usa para las exportaciones a CSV/Excel. |
 | `DATABASE_URL` | `sqlite:///./rma_system.db` | Base de datos (cualquier URL de SQLAlchemy). En Docker está fija a `/data`. |
 | `UPLOAD_DIR` | `uploads` | Carpeta de adjuntos. En Docker está fija a `/data/uploads`. |
+| `PUBLIC_URL` | (vacía) | Dirección pública del sistema, para los QR y los links de los mails (ej. `https://rma.tuempresa.com`). Vacía = la dirección con la que se accede. También se puede cargar en *Ajustes*. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | (vacías), `587`, `starttls` | Servidor de correo, si en *Ajustes* elegís tomar la configuración SMTP del `.env` (la otra opción es cargarla en el panel). |
+| `TAREAS_PERIODICAS` | `1` | Revisión automática de SLA. Poné `0` si corrés más de un proceso de la app (así no avisa dos veces). |
 | `PORT` | `8000` | Puerto publicado por Docker Compose. |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | IP(s) del proxy inverso en el que se confía para conocer la IP real del cliente (ver *Deploy*). |
 
 Al arrancar, la app avisa en el log si la `SECRET_KEY` o `CORS_ORIGINS` quedaron con valores inseguros.
+
+### Ajustes desde el panel
+
+En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor:
+
+- **General**: nombre y datos de contacto que salen en documentos y mails, URL pública y si el seguimiento público está habilitado.
+- **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
+- **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
+- **SLA**: con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el SLA más corto, 24 h) y cada cuántos minutos revisar.
+
+Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
+
+### Etiquetas
+
+La etiqueta está pensada para impresoras de etiquetas de **62 × 29 mm** (Brother QL y similares). Al imprimir, elegí ese tamaño de papel y **escala 100 % / tamaño real**: el código de barras se genera con el ancho exacto de barra para 300 dpi y deja de leerse si se achica.
+
+- El **QR** abre el ticket en el sistema (después de iniciar sesión, si hace falta).
+- El **código de barras** tiene el N° de RMA: con un lector USB, escanearlo en el buscador encuentra el ticket.
 
 ## Deploy
 
@@ -124,6 +168,8 @@ Checklist:
 - `CORS_ORIGINS` vacía.
 - `FORWARDED_ALLOW_IPS` con la IP desde la que el proxy llega a la app. Así el bloqueo por intentos fallidos de login usa la IP real de cada cliente y no la del proxy (que bloquearía a todos a la vez). Con Docker y el proxy en el mismo host, suele ser el gateway de la red de Docker: `docker network inspect gezarma_default` → `Gateway`.
 - No publicar el puerto 8000 directo a internet si hay proxy: en `docker-compose.yml` se puede usar `"127.0.0.1:8000:8000"`.
+- `PUBLIC_URL` (o *Ajustes → URL pública*) con la dirección real, para que los QR y los links de los mails funcionen desde afuera.
+- Correr **un solo proceso** de la app (sin `--workers` > 1): la revisión de SLA y el límite de intentos del seguimiento público viven en el proceso. Si necesitás más de uno, dejá `TAREAS_PERIODICAS=1` solo en uno.
 
 ### Backups
 
@@ -163,7 +209,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, exportación, contraseñas y migraciones.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones.
 
 ### Estructura
 
@@ -177,10 +223,12 @@ backend/
     schemas.py         esquemas Pydantic (entrada/salida de la API)
     auth.py            contraseñas (bcrypt), JWT y permisos por rol
     routers/           endpoints por área (tickets, presupuestos, stock, …)
-    services/          lógica de tickets (número RMA, SLA, notificaciones)
+    ajustes.py         ajustes editables desde el panel (secretos cifrados)
+    services/          lógica: tickets, stock, documentos, email, SLA, avisos
+    templates/         plantillas de documentos (PDF/impresión) y de mails
   migrations/          migraciones de Alembic
 frontend/
-  index.html, partials/, js/
+  index.html, seguimiento.html (página pública), partials/, js/
 tests/                 tests de pytest
 docs/capturas/         capturas de este README
 ```
