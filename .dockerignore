@@ -1,0 +1,25 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+.env
+.env.*
+!.env.example
+
+# Datos locales: nunca dentro de la imagen
+*.db
+uploads/
+data/
+
+# Python / tests / docs
+**/__pycache__
+**/*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+tests/
+pytest.ini
+requirements-dev.txt
+docs/
+README.md

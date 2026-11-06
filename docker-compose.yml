@@ -1,0 +1,30 @@
+# Levantar:   docker compose up -d --build
+# Logs:       docker compose logs -f
+# Actualizar: git pull && docker compose up -d --build   (las migraciones corren solas)
+#
+# La configuración (SECRET_KEY, ADMIN_PASSWORD, ...) se toma de .env (ver .env.example).
+# Los datos (base + adjuntos) viven en el volumen "gezarma-data" y sobreviven a
+# reconstruir o borrar el contenedor.
+
+services:
+  gezarma:
+    build: .
+    image: gezarma:latest
+    container_name: gezarma
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Fijos dentro del contenedor (pisan lo que diga .env): los datos van al volumen
+      DATABASE_URL: sqlite:////data/rma_system.db
+      UPLOAD_DIR: /data/uploads
+      # IP(s) del proxy inverso en el que se confía para X-Forwarded-For
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    volumes:
+      - gezarma-data:/data
+
+volumes:
+  gezarma-data:
