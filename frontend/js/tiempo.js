@@ -6,7 +6,6 @@
  * - Panel del administrador: horas por técnico de los últimos 30 días.
  */
 const Tiempo = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const esTaller = () => ['administrador', 'tecnico'].includes(auth.getUser()?.role || '');
     const pesos = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     function duracion(min) {

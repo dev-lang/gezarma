@@ -9,7 +9,6 @@
  */
 const Kanban = (() => {
     const MAX_FINALES = 10;
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let _tickets = [];
     let _estados = [];
     let _arrastrado = null;

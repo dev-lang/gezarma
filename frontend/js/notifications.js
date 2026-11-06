@@ -18,6 +18,7 @@ let _pollTimer     = null;
 let _showAll       = false;
 let _dropdownOpen  = false;
 let _bellBtn       = null;
+let _marcarTimer   = null;
 
 /* ── Init ───────────────────────────────────────────────────────────────── */
 export function init() {
@@ -100,8 +101,8 @@ function _bindEvents() {
 
     document.getElementById("notif-mark-all-btn")?.addEventListener("click", async () => {
         await api.markNotificationsRead([]);
-        _updateBadge(0);
         await _loadDropdown();
+        poll();
     });
 
     document.getElementById("notif-show-all-toggle")?.addEventListener("click", async () => {
@@ -154,14 +155,17 @@ async function _loadDropdown() {
             });
         });
 
-        // Mark visible unread ones as read after a short delay
+        // Se marcan leídas las que se vieron: solo si el panel sigue abierto a
+        // los 2 s (abrir y cerrar enseguida no cuenta). El contador se pide al
+        // servidor: pudo llegar otra notificación mientras tanto.
+        clearTimeout(_marcarTimer);
         const unreadIds = items.filter(n => !n.leida).map(n => n.id);
         if (unreadIds.length) {
-            setTimeout(async () => {
-                await api.markNotificationsRead(unreadIds);
-                _updateBadge(0);
-                // Re-render to show them as read
+            _marcarTimer = setTimeout(async () => {
+                if (!_dropdownOpen) return;
+                try { await api.markNotificationsRead(unreadIds); } catch { return; }
                 list.querySelectorAll(".notif-unread-dot").forEach(d => d.classList.add("hidden"));
+                try { _updateBadge((await api.getUnreadCount()).count); } catch { /* el próximo poll lo corrige */ }
             }, 2000);
         }
     } catch {
@@ -192,7 +196,7 @@ function _renderItem(n) {
                         </button>` : ""}
                 </div>
             </div>
-            <button type="button" class="notif-dismiss-btn opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-400 text-base leading-none shrink-0 mt-0.5"
+            <button type="button" class="notif-dismiss-btn opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition text-gray-300 hover:text-red-400 text-base leading-none shrink-0 mt-0.5"
                 data-notif-id="${n.id}" title="Descartar">×</button>
         </div>`;
 }

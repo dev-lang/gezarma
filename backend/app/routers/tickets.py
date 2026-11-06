@@ -87,6 +87,30 @@ def get_dashboard_stats(
         "tickets_por_tecnico":  {t[0]: t[1] for t in techs},
     }
 
+# ── Resumen para las tarjetas del listado (todos los roles) ──────────────────
+@router.get("/stats/resumen")
+def resumen(
+    db: Session = Depends(database.get_db),
+    current_user: models.Usuario = Depends(auth.get_current_user)
+):
+    """Totales reales de las tarjetas del listado (antes se contaban solo los
+    tickets de la página cargada). El cliente ve solo los suyos."""
+    T = models.Ticket
+    q = db.query(T.estado, func.count(T.id))
+    if current_user.rol == models.UserRole.CLIENTE:
+        q = q.filter(T.usuario_id == current_user.id)
+    por_estado = dict(q.group_by(T.estado).all())
+    finales = {e.valor for e in db.query(models.TicketStatusConfig).filter_by(es_final=True).all()} \
+              or {models.TicketStatus.CERRADO.value, models.TicketStatus.CANCELADO.value}
+    nuevo = models.TicketStatus.NUEVO.value
+    total = sum(por_estado.values())
+    return {
+        "total": total,
+        "nuevos": por_estado.get(nuevo, 0),
+        "en_proceso": sum(n for e, n in por_estado.items() if e != nuevo and e not in finales),
+        "cerrados": sum(n for e, n in por_estado.items() if e in finales and e != models.TicketStatus.CANCELADO.value),
+    }
+
 # ── SLA: vencidos o por vencer (panel de alertas del dashboard) ──────────────
 @router.get("/sla/alertas")
 def sla_alertas(

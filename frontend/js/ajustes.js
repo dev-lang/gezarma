@@ -20,7 +20,6 @@ const Ajustes = (() => {
     let _items = [];
     let _destinoPrueba = '';   // se conserva al volver a dibujar el formulario
 
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const inputCls = 'w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white';
 
     function campo(a) {

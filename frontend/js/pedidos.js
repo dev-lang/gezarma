@@ -4,7 +4,6 @@
  * borrador → enviado → parcial / recibido (o cancelado). Al recibir se suma al stock.
  */
 const Pedidos = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const pesos = n => '$ ' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '';
     const ESTADOS = {

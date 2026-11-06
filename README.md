@@ -292,7 +292,11 @@ backend/
     templates/         plantillas de documentos (PDF/impresión) y de mails
   migrations/          migraciones de Alembic
 frontend/
-  index.html, seguimiento.html (página pública), partials/, js/
+  index.html, seguimiento.html (página pública), partials/ (pantallas en HTML)
+  js/                  un módulo por área (kanban, recepción, pedidos, adjuntos, búsqueda, …)
+  js/ui/               piezas comunes: escape.js (esc() para todo texto que va a HTML),
+                       confirm.js (confirmDialog/promptDialog), modales.js (Escape, foco
+                       y role="dialog" para todos los modales), components.js, toast.js
 tests/                 tests de pytest
 docs/capturas/         capturas de este README
 ```

@@ -54,7 +54,7 @@
                         <div id="detail-description-wrap" class="group relative">
                             <div class="bg-gray-50 p-4 rounded-lg text-gray-700 leading-relaxed" id="detail-description"></div>
                             <button type="button" id="edit-description-btn"
-                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 hover:text-blue-700 font-semibold hidden"
+                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition text-xs text-blue-500 hover:text-blue-700 font-semibold hidden"
                                 title="Editar descripción">✎ Editar</button>
                             <div id="edit-description-form" class="hidden mt-2">
                                 <textarea id="edit-description-input"
@@ -137,7 +137,7 @@
                 <div id="comments-container">
                     <div id="comment-list" class="space-y-4 mb-8"></div>
                     <div class="mt-6 border-t pt-6 space-y-3">
-                        <textarea id="new-comment" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" rows="3" placeholder="Escribe un comentario..."></textarea>
+                        <textarea id="new-comment" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" rows="3" placeholder="Escribí un comentario..."></textarea>
 
                         <!-- Nota interna toggle (tech/admin only) -->
                         <div id="internal-note-row" class="hidden items-center gap-3">
@@ -192,7 +192,7 @@
                     <div class="pt-2 border-t">
                         <label class="block text-[10px] font-bold text-gray-400 uppercase">Etiquetar Ticket</label>
                         <select id="update-tags" class="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="">Seleccione etiqueta...</option>
+                            <option value="">Elegí una etiqueta...</option>
                         </select>
                     </div>
                     <div class="pt-2 border-t">

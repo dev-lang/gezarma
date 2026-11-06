@@ -8,7 +8,6 @@
  * - Lector de código de barras: escanear la etiqueta abre el ticket.
  */
 const Recepcion = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ACCESORIOS = ['Cargador', 'Cable', 'Caja', 'Funda', 'Batería', 'Control remoto', 'Tarjeta de memoria', 'Chip / SIM'];
     const RMA_RE = /^RMA-\d{4}-[A-Z]{4}\d{3}$/i;
     const esTaller = () => ['administrador', 'tecnico'].includes(auth.getUser()?.role || '');

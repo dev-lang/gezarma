@@ -4,7 +4,6 @@
  * (aprobar un presupuesto, retirar el equipo, calificar la reparación).
  */
 const Portal = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const DOCS = { ingreso: 'Orden de ingreso', presupuesto: 'Presupuesto', remito: 'Remito' };
     const ICONO = { presupuesto: '💰', retiro: '📦', encuesta: '⭐' };
     const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-AR') : '';

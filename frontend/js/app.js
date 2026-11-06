@@ -574,7 +574,7 @@ const app = {
         // ── Detail: comment ───────────────────────────────────────────────
         on('add-comment-btn', 'click', async () => {
             const text = document.getElementById('new-comment').value.trim();
-            if (!text) { toast.warning('Escribe un comentario antes de enviar.'); return; }
+            if (!text) { toast.warning('Escribí un comentario antes de enviar.'); return; }
             const isInternal = document.getElementById('is-internal-toggle')?.checked || false;
             try {
                 await api.addComment(ui.currentTicketId, text, isInternal);
@@ -871,183 +871,12 @@ const app = {
             }
         });
 
-        // ── Detail: attachment upload ─────────────────────────────────────
-        on('upload-btn', 'click', () => document.getElementById('attachment-file')?.click());
+        // ── Detail: adjuntos (frontend/js/adjuntos.js) ────────────────────
+        Adjuntos.conectar(on);
 
-        on('attachment-file', 'change', async e => {
-            const files = Array.from(e.target.files || []);
-            if (!files.length) return;
-            e.target.value = '';  // reset so same file can be selected again
-
-            const ALLOWED   = ['pdf', 'txt', 'jpg', 'jpeg', 'png'];
-            const MAX_FILE  = 10 * 1024 * 1024;
-            const MAX_TOTAL = 10 * 1024 * 1024;
-            const ticketId  = ui.currentTicketId;
-
-            // Validate extensions & per-file size upfront
-            const invalid = files.filter(f => {
-                const ext = f.name.split('.').pop().toLowerCase();
-                return !ALLOWED.includes(ext) || f.size > MAX_FILE;
-            });
-            if (invalid.length) {
-                const msgs = invalid.map(f => {
-                    const ext = f.name.split('.').pop().toLowerCase();
-                    if (!ALLOWED.includes(ext)) return `${f.name}: tipo no permitido`;
-                    return `${f.name}: supera 10 MB`;
-                });
-                toast.error(msgs.join(' · '));
-                return;
-            }
-
-            // Fetch current storage state
-            let storageInfo = { used_mb: 0, remaining_mb: 10, limit_mb: 10 };
-            try {
-                const res = await api.getAttachments(ticketId);
-                storageInfo = res.storage || storageInfo;
-            } catch { /* fallback */ }
-
-            const totalNewBytes  = files.reduce((s, f) => s + f.size, 0);
-            const totalNewMb     = totalNewBytes / (1024 * 1024);
-            const usedAfterMb    = storageInfo.used_mb + totalNewMb;
-            const remainAfterMb  = storageInfo.limit_mb - usedAfterMb;
-
-            const fmtMb = n => n >= 1 ? n.toFixed(2) + ' MB' : (n * 1024).toFixed(0) + ' KB';
-
-            // Build preview list
-            const previewList = document.getElementById('upload-preview-list');
-            if (previewList) {
-                previewList.innerHTML = files.map(f => {
-                    const ext = f.name.split('.').pop().toLowerCase();
-                    const icons = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', txt: '📃' };
-                    const icon  = icons[ext] || '📎';
-                    const size  = f.size >= 1024 * 1024
-                        ? (f.size / (1024 * 1024)).toFixed(1) + ' MB'
-                        : Math.round(f.size / 1024) + ' KB';
-                    return `<div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm">
-                        <span>${icon}</span>
-                        <span class="flex-1 font-medium text-gray-800 truncate">${esc(f.name)}</span>
-                        <span class="text-gray-400 text-xs shrink-0">${ext.toUpperCase()} · ${size}</span>
-                    </div>`;
-                }).join('');
-            }
-
-            document.getElementById('preview-total-size').textContent   = fmtMb(totalNewMb);
-            document.getElementById('preview-used-size').textContent    = fmtMb(storageInfo.used_mb);
-            document.getElementById('preview-remaining-size').textContent = fmtMb(Math.max(0, remainAfterMb));
-
-            const errEl   = document.getElementById('upload-preview-error');
-            const confBtn = document.getElementById('upload-preview-confirm');
-            if (errEl) errEl.classList.add('hidden');
-            if (confBtn) confBtn.disabled = false;
-
-            if (usedAfterMb > storageInfo.limit_mb) {
-                if (errEl) {
-                    errEl.textContent = `⚠ Sin espacio suficiente. Disponible: ${fmtMb(storageInfo.remaining_mb)}, necesario: ${fmtMb(totalNewMb)}.`;
-                    errEl.classList.remove('hidden');
-                }
-                if (confBtn) confBtn.disabled = true;
-                document.getElementById('preview-remaining-size').classList.add('text-red-500');
-                document.getElementById('preview-remaining-size').classList.remove('text-blue-600');
-            } else {
-                document.getElementById('preview-remaining-size').classList.remove('text-red-500');
-                document.getElementById('preview-remaining-size').classList.add('text-blue-600');
-            }
-
-            // Show modal
-            document.getElementById('upload-preview-modal')?.classList.remove('hidden');
-
-            // Confirm: upload all files sequentially
-            const doUpload = async () => {
-                const spinner     = document.getElementById('upload-preview-spinner');
-                const labelEl     = document.getElementById('upload-preview-confirm-label');
-                if (confBtn)  confBtn.disabled = true;
-                if (spinner)  spinner.classList.remove('hidden');
-                if (labelEl)  labelEl.textContent = 'Subiendo...';
-
-                let uploaded = 0, failed = [];
-                for (const file of files) {
-                    try {
-                        await api.uploadAttachment(ticketId, file);
-                        uploaded++;
-                    } catch (err) {
-                        failed.push(`${file.name}: ${err.message}`);
-                    }
-                }
-                // Close modal and refresh
-                document.getElementById('upload-preview-modal')?.classList.add('hidden');
-                await ui.loadAttachments(ticketId);
-
-                if (spinner)  spinner.classList.add('hidden');
-                if (labelEl)  labelEl.textContent = 'Subir archivos';
-                if (confBtn)  confBtn.disabled = false;
-
-                if (failed.length) {
-                    toast.error(`${failed.length} archivo(s) fallaron: ${failed.join('; ')}`);
-                }
-                if (uploaded > 0) {
-                    toast.success(`${uploaded} archivo(s) subido(s) correctamente.`);
-                }
-                // Detach this listener
-                confBtn?.removeEventListener('click', doUpload);
-            };
-
-            confBtn?.addEventListener('click', doUpload, { once: true });
-        });
-
-        on('upload-preview-close',  'click', () => document.getElementById('upload-preview-modal')?.classList.add('hidden'));
-        on('upload-preview-cancel', 'click', () => document.getElementById('upload-preview-modal')?.classList.add('hidden'));
-
-        // ── Global search (dropdown + Enter → full page) ──────────────────
-        const searchInput   = document.getElementById('global-search');
-        const searchResults = document.getElementById('search-results');
-        if (searchInput) {
-            let searchTimeout;
-
-            searchInput.addEventListener('keydown', e => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const q = searchInput.value.trim();
-                    searchResults?.classList.add('hidden');
-                    clearTimeout(searchTimeout);
-                    if (q.length < 2) return;
-                    // N° de RMA exacto (tipeado o del lector de código de barras): abre el ticket
-                    Recepcion.abrirRma(q).then(abierto => {
-                        if (abierto) searchInput.value = '';
-                        else ui.loadSearchPage(q);
-                    });
-                }
-            });
-
-            searchInput.addEventListener('input', e => {
-                clearTimeout(searchTimeout);
-                const q = e.target.value.trim();
-                if (q.length < 2) { searchResults?.classList.add('hidden'); return; }
-
-                searchTimeout = setTimeout(async () => {
-                    try {
-                        const results = await api.searchGlobal(q);
-                        if (!searchResults) return;
-                        searchResults.innerHTML = results.length
-                            ? results.slice(0, 6).map(t => `
-                                <div onclick="app.viewTicket(${t.id}); document.getElementById('search-results').classList.add('hidden');"
-                                    class="p-4 border-b hover:bg-gray-50 cursor-pointer transition">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-blue-600 text-sm">${esc(t.numero_rma)}</span>
-                                        <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase">${esc(t.estado)}</span>
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-0.5">${esc(t.producto)} · SN: ${esc(t.numero_serie)}</div>
-                                </div>`).join('')
-                              + (results.length > 6 ? `<div data-q="${esc(q)}" onclick="ui.loadSearchPage(this.dataset.q)" class="p-3 text-center text-blue-600 text-xs font-bold hover:bg-blue-50 cursor-pointer">Ver los ${results.length} resultados →</div>` : '')
-                            : '<div class="p-4 text-gray-400 italic text-sm">Sin resultados</div>';
-                        searchResults.classList.remove('hidden');
-                    } catch (err) { console.error(err); }
-                }, 300);
-            });
-
-            document.addEventListener('click', e => {
-                if (!searchInput.contains(e.target)) searchResults?.classList.add('hidden');
-            });
-        }
+        // La búsqueda global de la barra superior se conecta una sola vez
+        // (frontend/js/busqueda.js): el campo no se recrea al navegar.
+        Busqueda.iniciar();
 
         // ── Search page ────────────────────────────────────────────────────
         on('back-to-dashboard-from-search', 'click', () => ui.initDashboard());

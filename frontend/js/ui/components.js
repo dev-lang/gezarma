@@ -1,3 +1,17 @@
+/** "Sin garantía", "1 mes", "6 meses", "1 año", "2 años", "18 meses" (nunca "1.5 años"). */
+function garantiaTexto(meses) {
+    const m = +meses || 0;
+    if (!m) return 'Sin garantía';
+    if (m % 12 === 0) return `${m / 12} año${m > 12 ? 's' : ''}`;
+    return `${m} mes${m > 1 ? 'es' : ''}`;
+}
+
+/** Precio en pesos con formato argentino: $ 12.345,50 */
+const _ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+function precioARS(n) { return _ars.format(+n || 0); }
+window.garantiaTexto = garantiaTexto;
+window.precioARS = precioARS;
+
 /**
  * components.js — Pure render functions for all UI elements.
  * Each function takes data and returns an HTML string.
@@ -78,7 +92,7 @@ const components = (() => {
             </td>
             <td class="px-6 py-4 text-right">
                 <button onclick="app.viewTicket(${t.id})"
-                    class="text-blue-600 hover:text-blue-800 font-bold text-sm">Ver Detalle</button>
+                    class="text-blue-600 hover:text-blue-800 font-bold text-sm">Ver detalle</button>
             </td>
         </tr>`;
     }
@@ -209,7 +223,7 @@ const components = (() => {
                 <span class="w-3 h-3 rounded-full shrink-0" style="background:${colorSeguro(tag.color)}"></span>
                 <span class="font-semibold text-sm text-gray-800">${esc(tag.nombre)}</span>
             </div>
-            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+            <div class="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
                 <button type="button" class="tag-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
                     data-id="${tag.id}" data-nombre="${esc(tag.nombre)}" data-color="${colorSeguro(tag.color)}">Editar</button>
                 <button type="button" class="tag-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
@@ -335,7 +349,7 @@ const components = (() => {
                    title="Descargar">⬇ Descargar</button>
                 ${canDelete ? `
                 <button type="button"
-                    class="adj-delete-btn text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100"
+                    class="adj-delete-btn text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100"
                     data-adj-id="${a.id}" title="Eliminar">✕</button>` : ''}
             </div>
         </div>`;
@@ -361,7 +375,7 @@ const components = (() => {
             <td class="py-3 pr-4 text-center">
                 <span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock}</span>${stockMinTxt(p)}
             </td>
-            <td class="py-3 pr-4 text-right font-mono text-sm">$${p.precio.toFixed(2)}</td>
+            <td class="py-3 pr-4 text-right font-mono text-sm">${precioARS(p.precio)}</td>
             <td class="py-3 text-right space-x-2">
                 <button onclick="ui.openEditPartForm(${p.id})"
                     class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
@@ -398,9 +412,7 @@ const components = (() => {
 
     // ── Product row ───────────────────────────────────────────────────────────
     function productRow(p) {
-        const garantiaLabel = p.periodo_garantia_meses >= 12
-            ? `${p.periodo_garantia_meses / 12} año${p.periodo_garantia_meses > 12 ? 's' : ''}`
-            : `${p.periodo_garantia_meses} mes${p.periodo_garantia_meses > 1 ? 'es' : ''}`;
+        const garantiaLabel = garantiaTexto(p.periodo_garantia_meses);
         return `
         <tr class="border-b hover:bg-gray-50 transition">
             <td class="px-6 py-3">
@@ -512,7 +524,7 @@ const components = (() => {
                 <p class="font-semibold text-sm text-gray-800">${esc(p.nombre)}</p>
                 <p class="text-xs text-gray-400 mt-1 line-clamp-2">${esc(p.texto)}</p>
             </div>
-            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition">
+            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
                 <button type="button" class="plantilla-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
                     data-id="${p.id}" data-nombre="${esc(p.nombre)}" data-orden="${esc(p.orden)}"
                     data-texto="${esc(p.texto)}">Editar</button>
@@ -538,7 +550,7 @@ const components = (() => {
                 <span class="text-xs text-gray-400 font-mono">${s.valor !== s.etiqueta ? '← ' + esc(s.valor) : ''}</span>
                 <div class="flex gap-1">${activoBadge}${finalBadge}</div>
             </div>
-            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition">
+            <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
                 <button type="button" class="estado-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
                     data-id="${s.id}" data-valor="${esc(s.valor)}" data-etiqueta="${esc(s.etiqueta)}"
                     data-color="${colorSeguro(s.color)}" data-orden="${esc(s.orden)}"
@@ -571,8 +583,8 @@ const components = (() => {
     }
 
     function adminProductRow(p) {
-        const g = p.periodo_garantia_meses >= 12
-            ? `${p.periodo_garantia_meses/12}a` : `${p.periodo_garantia_meses}m`;
+        const m = p.periodo_garantia_meses || 0;
+        const g = !m ? 'sin gar.' : m % 12 === 0 ? `${m / 12}a` : `${m}m`;
         return `
         <tr class="hover:bg-gray-50 transition">
             <td class="px-5 py-3">
@@ -597,7 +609,7 @@ const components = (() => {
             <td class="px-5 py-3 font-medium text-gray-800">${esc(p.nombre)}</td>
             <td class="px-5 py-3 text-gray-500 text-xs">${esc(p.proveedor)}</td>
             <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span>${stockMinTxt(p)}</td>
-            <td class="px-5 py-3 text-right font-semibold text-gray-700">$${p.precio.toFixed(2)}</td>
+            <td class="px-5 py-3 text-right font-semibold text-gray-700">${precioARS(p.precio)}</td>
             <td class="px-5 py-3 text-right space-x-3">
                 <button onclick="ui.openAdminEditPart(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
                 <button onclick="app.deletePart(${p.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>

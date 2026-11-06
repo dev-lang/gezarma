@@ -5,7 +5,6 @@
  * - En el panel del taller: promedio, distribución y últimos comentarios.
  */
 const Encuesta = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ETIQUETAS = ['', 'Muy mala', 'Mala', 'Regular', 'Buena', 'Excelente'];
     const estrellas = (n, cls = 'text-lg') =>
         `<span class="${cls} tracking-tight" aria-label="${n} de 5">${'★'.repeat(n)}<span class="text-gray-300">${'★'.repeat(5 - n)}</span></span>`;

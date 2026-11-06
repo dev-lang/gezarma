@@ -104,3 +104,17 @@ def test_etiqueta_repetida_no_duplica(client, admin, make_user, make_ticket):
     for _ in range(2):
         assert client.post(f"/tickets/{t['id']}/tags", headers=admin, json={"tag_nombre": "Garantía"}).status_code in (200, 400)
     assert [x["nombre"] for x in client.get(f"/tickets/{t['id']}", headers=admin).json()["tags"]].count("Garantía") == 1
+
+
+def test_resumen_cuenta_todo_y_respeta_al_cliente(client, admin, make_user, make_ticket):
+    """Las tarjetas del listado: totales reales (no los 50 cargados) y el cliente ve solo lo suyo."""
+    h, _ = make_user()
+    otro, _ = make_user()
+    antes = client.get("/tickets/stats/resumen", headers=admin).json()
+    tickets = [make_ticket(h, serie=f"RES-{i}") for i in range(3)]
+    make_ticket(otro, serie="RES-otro")
+    client.put(f"/tickets/{tickets[0]['id']}/status", headers=admin, json={"estado": "Cerrado"})
+    despues = client.get("/tickets/stats/resumen", headers=admin).json()
+    assert despues["total"] - antes["total"] == 4
+    assert despues["cerrados"] - antes["cerrados"] == 1
+    assert client.get("/tickets/stats/resumen", headers=h).json() == {"total": 3, "nuevos": 2, "en_proceso": 0, "cerrados": 1}

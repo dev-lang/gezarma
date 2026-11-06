@@ -8,7 +8,8 @@
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
-const fmt = n => `$${(+n || 0).toFixed(2)}`;
+const _ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const fmt = n => _ars.format(+n || 0);   // $ 12.345,50
 
 const ESTADO_COLORS = {
     borrador:  { bg: "bg-gray-100",    text: "text-gray-600",    label: "Borrador"  },
@@ -124,7 +125,7 @@ function bindCardEvents(userRole) {
 
     /* Send */
     $("send-presupuesto-btn").onclick = async () => {
-        if (!confirm("¿Enviar el presupuesto al cliente?")) return;
+        if (!await confirmDialog("¿Enviar el presupuesto al cliente?", "El cliente lo va a ver en el portal y podrá aprobarlo o rechazarlo.", "Enviar", { peligro: false })) return;
         try {
             _currentBudget = await api.updateEstadoPresupuesto(_currentTicketId, "enviado");
             renderPresupuestoCard(_currentBudget, userRole);
@@ -134,7 +135,7 @@ function bindCardEvents(userRole) {
 
     /* Approve */
     $("approve-presupuesto-btn").onclick = async () => {
-        if (!confirm("¿Aprobar el presupuesto?")) return;
+        if (!await confirmDialog("¿Aprobar el presupuesto?", "", "Aprobar", { peligro: false })) return;
         try {
             _currentBudget = await api.updateEstadoPresupuesto(_currentTicketId, "aprobado");
             renderPresupuestoCard(_currentBudget, userRole);
@@ -144,7 +145,7 @@ function bindCardEvents(userRole) {
 
     /* Reject */
     $("reject-presupuesto-btn").onclick = async () => {
-        if (!confirm("¿Rechazar el presupuesto?")) return;
+        if (!await confirmDialog("¿Rechazar el presupuesto?", "", "Rechazar")) return;
         try {
             _currentBudget = await api.updateEstadoPresupuesto(_currentTicketId, "rechazado");
             renderPresupuestoCard(_currentBudget, userRole);
@@ -244,7 +245,7 @@ function renderRepuestoPicker() {
     };
 }
 
-const escHtml = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const escHtml = s => window.esc(s);   // ui/escape.js
 
 function addItemRow(data = {}) {
     const tbody = $("presupuesto-items-body");
@@ -483,7 +484,7 @@ function _renderPlantillaRows(items) {
     // Bind delete buttons
     list.querySelectorAll(".del-pp-btn").forEach(btn => {
         btn.onclick = async () => {
-            if (!confirm("¿Eliminar esta plantilla?")) return;
+            if (!await confirmDialog("¿Eliminar esta plantilla?", "Los presupuestos ya hechos con ella no cambian.")) return;
             try {
                 await api.deletePlantillaPresupuesto(btn.dataset.id);
                 showToast("Plantilla eliminada", "success");

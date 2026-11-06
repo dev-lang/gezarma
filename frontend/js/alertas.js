@@ -3,7 +3,6 @@
  * vencer, equipos listos para retirar y repuestos bajo el stock mínimo. Si no hay alertas, no se muestra.
  */
 const Alertas = (() => {
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     // Clases completas (no armadas con variables) para que Tailwind las detecte siempre
     const COLORES = {

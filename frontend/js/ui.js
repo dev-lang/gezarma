@@ -27,10 +27,13 @@ const ui = {
 
     async loadPartial(name) {
         const res = await fetch(`/partials/${name}.html`);
+        // Sin esto, un 404/500 se inyectaba como si fuera la pantalla
+        if (!res.ok) throw new Error(`No se pudo cargar la pantalla (${res.status})`);
         return res.text();
     },
 
     async showSection(name) {
+        if (name !== 'detail') this.currentTicketId = null;   // las cargas pendientes del detalle se descartan
         const root = document.getElementById('app-root');
         const navbar = document.getElementById('navbar');
 
@@ -108,7 +111,8 @@ const ui = {
             const queryParams = { ...filters, skip: app.currentPage * app.pageSize, limit: app.pageSize };
             const tickets = await api.getTickets(queryParams);
             this.renderTicketList(tickets, !!filters.status);
-            this.renderStats(tickets);
+            // Totales reales (no solo los de esta página)
+            api.request('tickets/stats/resumen').then(r => this.renderStats(r)).catch(() => {});
         } catch (err) {
             toast.error('Error al cargar los tickets.');
             console.error(err);
@@ -123,15 +127,10 @@ const ui = {
             : components.ticketEmptyState(filtered);
     },
 
-    renderStats(tickets) {
+    renderStats(r) {
         const container = document.getElementById('stats-container');
         if (!container) return;
-        const stats = {
-            total:     tickets.length,
-            nuevos:    tickets.filter(t => t.estado === 'Nuevo').length,
-            proceso:   tickets.filter(t => !['Nuevo','Cerrado','Cancelado'].includes(t.estado)).length,
-            cerrados:  tickets.filter(t => t.estado === 'Cerrado').length,
-        };
+        const stats = { total: r.total, nuevos: r.nuevos, proceso: r.en_proceso, cerrados: r.cerrados };
         container.innerHTML = [
             { label: 'Total Tickets',  value: stats.total,   color: 'blue',   icon: 'ticket' },
             { label: 'Nuevos',         value: stats.nuevos,  color: 'amber',  icon: 'new'    },
@@ -179,6 +178,7 @@ const ui = {
     async showTicketDetail(ticket) {
         this.currentTicketId = ticket.id;
         await this.showSection('detail');
+        if (this.currentTicketId !== ticket.id) return;   // se abrió otro mientras cargaba
 
         document.getElementById('detail-rma-id').innerText  = ticket.numero_rma;
         document.getElementById('detail-product').innerText = ticket.producto;
@@ -388,6 +388,7 @@ const ui = {
     async loadComments(ticketId) {
         try {
             const comments = await api.getComments(ticketId);
+            if (ui.currentTicketId != ticketId) return;   // ya se navegó a otro ticket
             document.getElementById('comment-list').innerHTML = comments.length
                 ? comments.map(components.comment).join('')
                 : components.commentEmptyState();
@@ -397,6 +398,7 @@ const ui = {
     async loadHistory(ticketId) {
         try {
             const history = await api.getTicketHistory(ticketId);
+            if (ui.currentTicketId != ticketId) return;
             document.getElementById('history-list').innerHTML = history.length
                 ? history.map(components.historyEntry).join('')
                 : '<p class="text-gray-400 italic text-sm py-4">Sin cambios registrados.</p>';
@@ -406,6 +408,7 @@ const ui = {
     async loadAttachments(ticketId) {
         try {
             const res = await api.getAttachments(ticketId);
+            if (ui.currentTicketId != ticketId) return;
             const atts    = Array.isArray(res) ? res : (res.adjuntos || []);
             const storage = res.storage || null;
             const user    = auth.getUser();
@@ -485,7 +488,7 @@ const ui = {
             const products = await api.request('/products/');
             const select = document.getElementById('tk-producto-id');
             if (!select) return;
-            select.innerHTML = '<option value="">Seleccione un producto...</option>'
+            select.innerHTML = '<option value="">Elegí un producto...</option>'
                 + products.map(p => `<option value="${p.id}">${esc(p.marca)} ${esc(p.modelo)} (${esc(p.categoria)})</option>`).join('');
         } catch (err) { console.error(err); }
     },
@@ -502,7 +505,7 @@ const ui = {
             ['update-tags', 'ef-add-tag'].forEach(selId => {
                 const sel = document.getElementById(selId);
                 if (!sel) return;
-                sel.innerHTML = '<option value="">Seleccione etiqueta...</option>'
+                sel.innerHTML = '<option value="">Elegí una etiqueta...</option>'
                     + tags.map(t => `<option value="${esc(t.nombre)}" style="color:${colorSeguro(t.color)}">${esc(t.nombre)}</option>`).join('');
             });
         } catch (err) { console.error(err); }
@@ -1224,10 +1227,10 @@ const ui = {
         }
         tbody.innerHTML = movs.map(m => components.stockMovRow(m)).join('');
         tbody.querySelectorAll('.stock-edit-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const nota = btn.dataset.nota || '';
                 const id   = parseInt(btn.dataset.id);
-                const newNota = prompt('Editar nota del movimiento:', nota);
+                const newNota = await promptDialog('Editar nota del movimiento', nota);
                 if (newNota !== null) ui._updateStockMov(id, newNota);
             });
         });
@@ -1362,7 +1365,7 @@ const ui = {
         if (refreshBtn) refreshBtn.addEventListener('click', () => this._loadLoginAttempts());
         const clearAllBtn = document.getElementById('clear-all-attempts-btn');
         if (clearAllBtn) clearAllBtn.addEventListener('click', async () => {
-            if (!confirm('¿Limpiar todos los intentos fallidos registrados?')) return;
+            if (!await confirmDialog('¿Limpiar todos los intentos fallidos?', 'Se borra el registro de intentos de ingreso.', 'Limpiar')) return;
             await api.clearLoginAttempts(null);
             await this._loadLoginAttempts();
             toast.success('Intentos fallidos borrados.');
