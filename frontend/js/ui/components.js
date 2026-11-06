@@ -310,8 +310,6 @@ const components = (() => {
         const mimeLabel = (a.mime_type || '').replace('image/', '').replace('application/', '').replace('text/', '') || ext.toUpperCase();
 
         const canDelete = userRole === 'administrador' || userRole === 'tecnico';
-        const token = localStorage.getItem('token');
-        const downloadUrl = `/tickets/${ticketId}/attachments/${a.id}/download?token=${encodeURIComponent(token)}`;
 
         return `
         <div class="flex items-center justify-between gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-100 group"
@@ -322,9 +320,10 @@ const components = (() => {
                 <p class="text-[10px] text-blue-400">${mimeLabel.toUpperCase()} · ${sizeStr}</p>
             </div>
             <div class="flex items-center gap-1 shrink-0">
-                <a href="${downloadUrl}" target="_blank" download="${a.nombre_archivo}"
-                   class="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100 transition"
-                   title="Descargar">⬇ Descargar</a>
+                <button type="button"
+                   class="adj-download-btn text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100 transition"
+                   data-adj-id="${a.id}" data-filename="${a.nombre_archivo}"
+                   title="Descargar">⬇ Descargar</button>
                 ${canDelete ? `
                 <button type="button"
                     class="adj-delete-btn text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100"

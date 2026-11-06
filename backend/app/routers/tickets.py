@@ -760,15 +760,11 @@ def list_attachments(
 def download_attachment(
     ticket_id: int,
     adj_id: int,
-    token: Optional[str] = Query(None),
     db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.get_current_user_optional),
+    current_user: models.Usuario = Depends(auth.get_current_user),
 ):
-    # Accept token via query param (for direct browser download links)
-    if current_user is None and token:
-        current_user = auth.decode_token_user(token, db)
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="No autenticado")
+    # Auth only via the Authorization header: a token in the URL ends up in
+    # server logs, browser history and Referer headers.
     _get_ticket_for_user(ticket_id, current_user, db)
 
     adj = db.query(models.Adjunto).filter_by(id=adj_id, ticket_id=ticket_id).first()

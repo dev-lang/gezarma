@@ -99,9 +99,22 @@ const api = {
             return r.json();
         });
     },
-    downloadAttachmentUrl(ticketId, adjId) {
+    // Downloads with the Authorization header (the token never goes in the URL)
+    async downloadAttachment(ticketId, adjId, filename) {
         const token = localStorage.getItem('token');
-        return `${this.baseUrl}tickets/${ticketId}/attachments/${adjId}/download?token=${token}`;
+        const res = await fetch(`${this.baseUrl}tickets/${ticketId}/attachments/${adjId}/download`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) {
+            if (res.status === 401 && typeof auth !== 'undefined') auth.logout();
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.detail || 'Error al descargar el archivo');
+        }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const link = Object.assign(document.createElement('a'), { href: url, download: filename || 'archivo' });
+        document.body.appendChild(link); link.click();
+        document.body.removeChild(link); URL.revokeObjectURL(url);
     },
     deleteAttachment(ticketId, adjId) {
         return this.request(`tickets/${ticketId}/attachments/${adjId}`, { method: 'DELETE' });

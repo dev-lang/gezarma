@@ -392,6 +392,15 @@ const ui = {
                     ? atts.map(a => components.attachmentItem(a, ticketId, role)).join('')
                     : '<p class="text-gray-400 italic text-sm py-2">Sin archivos adjuntos.</p>';
 
+                // Wire download buttons
+                listEl.querySelectorAll('.adj-download-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api.downloadAttachment(ticketId, parseInt(btn.dataset.adjId), btn.dataset.filename);
+                        } catch (err) { toast.error(err.message); }
+                    });
+                });
+
                 // Wire delete buttons
                 listEl.querySelectorAll('.adj-delete-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
