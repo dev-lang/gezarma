@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block contenido %}
+<table style="margin-top: 14px;">
+  <tr><td class="label">Proveedor</td><td><b>{{ pedido.proveedor }}</b></td></tr>
+  <tr><td class="label">Fecha</td><td>{{ fecha }}</td></tr>
+  {% if pedido.notas %}<tr><td class="label">Notas</td><td>{{ pedido.notas }}</td></tr>{% endif %}
+</table>
+
+<h2>Repuestos</h2>
+<table class="items">
+  <tr><th style="width: 22%;">Código</th><th>Repuesto</th><th class="right" style="width: 14%;">Cantidad</th></tr>
+  {% for i in pedido.items %}
+  <tr><td class="small">{{ i.repuesto.codigo }}</td><td>{{ i.repuesto.nombre }}</td><td class="right"><b>{{ i.cantidad }}</b></td></tr>
+  {% endfor %}
+  <tr class="total"><td></td><td class="right">Total de unidades</td><td class="right">{{ pedido.items | sum(attribute="cantidad") }}</td></tr>
+</table>
+
+<p class="small muted" style="margin-top: 14px;">Por favor, confirmar disponibilidad y plazo de entrega.</p>
+{% endblock %}

@@ -902,6 +902,9 @@ const ui = {
         if (tab === 'ajustes' && typeof Ajustes !== 'undefined') {
             Ajustes.cargar();
         }
+        if (tab === 'pedidos' && typeof Pedidos !== 'undefined') {
+            Pedidos.cargar();
+        }
     },
 
     // ── Admin: Users ──────────────────────────────────────────────────────────

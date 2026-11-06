@@ -307,6 +307,34 @@ class Adjunto(Base):
     ticket = relationship("Ticket", back_populates="adjuntos")
 
 
+class PedidoProveedor(Base):
+    """Pedido de repuestos a un proveedor: borrador → enviado → parcial / recibido (o cancelado)."""
+    __tablename__ = "pedidos_proveedor"
+    id              = Column(Integer, primary_key=True, index=True)
+    proveedor       = Column(String, nullable=False, index=True)
+    estado          = Column(String, nullable=False, default="borrador", index=True)
+    notas           = Column(Text, nullable=True)
+    fecha_creacion  = Column(DateTime, default=utcnow)
+    fecha_envio     = Column(DateTime, nullable=True)
+    fecha_recepcion = Column(DateTime, nullable=True)
+    creado_por      = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    items   = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan",
+                           order_by="PedidoItem.id")
+    usuario = relationship("Usuario")
+
+
+class PedidoItem(Base):
+    __tablename__ = "pedido_items"
+    id          = Column(Integer, primary_key=True, index=True)
+    pedido_id   = Column(Integer, ForeignKey("pedidos_proveedor.id", ondelete="CASCADE"), nullable=False, index=True)
+    repuesto_id = Column(Integer, ForeignKey("repuestos.id"), nullable=False)
+    cantidad    = Column(Integer, nullable=False)
+    recibido    = Column(Integer, nullable=False, default=0, server_default="0")
+    precio      = Column(Float, nullable=True)   # costo unitario al armar el pedido
+    pedido   = relationship("PedidoProveedor", back_populates="items")
+    repuesto = relationship("Repuesto")
+
+
 class TiempoTrabajo(Base):
     """Un tramo de trabajo de un técnico sobre un ticket (fin vacío = en curso)."""
     __tablename__ = "tiempos_trabajo"

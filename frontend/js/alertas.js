@@ -12,7 +12,7 @@ const Alertas = (() => {
         amber: { head: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
     };
 
-    function tarjeta(titulo, color, filas) {
+    function tarjeta(titulo, color, filas, pie = '') {
         const c = COLORES[color];
         return `
         <div class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
@@ -20,7 +20,7 @@ const Alertas = (() => {
                 <h3 class="font-bold ${c.text} text-sm uppercase tracking-wide">${titulo}</h3>
                 <span class="text-xs font-bold ${c.text} bg-white border ${c.border} rounded-full px-2">${filas.length}</span>
             </div>
-            <ul class="divide-y max-h-64 overflow-y-auto">${filas.join('')}</ul>
+            <ul class="divide-y max-h-64 overflow-y-auto">${filas.join('')}</ul>${pie}
         </div>`;
     }
 
@@ -75,7 +75,12 @@ const Alertas = (() => {
         const bloques = [];
         if (retiro.length) bloques.push(tarjeta('Listos para retirar', 'green', retiro.map(filaRetiro)));
         if (sla.length) bloques.push(tarjeta('SLA vencidos o por vencer', 'red', sla.map(filaSla)));
-        if (stock.length) bloques.push(tarjeta('Repuestos bajo el mínimo', 'amber', stock.map(filaStock)));
+        if (stock.length) {
+            const pie = (auth.getUser()?.role || '') === 'administrador' ? `
+                <div class="px-5 py-2.5 border-t text-right"><button type="button" onclick="ui.loadAdminPanel('pedidos')"
+                    class="text-xs font-bold text-amber-700 hover:text-amber-900">Armar pedidos a proveedor →</button></div>` : '';
+            bloques.push(tarjeta('Repuestos bajo el mínimo', 'amber', stock.map(filaStock), pie));
+        }
         panel.innerHTML = bloques.join('');
         panel.classList.toggle('hidden', !bloques.length);
     }
