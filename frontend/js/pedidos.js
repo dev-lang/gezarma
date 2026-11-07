@@ -163,7 +163,7 @@ const Pedidos = (() => {
         if (estado === 'cancelado') return '';
         const actual = PASO[estado];
         const e = (n, texto) => `<li class="flex items-center gap-1.5 ${n < actual ? 'text-emerald-700' : n === actual ? 'text-blue-700 font-bold' : 'text-gray-400'}">
-            <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${n < actual ? 'bg-emerald-100' : n === actual ? 'bg-blue-600 text-white' : 'bg-gray-100'}">${n < actual ? '✓' : n}</span>${texto}</li>`;
+            <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${n < actual ? 'bg-emerald-100' : n === actual ? 'bg-blue-600 text-white' : 'bg-gray-100'}">${n < actual ? icono('check', 'w-3 h-3') : n}</span>${texto}</li>`;
         return `<ol class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-3">${e(1, 'Armar')}${e(2, 'Enviar')}${e(3, 'Recibir')}</ol>`;
     }
 
@@ -180,7 +180,7 @@ const Pedidos = (() => {
                 <td class="py-1.5"><span translate="no">${esc(i.nombre)}</span> <span class="font-mono text-xs text-gray-400" translate="no">${esc(i.codigo)}</span></td>
                 <td class="text-right text-gray-500">${i.stock}</td>
                 <td class="text-right"><input type="number" min="1" value="${i.cantidad}" data-cant class="w-20 px-2 py-1 border rounded text-right"></td>
-                <td class="text-right"><button type="button" data-quitar class="text-red-500 hover:text-red-700 text-xs" aria-label="Quitar">✕</button></td></tr>`).join('')}</tbody></table></div>
+                <td class="text-right"><button type="button" data-quitar class="text-red-500 hover:text-red-700 text-xs" aria-label="Quitar">${icono('x', 'w-4 h-4')}</button></td></tr>`).join('')}</tbody></table></div>
             <div class="flex flex-wrap items-center gap-2 mt-2">
                 <select data-agregar class="px-2 py-1.5 border rounded-lg text-sm max-w-full sm:max-w-xs"><option value="">+ Agregar repuesto…</option>
                     ${_repuestos.filter(r => !p.items.some(i => i.repuesto_id === r.id)).map(r => `<option value="${r.id}">${esc(r.nombre)} (${esc(r.codigo)})</option>`).join('')}</select>
@@ -191,7 +191,7 @@ const Pedidos = (() => {
                 <div class="flex flex-wrap items-center gap-2">
                     <input type="email" data-email value="${esc(mails()[p.proveedor] || '')}" placeholder="Email del proveedor"
                         class="flex-1 min-w-[12rem] px-3 py-2 border rounded-lg text-sm bg-white">
-                    <button type="button" data-enviar class="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">✉ Enviar por email</button>
+                    <button type="button" data-enviar class="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">${icono('mail', 'w-4 h-4 mr-1.5')}Enviar por email</button>
                 </div>
                 <p class="text-xs text-gray-500 mt-2">Le llega con el pedido en PDF y CSV. ¿Lo pediste por teléfono o WhatsApp?
                     <button type="button" data-ya-pedido class="font-semibold text-blue-700 hover:text-blue-900 underline underline-offset-2">Ya lo pedí, marcarlo como enviado</button></p>
@@ -230,8 +230,8 @@ const Pedidos = (() => {
                 ${p.notas && p.estado !== 'borrador' ? `<p class="text-xs text-gray-500 mb-2">Notas: ${esc(p.notas)}</p>` : ''}
                 ${cuerpo}
                 <div class="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t">
-                    <button type="button" data-pdf class="text-xs font-semibold border px-3 py-1.5 rounded-lg hover:bg-gray-50">📄 Ver PDF</button>
-                    <button type="button" data-csv class="text-xs font-semibold border px-3 py-1.5 rounded-lg hover:bg-gray-50">⬇ CSV</button>
+                    <button type="button" data-pdf class="text-xs font-semibold border px-3 py-1.5 rounded-lg hover:bg-gray-50">${icono('documento', 'w-3.5 h-3.5 mr-1')}Ver PDF</button>
+                    <button type="button" data-csv class="text-xs font-semibold border px-3 py-1.5 rounded-lg hover:bg-gray-50">${icono('descargar', 'w-3.5 h-3.5 mr-1')}CSV</button>
                     ${!['recibido', 'cancelado'].includes(p.estado) ? `<button type="button" data-cancelar class="text-xs font-semibold text-red-600 hover:text-red-800 ml-auto">Cancelar pedido</button>` : ''}
                 </div>
             </div>
@@ -254,7 +254,7 @@ const Pedidos = (() => {
                 if (!r) return;
                 tbody.insertAdjacentHTML('beforeend', `<tr class="border-t" data-rep="${r.id}"><td class="py-1.5"><span translate="no">${esc(r.nombre)}</span> <span class="font-mono text-xs text-gray-400" translate="no">${esc(r.codigo)}</span></td>
                     <td class="text-right text-gray-500">${r.stock}</td><td class="text-right"><input type="number" min="1" value="1" data-cant class="w-20 px-2 py-1 border rounded text-right"></td>
-                    <td class="text-right"><button type="button" data-quitar class="text-red-500 text-xs" aria-label="Quitar">✕</button></td></tr>`);
+                    <td class="text-right"><button type="button" data-quitar class="text-red-500 text-xs" aria-label="Quitar">${icono('x', 'w-4 h-4')}</button></td></tr>`);
                 tbody.lastElementChild.querySelector('[data-quitar]').addEventListener('click', ev => ev.target.closest('tr').remove());
                 e.target.querySelector(`option[value="${r.id}"]`)?.remove();
                 e.target.value = '';

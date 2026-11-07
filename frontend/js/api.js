@@ -82,6 +82,19 @@ const api = {
         const qs = new URLSearchParams(params).toString();
         return this.request(`tickets/${qs ? "?" + qs : ""}`);
     },
+    /** Una página de la lista, con el total (encabezado X-Total-Count) para paginar. */
+    async getTicketsPagina(params = {}) {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${this.baseUrl}tickets/?${new URLSearchParams(params)}`, {
+            headers: { "Authorization": `Bearer ${token}`, "Accept-Language": window.I18N?.codigo || "es-AR" } });
+        if (!res.ok) {
+            if (res.status === 401 && token && typeof auth !== "undefined") auth.logout();
+            let msg = `Error ${res.status}`;
+            try { msg = (await res.json()).detail || msg; } catch {}
+            throw new Error(msg);
+        }
+        return { items: await res.json(), total: +(res.headers.get("X-Total-Count") || 0) };
+    },
     getTicket(id)       { return this.request(`tickets/${id}`); },
     createTicket(data)  { return this.request("tickets/", { method: "POST", body: JSON.stringify(data) }); },
 

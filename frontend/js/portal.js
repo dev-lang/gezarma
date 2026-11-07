@@ -5,7 +5,7 @@
  */
 const Portal = (() => {
     const DOCS = { ingreso: 'Orden de ingreso', presupuesto: 'Presupuesto', remito: 'Remito' };
-    const ICONO = { presupuesto: '💰', retiro: '📦', encuesta: '⭐' };
+    const ICONO = { presupuesto: 'billete', retiro: 'paquete', encuesta: 'estrella' };
     const fecha = iso => iso ? new Date(iso).toLocaleDateString(I18N.locale) : '';
     const abrirTicket = id => api.getTicket(id).then(t => ui.showTicketDetail(t));
 
@@ -19,10 +19,10 @@ const Portal = (() => {
             </div>
             <p class="text-xs text-gray-500 mt-0.5">Ingresó el ${fecha(r.fecha_ingreso)}${r.fecha_cierre ? ` · cerrado el ${fecha(r.fecha_cierre)}` : ''} · ${r.en_garantia ? 'en garantía' : 'fuera de garantía'}</p>
             <p class="text-sm text-gray-700 mt-1 line-clamp-2">${esc(r.descripcion)}</p>
-            ${r.acciones.map(a => `<p class="mt-1 text-xs font-semibold text-amber-700">${ICONO[a.tipo] || '•'} ${esc(a.texto)}${a.vence ? ` (hasta el ${fecha(a.vence)})` : ''}</p>`).join('')}
+            ${r.acciones.map(a => `<p class="mt-1 text-xs font-semibold text-amber-700">${icono(ICONO[a.tipo] || 'info', 'w-3.5 h-3.5 mr-1')}${esc(a.texto)}${a.vence ? ` (hasta el ${fecha(a.vence)})` : ''}</p>`).join('')}
             <div class="flex flex-wrap gap-2 mt-2">
                 ${r.documentos.map(d => `<button type="button" data-doc="${d}" data-id="${r.id}"
-                    class="text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-50">📄 ${DOCS[d] || d}</button>`).join('')}
+                    class="text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-50">${icono('documento', 'w-3.5 h-3.5 mr-1')}${DOCS[d] || d}</button>`).join('')}
             </div>
         </li>`;
     }

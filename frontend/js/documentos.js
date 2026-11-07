@@ -77,7 +77,7 @@ const Documentos = (() => {
         div.style.top = (r.bottom + 4 + alto > window.innerHeight && r.top - 4 - alto > 0)
             ? `${r.top - 4 - alto}px` : `${r.bottom + 4}px`;
         div.innerHTML = tipos.map(t =>
-            `<button type="button" data-tipo="${t.id}" class="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold text-gray-700">📄 ${etiquetaDe(t)}</button>`
+            `<button type="button" data-tipo="${t.id}" class="w-full text-left px-4 py-2 hover:bg-gray-50 font-semibold text-gray-700">${icono('documento', 'w-4 h-4 mr-2 text-gray-400')}${etiquetaDe(t)}</button>`
         ).join('');
         div.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
             cerrarMenu();

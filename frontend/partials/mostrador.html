@@ -101,7 +101,7 @@
             <h3 class="font-bold text-gray-800 mb-1">4. Fotos del equipo <span class="text-xs font-normal text-gray-400">(opcional)</span></h3>
             <p class="text-xs text-gray-400 mb-3">Desde el celular abre la cámara. Se achican antes de subir para no ocupar el espacio de adjuntos del ticket.</p>
             <input type="file" id="ing-fotos" accept="image/jpeg,image/png" capture="environment" multiple class="hidden">
-            <button type="button" id="ing-fotos-btn" class="border-2 border-dashed border-gray-300 text-gray-500 px-4 py-3 rounded-lg text-sm hover:border-blue-400 hover:text-blue-500 transition">📷 Sacar o elegir fotos</button>
+            <button type="button" id="ing-fotos-btn" class="border-2 border-dashed border-gray-300 text-gray-500 px-4 py-3 rounded-lg text-sm hover:border-blue-400 hover:text-blue-500 transition"><i data-icono="camara" class="w-5 h-5 mr-2"></i>Sacar o elegir fotos</button>
             <div id="ing-fotos-lista" class="flex flex-wrap gap-3 mt-3"></div>
         </div>
 
@@ -120,15 +120,15 @@
 
     <!-- Resultado -->
     <div id="mostrador-listo" class="hidden bg-white p-6 sm:p-8 rounded-xl border border-gray-200 text-center">
-        <p class="text-4xl mb-2">✅</p>
+        <p class="mb-2 text-emerald-600 flex justify-center"><i data-icono="check-circulo" class="w-12 h-12"></i></p>
         <h3 class="text-xl font-bold text-gray-800">Ingreso registrado</h3>
         <p class="font-mono text-2xl font-bold text-blue-700 mt-2" id="mostrador-listo-rma"></p>
         <p class="text-sm text-gray-500 mt-1" id="mostrador-listo-cliente"></p>
         <p class="text-sm text-amber-600 mt-2 hidden" id="mostrador-listo-aviso"></p>
         <div class="flex flex-wrap justify-center gap-3 mt-6">
-            <button type="button" data-doc="etiqueta" class="mostrador-doc bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg font-semibold">🏷️ Etiqueta</button>
-            <button type="button" data-doc="ticket_ingreso" class="mostrador-doc bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg font-semibold">🧾 Comprobante (ticketera)</button>
-            <button type="button" data-doc="ingreso" class="mostrador-doc border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-lg font-semibold">📄 Orden de ingreso (A4)</button>
+            <button type="button" data-doc="etiqueta" class="mostrador-doc bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg font-semibold"><i data-icono="etiqueta" class="w-4 h-4 mr-2"></i>Etiqueta</button>
+            <button type="button" data-doc="ticket_ingreso" class="mostrador-doc bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg font-semibold"><i data-icono="recibo" class="w-4 h-4 mr-2"></i>Comprobante (ticketera)</button>
+            <button type="button" data-doc="ingreso" class="mostrador-doc border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-lg font-semibold"><i data-icono="documento" class="w-4 h-4 mr-2"></i>Orden de ingreso (A4)</button>
         </div>
         <div class="flex flex-wrap justify-center gap-3 mt-4">
             <button type="button" id="mostrador-abrir" class="text-blue-600 hover:text-blue-800 font-semibold px-4 py-2">Abrir el ticket</button>

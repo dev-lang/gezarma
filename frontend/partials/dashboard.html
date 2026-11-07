@@ -7,24 +7,22 @@
         <div id="action-buttons" class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <button type="button" id="favorites-nav-btn"
                 class="justify-center hidden items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold shadow transition">
-                ⭐ Favoritos
+                <i data-icono="estrella" class="w-4 h-4"></i> Favoritos
             </button>
             <button type="button" id="admin-panel-btn"
                 class="justify-center hidden items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>
-                </svg>
+                <i data-icono="engranaje" class="w-4 h-4"></i>
                 Administración
             </button>
             <button type="button" id="horas-btn"
                 class="justify-center hidden items-center gap-2 bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 px-4 py-2 rounded-lg font-semibold shadow-sm transition">
-                ⏱ Horas
+                <i data-icono="reloj" class="w-4 h-4"></i> Horas
             </button>
             <button type="button" id="mostrador-btn"
                 class="justify-center hidden items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
-                🧾 Ingreso en mostrador
+                <i data-icono="recibo" class="w-4 h-4"></i> Ingreso en mostrador
             </button>
-            <button type="button" id="create-ticket-btn" class="text-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition">Nuevo Ticket</button>
+            <button type="button" id="create-ticket-btn" class="flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition"><i data-icono="mas" class="w-4 h-4"></i> Nuevo Ticket</button>
         </div>
     </div>
 
@@ -69,8 +67,8 @@
 
     <!-- Lista / Tablero (solo taller; frontend/js/kanban.js) -->
     <div id="vista-selector" class="hidden items-center gap-1 bg-gray-200 rounded-lg p-1 w-fit mb-4">
-        <button type="button" data-vista="lista" class="px-4 py-1.5 rounded-md text-sm font-semibold transition">☰ Lista</button>
-        <button type="button" data-vista="tablero" class="px-4 py-1.5 rounded-md text-sm font-semibold transition">▦ Tablero</button>
+        <button type="button" data-vista="lista" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="lista" class="w-4 h-4"></i> Lista</button>
+        <button type="button" data-vista="tablero" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="tablero" class="w-4 h-4"></i> Tablero</button>
     </div>
 
     <!-- Kanban -->
@@ -79,38 +77,21 @@
         <div id="kanban-board" class="flex gap-3 overflow-x-auto pb-3"></div>
     </div>
 
-    <!-- Filters -->
-    <div id="ticket-filters" class="flex items-center space-x-4 mb-6">
-        <label class="text-sm font-semibold text-gray-600">Filtrar por estado:</label>
-        <select id="filter-status" class="px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="">Todos</option>
-            <option value="Nuevo">Nuevo</option>
-            <option value="En revisión">En revisión</option>
-            <option value="Aprobado para RMA">Aprobado para RMA</option>
-            <option value="Equipo recibido">Equipo recibido</option>
-            <option value="En diagnóstico">En diagnóstico</option>
-            <option value="En reparación">En reparación</option>
-            <option value="Esperando repuestos">Esperando repuestos</option>
-            <option value="Reparado">Reparado</option>
-            <option value="Enviado al cliente">Enviado al cliente</option>
-            <option value="Cerrado">Cerrado</option>
-        </select>
-        <button type="button" id="apply-filters" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition">Filtrar</button>
+    <!-- Lista de tickets: estados con contador (filtran al instante), orden por columna, páginas (js/ui.js → loadTickets) -->
+    <div id="ticket-filters" class="flex flex-wrap items-center gap-2 mb-3">
+        <div id="ticket-chips" class="flex flex-wrap items-center gap-1.5 min-w-0" role="group" aria-label="Filtrar por estado"></div>
+        <button type="button" id="ticket-densidad" aria-pressed="false" title="Ver más filas en pantalla"
+            class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-1.5 transition">
+            <i data-icono="lista" class="w-4 h-4"></i><span>Vista compacta</span>
+        </button>
     </div>
 
     <!-- Ticket Table -->
-    <div id="ticket-list-wrap" class="bg-white rounded-xl shadow overflow-x-auto border border-gray-100">
-        <table class="w-full text-left min-w-[640px]">
-            <thead class="bg-gray-50 border-b">
-                <tr>
-                    <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Ticket / RMA</th>
-                    <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
-                    <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
-                </tr>
-            </thead>
+    <div id="ticket-list-wrap" class="bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
+        <table class="w-full text-left min-w-[640px]" id="ticket-tabla">
+            <thead class="bg-gray-50 border-b" id="ticket-list-head"></thead>
             <tbody id="ticket-list-body" class="divide-y"></tbody>
         </table>
+        <div id="ticket-paginas" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t text-sm text-gray-500"></div>
     </div>
 </section>

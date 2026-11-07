@@ -7,10 +7,10 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
-            Volver al Dashboard
+            Volver al panel
         </button>
         <div>
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Panel de Administración</h2>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Administración</h2>
             <p class="hidden sm:block text-sm text-gray-400">Gestión centralizada del sistema</p>
         </div>
     </div>
@@ -18,115 +18,78 @@
     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-start">
 
         <!-- ── Menú: tira horizontal desplazable en celular/tablet, barra lateral en escritorio ── -->
-        <aside id="admin-menu" class="w-full lg:w-56 shrink-0 bg-white rounded-2xl shadow border border-gray-100 overflow-hidden lg:sticky lg:top-6">
-            <div class="hidden lg:block p-4 border-b bg-gray-50">
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Administración</p>
-            </div>
-            <nav class="p-2 flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible" aria-label="Secciones de administración">
+        <aside id="admin-menu" class="w-full lg:w-60 shrink-0 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden lg:sticky lg:top-6">
+            <nav class="p-2 flex lg:flex-col gap-0.5 overflow-x-auto lg:overflow-visible" aria-label="Secciones de administración">
+                <p class="hidden lg:block px-3 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Personas</p>
                 <button type="button" data-tab="users"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50 active-tab">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-slate-100 text-slate-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50 active-tab">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="usuarios" class="w-[18px] h-[18px]"></i></span>
                     <span>Usuarios</span>
-                    <span id="admin-user-count" class="lg:ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                    <span id="admin-user-count" class="lg:ml-auto text-xs font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full tabular-nums"></span>
                 </button>
+                <p class="hidden lg:block px-3 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Catálogo y stock</p>
                 <button type="button" data-tab="products"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-green-50 text-green-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="notebook" class="w-[18px] h-[18px]"></i></span>
                     <span>Productos</span>
-                    <span id="admin-product-count" class="lg:ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                    <span id="admin-product-count" class="lg:ml-auto text-xs font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full tabular-nums"></span>
                 </button>
                 <button type="button" data-tab="parts"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="chip" class="w-[18px] h-[18px]"></i></span>
                     <span>Repuestos</span>
-                    <span id="admin-parts-count" class="lg:ml-auto text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"></span>
+                    <span id="admin-parts-count" class="lg:ml-auto text-xs font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full tabular-nums"></span>
                 </button>
-
                 <button type="button" data-tab="stock"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="barras" class="w-[18px] h-[18px]"></i></span>
                     <span>Stock</span>
                 </button>
-
                 <button type="button" data-tab="pedidos"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="camion" class="w-[18px] h-[18px]"></i></span>
                     <span>Pedidos a proveedor</span>
                 </button>
-
-                <button type="button" data-tab="tags"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-green-50 text-green-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                    </span>
-                    <span>Etiquetas</span>
-                </button>
-
-                <button type="button" data-tab="plantillas"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-cyan-50 text-cyan-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </span>
-                    <span>Plantillas</span>
-                </button>
-
+                <p class="hidden lg:block px-3 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Configuración</p>
                 <button type="button" data-tab="estados"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-violet-50 text-violet-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="lista" class="w-[18px] h-[18px]"></i></span>
                     <span>Estados</span>
                 </button>
-
+                <button type="button" data-tab="tags"
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="etiqueta" class="w-[18px] h-[18px]"></i></span>
+                    <span>Etiquetas</span>
+                </button>
+                <button type="button" data-tab="plantillas"
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="documento" class="w-[18px] h-[18px]"></i></span>
+                    <span>Plantillas de diagnóstico</span>
+                </button>
                 <button type="button" data-tab="plantillas-presupuesto"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M12 7h.01M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z"/></svg>
-                    </span>
-                    <span>Plantillas Presupu.</span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="recibo" class="w-[18px] h-[18px]"></i></span>
+                    <span>Plantillas de presupuesto</span>
                 </button>
-
-                <button type="button" data-tab="finanzas"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-teal-50 text-teal-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </span>
-                    <span>Finanzas</span>
-                </button>
-
-                <button type="button" data-tab="seguridad"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-red-50 text-red-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </span>
-                    <span>Seguridad / Login</span>
-                </button>
-
                 <button type="button" data-tab="ajustes"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-slate-100 text-slate-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="engranaje" class="w-[18px] h-[18px]"></i></span>
                     <span>Ajustes</span>
                 </button>
-
-                <div class="my-1 border-t border-gray-100"></div>
-
+                <button type="button" data-tab="seguridad"
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="candado" class="w-[18px] h-[18px]"></i></span>
+                    <span>Seguridad e ingresos</span>
+                </button>
+                <p class="hidden lg:block px-3 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Datos</p>
+                <button type="button" data-tab="finanzas"
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="billete" class="w-[18px] h-[18px]"></i></span>
+                    <span>Finanzas</span>
+                </button>
                 <button type="button" data-tab="export"
-                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
-                    <span class="w-7 h-7 lg:w-8 lg:h-8 shrink-0 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 tab-icon">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </span>
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="descargar" class="w-[18px] h-[18px]"></i></span>
                     <span>Exportar</span>
                 </button>
             </nav>
@@ -197,7 +160,7 @@
                             </select>
                             <button type="button" id="admin-import-products-btn" title="Importar desde Excel o CSV"
                                 class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
-                                ⬆ Importar
+                                <i data-icono="subir" class="w-4 h-4 mr-1.5"></i>Importar
                             </button>
                             <button type="button" id="admin-new-product-btn"
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
@@ -240,7 +203,7 @@
                                 placeholder="Buscar repuesto...">
                             <button type="button" id="admin-import-parts-btn" title="Importar desde Excel o CSV"
                                 class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
-                                ⬆ Importar
+                                <i data-icono="subir" class="w-4 h-4 mr-1.5"></i>Importar
                             </button>
                             <button type="button" id="admin-new-part-btn"
                                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
@@ -298,7 +261,7 @@
                                 <option value="">Todos los repuestos</option>
                             </select>
                             <button type="button" id="admin-stock-refresh-btn"
-                                class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50 transition text-gray-600">↻ Actualizar</button>
+                                class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50 transition text-gray-600"><i data-icono="cambio" class="w-3.5 h-3.5 mr-1"></i>Actualizar</button>
                             <button type="button" id="admin-reposicion-btn"
                                 class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">+ Reponer Stock</button>
                         </div>
@@ -578,7 +541,7 @@
                                 <p class="text-gray-400 italic">Cargando...</p>
                             </div>
                             <button type="button" id="refresh-attempts-btn"
-                                class="mt-4 text-xs text-blue-500 hover:text-blue-700 font-semibold">↻ Actualizar</button>
+                                class="mt-4 text-xs text-blue-500 hover:text-blue-700 font-semibold"><i data-icono="cambio" class="w-3.5 h-3.5 mr-1"></i>Actualizar</button>
                         </div>
                     </div>
                 </div>
@@ -611,7 +574,7 @@
                     <div id="pp-cat-filter-pills" class="flex flex-wrap gap-2"></div>
                     <button type="button" id="manage-pp-cats-btn"
                         class="ml-auto text-xs font-semibold text-indigo-500 hover:text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition">
-                        ⚙ Gestionar categorías
+                        <i data-icono="engranaje" class="w-3.5 h-3.5 mr-1"></i>Gestionar categorías
                     </button>
                 </div>
 
@@ -778,14 +741,10 @@
     </div>
 
     <style>
-        .admin-tab-btn.active-tab {
-            background: #eff6ff;
-            color: #1d4ed8;
-        }
-        .admin-tab-btn.active-tab .tab-icon {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
+        .admin-tab-btn.active-tab { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+        .admin-tab-btn.active-tab .tab-icon { color: #2563eb; }
+        .dark .admin-tab-btn.active-tab { background: #1e3a5f; color: #bfdbfe; }
+        .dark .admin-tab-btn.active-tab .tab-icon { color: #93c5fd; }
     </style>
 
 </section>

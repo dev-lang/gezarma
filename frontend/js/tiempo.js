@@ -39,8 +39,8 @@ const Tiempo = (() => {
                 <div class="flex items-center gap-2">
                     ${corriendo
                         ? `<span class="font-mono text-lg font-bold text-emerald-700" data-vivo>0:00:00</span>
-                           <button type="button" data-accion="pausar" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold">⏸ Pausar</button>`
-                        : `<button type="button" data-accion="iniciar" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold">▶ Iniciar trabajo</button>`}
+                           <button type="button" data-accion="pausar" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold">${icono('pausa', 'w-4 h-4 mr-1.5', { relleno: true })}Pausar</button>`
+                        : `<button type="button" data-accion="iniciar" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold">${icono('play', 'w-4 h-4 mr-1.5', { relleno: true })}Iniciar trabajo</button>`}
                     <button type="button" data-accion="manual" class="text-sm font-semibold text-blue-600 hover:text-blue-800 px-2">+ Cargar a mano</button>
                 </div>
             </div>
@@ -59,7 +59,7 @@ const Tiempo = (() => {
                         <span><b>${esc(r.usuario_nombre)}</b> · ${new Date(r.inicio).toLocaleString(I18N.locale, { hour12: false, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             · ${r.en_curso ? '<span class="text-emerald-700 font-semibold">en curso</span>' : duracion(r.minutos)}${r.manual ? ' <span class="text-[10px] text-gray-400">(a mano)</span>' : ''}${r.nota ? ` — ${esc(r.nota)}` : ''}</span>
                         ${(r.usuario_id === yo?.user_id || yo?.role === 'administrador') && !r.en_curso
-                            ? `<button type="button" data-borrar="${r.id}" class="text-xs text-red-500 hover:text-red-700" aria-label="Borrar registro">✕</button>` : ''}
+                            ? `<button type="button" data-borrar="${r.id}" class="text-xs text-red-500 hover:text-red-700" aria-label="Borrar registro">${icono('x', 'w-4 h-4')}</button>` : ''}
                     </li>`).join('')}</ul>
             </details>` : ''}
         </div>`;
@@ -106,7 +106,7 @@ const Tiempo = (() => {
         info.insertAdjacentHTML('beforebegin', `
             <button type="button" id="tiempo-chip" title="Trabajo en curso: ${esc(r.numero_rma)}"
                 class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                ⏱ <span class="font-mono">${esc(r.numero_rma)}</span> <span class="font-mono" data-vivo></span>
+                ${icono('reloj', 'w-3.5 h-3.5')} <span class="font-mono">${esc(r.numero_rma)}</span> <span class="font-mono" data-vivo></span>
             </button>`);
         const el = document.getElementById('tiempo-chip');
         el.addEventListener('click', () => api.getTicket(r.ticket_id).then(t => ui.showTicketDetail(t)));

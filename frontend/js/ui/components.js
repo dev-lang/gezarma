@@ -38,77 +38,118 @@ const components = (() => {
         return map[status] || 'bg-gray-100 text-gray-700';
     }
 
+    // ── Etiquetas (badges): una sola forma en todo el sistema ───────────────
+    // Tipo oración, mismo tamaño, color suave y un punto opcional (estado).
+    const BADGE = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap';
+    const BADGE_GRANDE = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap';
+    function badge(texto, colores, { punto = false, grande = false, extra = '', titulo = '' } = {}) {
+        return `<span class="${grande ? BADGE_GRANDE : BADGE} ${colores} ${extra}"${titulo ? ` title="${esc(titulo)}"` : ''}>` +
+               `${punto ? '<span class="w-1.5 h-1.5 rounded-full bg-current opacity-75" aria-hidden="true"></span>' : ''}${esc(texto)}</span>`;
+    }
+    const statusBadge = (estado, opciones = {}) => badge(estado, statusClass(estado), { punto: true, ...opciones });
+    /** Pinta un elemento existente (p. ej. #detail-status-badge) como etiqueta de estado. */
+    function pintarEstado(el, estado) {
+        if (!el) return;
+        el.className = `${BADGE_GRANDE} ${statusClass(estado)}`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-current opacity-75" aria-hidden="true"></span>${esc(estado)}`;
+    }
+    const ROLES = {
+        administrador: ['Administrador', 'bg-red-100 text-red-700'],
+        tecnico:       ['Técnico',       'bg-purple-100 text-purple-700'],
+        cliente:       ['Cliente',       'bg-gray-100 text-gray-600'],
+    };
+    const rolBadge = rol => badge((ROLES[rol] || [rol])[0], (ROLES[rol] || [, 'bg-gray-100 text-gray-600'])[1]);
+    const activoBadge = (activo, si = 'Activo', no = 'Inactivo') =>
+        badge(activo ? si : no, activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500', { punto: true });
+    const garantiaBadge = enGarantia => enGarantia
+        ? badge('Garantía', 'bg-green-100 text-green-700', { extra: 'ml-1.5' })
+        : badge('Fuera de garantía', 'bg-gray-100 text-gray-600', { extra: 'ml-1.5' });
+
     // Umbral de "por vencer": el mismo ajuste que usan las alertas (Ajustes → SLA)
     let _slaAvisoMs = 4 * 3_600_000;
     function setSlaAvisoHoras(h) { if (h > 0) _slaAvisoMs = h * 3_600_000; }
 
-    function slaBadge(deadline, estado) {
+    function slaBadge(deadline, estado, { soloAlertas = false } = {}) {
         // Don't show SLA badge on new tickets — the 24h clock is internal,
         // not meaningful to display until the team has picked up the ticket.
         if (!deadline || estado === 'Nuevo') return '';
         const diff = new Date(deadline) - new Date();
-        if (diff < 0)
-            return '<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded ml-2 font-bold">VENCIDO</span>';
-        if (diff < _slaAvisoMs)
-            return '<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded ml-2 font-bold">POR VENCER</span>';
-        return '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2 font-bold">EN TIEMPO</span>';
+        if (diff < 0) return badge('SLA vencido', 'bg-red-100 text-red-700', { extra: 'ml-2' });
+        if (diff < _slaAvisoMs) return badge('SLA por vencer', 'bg-amber-100 text-amber-700', { extra: 'ml-2' });
+        return soloAlertas ? '' : badge('En tiempo', 'bg-green-100 text-green-700', { extra: 'ml-2' });
     }
 
     function priorityBadge(prioridad) {
         const map = {
-            'Urgente': 'bg-red-600 text-white',
-            'Alta':    'bg-orange-500 text-white',
-            'Normal':  'bg-gray-200 text-gray-700',
-            'Media':   'bg-gray-200 text-gray-700',
+            'Urgente': 'bg-red-100 text-red-700',
+            'Alta':    'bg-orange-100 text-orange-700',
+            'Normal':  'bg-gray-100 text-gray-600',
+            'Media':   'bg-gray-100 text-gray-600',
             'Baja':    'bg-gray-100 text-gray-500',
         };
-        const cls = map[prioridad] || 'bg-gray-100 text-gray-500';
-        return `<span class="text-[10px] ${cls} px-2 py-0.5 rounded font-bold uppercase">${esc(prioridad)}</span>`;
+        return badge(prioridad, map[prioridad] || 'bg-gray-100 text-gray-500');
     }
 
-    // ── Ticket table row ─────────────────────────────────────────────────────
-    function ticketRow(t) {
-        const warrantyBadge = t.en_garantia
-            ? '<span class="text-green-600 font-bold">[GARANTÍA]</span>'
-            : '<span class="text-red-500 font-bold">[FUERA GARANTÍA]</span>';
+    // ── Lista de tickets ─────────────────────────────────────────────────────
+    // Columnas según quién mira: el taller ve cliente, técnico, días y prioridad.
+    const COLS_TALLER  = ['ticket', 'equipo', 'cliente', 'estado', 'tecnico', 'dias', 'prioridad'];
+    const COLS_CLIENTE = ['ticket', 'equipo', 'estado', 'fecha'];
+    const COL_INFO = {
+        ticket:    ['Ticket', 'rma'],      equipo: ['Equipo', 'producto'], cliente: ['Cliente', 'cliente'],
+        estado:    ['Estado', 'estado'],   tecnico: ['Técnico', 'tecnico'], dias: ['Días', 'dias'],
+        prioridad: ['Prioridad', 'prioridad'], fecha: ['Ingreso', 'fecha'],
+    };
+    /** Días que lleva en el taller (null si ya se cerró). */
+    function diasEnTaller(t) {
+        if (t.fecha_cierre) return null;
+        return Math.max(0, Math.floor((Date.now() - new Date(t.fecha_creacion)) / 86_400_000));
+    }
 
+    function ticketHead(cols, orden) {
+        const [campoAct, sentido] = orden.split('_');
+        return `<tr>${cols.map(c => {
+            const [titulo, campo] = COL_INFO[c];
+            const activo = campo === campoAct;
+            const flecha = activo ? icono(sentido === 'asc' ? 'arriba' : 'abajo', 'w-3.5 h-3.5') : icono('arriba-abajo', 'w-3.5 h-3.5 opacity-0 group-hover:opacity-60');
+            return `<th class="px-5 py-2.5 text-xs font-semibold text-gray-500 ${c === 'dias' ? 'text-right' : ''}" ${activo ? `aria-sort="${sentido === 'asc' ? 'ascending' : 'descending'}"` : ''}>
+                <button type="button" data-orden="${campo}" class="group inline-flex items-center gap-1 hover:text-gray-800 ${activo ? 'text-gray-800' : ''}">${esc(titulo)}${flecha}</button></th>`;
+        }).join('')}</tr>`;
+    }
+
+    function ticketRow(t, cols = COLS_TALLER) {
+        const dias = diasEnTaller(t);
+        const celda = {
+            ticket: `<td data-col="ticket" class="px-5 py-3.5">
+                <div class="font-semibold text-blue-700 whitespace-nowrap" translate="no">${esc(t.numero_rma)}</div>
+                <div class="t-sub text-xs text-gray-400 mt-0.5">#${t.id}</div></td>`,
+            equipo: `<td data-col="equipo" class="px-5 py-3.5 min-w-[11rem]">
+                <div class="font-medium text-gray-800">${esc(t.producto || 'Producto Genérico')}</div>
+                <div class="t-sub text-xs text-gray-400 mt-0.5"><span translate="no">SN ${esc(t.numero_serie)}</span>${garantiaBadge(t.en_garantia)}</div></td>`,
+            cliente: `<td data-col="cliente" class="px-5 py-3.5 text-sm text-gray-700" translate="no">${esc(t.usuario_nombre || '—')}</td>`,
+            estado: `<td data-col="estado" class="px-5 py-3.5"><div class="flex flex-wrap items-center gap-1">${statusBadge(t.estado)}${slaBadge(t.deadline_sla, t.estado, { soloAlertas: true }).replace('ml-2', '')}</div></td>`,
+            tecnico: `<td data-col="tecnico" class="px-5 py-3.5 text-sm">${t.tecnico_nombre ? `<span class="text-gray-700" translate="no">${esc(t.tecnico_nombre)}</span>` : '<span class="text-gray-400">Sin asignar</span>'}</td>`,
+            dias: `<td data-col="dias" class="px-5 py-3.5 text-sm text-right tabular-nums ${dias >= 7 ? 'text-amber-700 font-semibold' : 'text-gray-700'}"
+                title="${esc(new Date(t.fecha_creacion).toLocaleDateString(I18N.locale))}">${dias == null ? '<span class="text-gray-400">—</span>' : `<span class="t-dias">${dias}</span>`}</td>`,
+            prioridad: `<td data-col="prioridad" class="px-5 py-3.5">${priorityBadge(t.prioridad)}</td>`,
+            fecha: `<td data-col="fecha" class="px-5 py-3.5 text-sm text-gray-500 tabular-nums">${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}</td>`,
+        };
         return `
-        <tr class="hover:bg-gray-50 transition border-b" data-ticket-id="${t.id}">
-            <td class="px-6 py-4">
-                <div class="font-bold text-blue-600">#${t.id} ${slaBadge(t.deadline_sla, t.estado)}</div>
-                <div class="text-xs text-gray-400 font-mono">${esc(t.numero_rma)}</div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="text-sm font-semibold">${esc(t.producto || 'Producto Genérico')}</div>
-                <div class="text-xs text-gray-400">SN: ${esc(t.numero_serie)} ${warrantyBadge}</div>
-            </td>
-            <td class="px-6 py-4">
-                <span class="${statusClass(t.estado)} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                    ${esc(t.estado)}
-                </span>
-            </td>
-            <td class="px-6 py-4 text-xs text-gray-500">
-                ${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}
-                <div class="mt-0.5">${priorityBadge(t.prioridad)}</div>
-            </td>
-            <td class="px-6 py-4 text-right">
-                <button onclick="app.viewTicket(${t.id})"
-                    class="text-blue-600 hover:text-blue-800 font-bold text-sm">Ver detalle</button>
-            </td>
+        <tr class="hover:bg-gray-50 transition" data-ticket-id="${t.id}" tabindex="0" aria-label="${esc(t.numero_rma)}">
+            ${cols.map(c => celda[c]).join('')}
         </tr>`;
     }
 
     // ── Estados vacíos: qué pasa y qué se puede hacer ─────────────────────────
     // acciones: [{ texto, clic: 'id-de-un-botón-existente' }] o [{ texto, foco: 'id-de-un-campo' }]
     // o [{ texto, limpiar: true }] (dispara el evento "vacio:limpiar" para quitar filtros)
-    function vacio({ titulo, texto = '', acciones = [], icono = '📭', chico = false }) {
+    function vacio({ titulo, texto = '', acciones = [], icono: ico = 'bandeja', chico = false }) {
         const botones = acciones.map((a, i) => `
             <button type="button" ${a.clic ? `data-vacio-clic="${esc(a.clic)}"` : ''} ${a.foco ? `data-vacio-foco="${esc(a.foco)}"` : ''}
                 ${a.limpiar ? 'data-vacio-limpiar' : ''}
                 class="${i === 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'} px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition">${esc(a.texto)}</button>`).join('');
         return `
         <div class="flex flex-col items-center text-center gap-2 ${chico ? 'py-6' : 'py-12'} px-4">
-            <span class="${chico ? 'text-3xl' : 'text-5xl'}" aria-hidden="true">${icono}</span>
+            <span class="${chico ? 'w-10 h-10' : 'w-14 h-14'} rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1" aria-hidden="true">${window.icono(ico, chico ? 'w-5 h-5' : 'w-7 h-7') || esc(ico)}</span>
             <p class="font-semibold text-gray-600 ${chico ? 'text-sm' : 'text-base'}">${esc(titulo)}</p>
             ${texto ? `<p class="text-sm text-gray-400 max-w-sm">${esc(texto)}</p>` : ''}
             ${botones ? `<div class="flex flex-wrap justify-center gap-2 mt-2">${botones}</div>` : ''}
@@ -128,15 +169,15 @@ const components = (() => {
     // ── Ticket table empty state ─────────────────────────────────────────────
     function ticketEmptyState(filtered = false) {
         if (filtered) {
-            return vacioFila(5, { icono: '🔎', titulo: 'Sin resultados para ese filtro', texto: 'Probá con otro estado o limpiá el filtro.',
+            return vacioFila(8, { icono: 'buscar', titulo: 'Sin resultados para ese filtro', texto: 'Probá con otro estado o limpiá el filtro.',
                                   acciones: [{ texto: 'Ver todos los tickets', limpiar: true }] });
         }
         const rol = auth.getUser()?.role || '';
         if (rol === 'cliente') {
-            return vacioFila(5, { icono: '🛠️', titulo: 'Todavía no tenés reparaciones', texto: 'Cargá tu equipo y te avisamos cada novedad.',
+            return vacioFila(8, { icono: 'llave', titulo: 'Todavía no tenés reparaciones', texto: 'Cargá tu equipo y te avisamos cada novedad.',
                                   acciones: [{ texto: 'Cargar un equipo', clic: 'create-ticket-btn' }] });
         }
-        return vacioFila(5, { icono: '📋', titulo: 'Aún no hay tickets', texto: 'Cuando llegue un equipo, cargalo desde el mostrador o como ticket.',
+        return vacioFila(8, { icono: 'portapapeles', titulo: 'Aún no hay tickets', texto: 'Cuando llegue un equipo, cargalo desde el mostrador o como ticket.',
                               acciones: [{ texto: 'Ingreso en mostrador', clic: 'mostrador-btn' }, { texto: 'Nuevo ticket', clic: 'create-ticket-btn' }] });
     }
 
@@ -185,7 +226,7 @@ const components = (() => {
             headerCls = 'text-blue-800';
         }
 
-        const icon = isInternal ? '🔒 ' : isDiag ? '🔧 ' : '';
+        const icon = isInternal ? icono('candado', 'w-3.5 h-3.5') : isDiag ? icono('llave', 'w-3.5 h-3.5') : '';
         return `
         <div class="p-4 rounded-lg border ${wrapCls}">
             <div class="flex justify-between items-start mb-2">
@@ -246,10 +287,10 @@ const components = (() => {
                 <span class="font-semibold text-sm text-gray-800">${esc(tag.nombre)}</span>
             </div>
             <div class="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
-                <button type="button" class="tag-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
-                    data-id="${tag.id}" data-nombre="${esc(tag.nombre)}" data-color="${colorSeguro(tag.color)}">Editar</button>
-                <button type="button" class="tag-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
-                    data-id="${tag.id}" data-nombre="${esc(tag.nombre)}">Eliminar</button>
+                <button type="button" class="tag-edit-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                    data-id="${tag.id}" data-nombre="${esc(tag.nombre)}" data-color="${colorSeguro(tag.color)}" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button type="button" class="tag-del-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                    data-id="${tag.id}" data-nombre="${esc(tag.nombre)}" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </div>
         </div>`;
     }
@@ -261,11 +302,11 @@ const components = (() => {
             administrador: { label: 'Administrador',  cls: 'bg-red-100 text-red-700 border border-red-200' },
         };
         const { label, cls } = map[rol] || { label: rol, cls: 'bg-gray-100 text-gray-600 border border-gray-200' };
-        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${cls}">${label}</span>`;
+        return badge(label, cls.replace(/ ?border[^ ]*/g, ''));
     }
 
     function commentEmptyState() {
-        return vacio({ icono: '💬', titulo: 'No hay comentarios aún.', chico: true,
+        return vacio({ icono: 'mensaje', titulo: 'No hay comentarios aún.', chico: true,
                        acciones: [{ texto: 'Escribir el primero', foco: 'new-comment' }] });
     }
 
@@ -278,28 +319,32 @@ const components = (() => {
             cliente:       { bg: "bg-slate-100", text: "text-slate-600", label: "Cliente" },
         };
         const s = map[rol] || { bg: "bg-gray-100", text: "text-gray-600", label: rol };
-        return `<span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${s.bg} ${s.text}">${s.label}</span>`;
+        return badge(s.label, `${s.bg} ${s.text}`);
     }
 
     // ── Feature 9: rich historial entries ────────────────────────────────────
     const EVENTO_ICON = {
-        cambio_estado:    { icon: "🔄", color: "blue" },
-        comentario:       { icon: "💬", color: "gray" },
-        nota_interna:     { icon: "🔒", color: "violet" },
-        tag_agregado:     { icon: "🏷", color: "green" },
-        tag_eliminado:    { icon: "🗑", color: "red" },
-        tag_editado:      { icon: "✏️", color: "amber" },
-        repuesto_agregado:{ icon: "🔧", color: "indigo" },
-        campo_editado:    { icon: "📝", color: "amber" },
-        tecnico_asignado: { icon: "👤", color: "blue" },
-        ticket_clonado:   { icon: "📋", color: "teal" },
-        ticket_relacionado:{ icon:"🔗", color: "teal" },
-        ticket_desasociado:{ icon:"🔓", color: "gray" },
-        tiempo_editado:   { icon: "⏱", color: "emerald" },
+        cambio_estado:    { icon: "cambio", color: "blue" },
+        comentario:       { icon: "mensaje", color: "gray" },
+        nota_interna:     { icon: "candado", color: "violet" },
+        tag_agregado:     { icon: "etiqueta", color: "green" },
+        tag_eliminado:    { icon: "papelera", color: "red" },
+        tag_editado:      { icon: "lapiz", color: "amber" },
+        repuesto_agregado:{ icon: "paquete", color: "indigo" },
+        campo_editado:    { icon: "lapiz", color: "amber" },
+        tecnico_asignado: { icon: "usuario", color: "blue" },
+        ticket_clonado:   { icon: "copiar", color: "teal" },
+        ticket_relacionado:{ icon:"vinculo", color: "teal" },
+        ticket_desasociado:{ icon:"desvincular", color: "gray" },
+        archivo_subido:   { icon: "clip", color: "blue" },
+        archivo_eliminado:{ icon: "papelera", color: "red" },
+        checklist_ingreso:{ icon: "checklist", color: "emerald" },
+        firma_registrada: { icon: "firma", color: "emerald" },
+        tiempo_editado:   { icon: "reloj", color: "emerald" },
     };
 
     function historyEntry(h) {
-        const ev      = EVENTO_ICON[h.tipo_evento] || { icon: "•", color: "gray" };
+        const ev      = EVENTO_ICON[h.tipo_evento] || { icon: "info", color: "gray" };
         const fecha   = new Date(h.fecha).toLocaleString(I18N.locale, { hour12: false });
         const usuario = h.usuario_nombre || "Sistema";
         let body = "";
@@ -319,7 +364,7 @@ const components = (() => {
         }
         return `<div class="flex gap-3 text-sm">
             <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full bg-${ev.color}-50 border-2 border-${ev.color}-200 flex items-center justify-center text-base shrink-0">${ev.icon}</div>
+                <div class="w-8 h-8 rounded-full bg-${ev.color}-50 border-2 border-${ev.color}-200 flex items-center justify-center text-${ev.color}-600 shrink-0">${icono(ev.icon, "w-4 h-4")}</div>
                 <div class="flex-1 w-px bg-gray-200 my-1"></div>
             </div>
             <div class="pb-4 flex-1 min-w-0">
@@ -335,8 +380,8 @@ const components = (() => {
 
     function attachmentItem(a, ticketId, userRole) {
         const ext = (a.nombre_archivo || '').split('.').pop().toLowerCase();
-        const iconMap = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', txt: '📃' };
-        const icon = iconMap[ext] || '📎';
+        const iconMap = { pdf: 'documento', jpg: 'imagen', jpeg: 'imagen', png: 'imagen', txt: 'documento' };
+        const icon = icono(iconMap[ext] || 'clip', 'w-5 h-5');
 
         // Human-readable size
         const bytes = a.tamanio || 0;
@@ -354,20 +399,20 @@ const components = (() => {
         return `
         <div class="flex items-center justify-between gap-2 p-2.5 bg-blue-50 rounded-lg border border-blue-100 group"
              data-adj-id="${a.id}">
-            <span class="text-lg shrink-0">${icon}</span>
+            <span class="shrink-0 text-blue-500">${icon}</span>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-blue-900 truncate">${a.categoria === 'ingreso' ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded mr-1">📷 Ingreso</span>' : ''}${esc(a.nombre_archivo)}</p>
+                <p class="text-sm font-medium text-blue-900 truncate">${a.categoria === 'ingreso' ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded mr-1">Ingreso</span>' : ''}${esc(a.nombre_archivo)}</p>
                 <p class="text-[10px] text-blue-400">${mimeLabel.toUpperCase()} · ${sizeStr}</p>
             </div>
             <div class="flex items-center gap-1 shrink-0">
                 <button type="button"
                    class="adj-download-btn text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100 transition"
                    data-adj-id="${a.id}" data-filename="${esc(a.nombre_archivo)}"
-                   title="Descargar">⬇ Descargar</button>
+                   title="Descargar">${icono('descargar', 'w-3.5 h-3.5 mr-1')}Descargar</button>
                 ${canDelete ? `
                 <button type="button"
                     class="adj-delete-btn text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100"
-                    data-adj-id="${a.id}" title="Eliminar">✕</button>` : ''}
+                    data-adj-id="${a.id}" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>` : ''}
             </div>
         </div>`;
     }
@@ -395,34 +440,30 @@ const components = (() => {
             <td class="py-3 pr-4 text-right font-mono text-sm">${precioARS(p.precio)}</td>
             <td class="py-3 text-right space-x-2">
                 <button onclick="ui.openEditPartForm(${p.id})"
-                    class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
+                    class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
                 <button onclick="app.deletePart(${p.id})"
-                    class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>
+                    class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </td>
         </tr>`;
     }
 
     // ── User row ─────────────────────────────────────────────────────────────
     function userRow(u) {
-        const rolColors = { administrador: 'bg-red-100 text-red-700', tecnico: 'bg-purple-100 text-purple-700', cliente: 'bg-gray-100 text-gray-600' };
-        const rolCls = rolColors[u.rol] || 'bg-gray-100 text-gray-600';
-        const activoCls = u.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400';
-        const activoLabel = u.activo ? 'Habilitado' : 'Deshabilitado';
         const isProtected = u.username === 'admin';
         return `
         <tr class="border-b hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
-            <td class="px-6 py-3 font-semibold">${esc(u.username)}</td>
+            <td class="px-6 py-3 font-medium" translate="no">${esc(u.username)}</td>
             <td class="px-6 py-3 text-gray-600">${esc(u.nombre || '—')}</td>
             <td class="px-6 py-3 text-gray-500 text-xs">${esc(u.email || '—')}</td>
             <td class="px-6 py-3">
-                <span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolCls}">${esc(u.rol)}</span>
+                ${rolBadge(u.rol)}
             </td>
             <td class="px-6 py-3 text-center">
-                <span class="px-2 py-0.5 rounded text-xs font-bold ${activoCls}">${activoLabel}</span>
+                ${activoBadge(u.activo, 'Habilitado', 'Deshabilitado')}
             </td>
             <td class="px-6 py-3 text-right space-x-3">
-                ${!isProtected ? `<button onclick="ui.openUserEditModalById(${Number(u.id)})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>` : ''}
-                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>` : '<span class="text-xs text-gray-300">Admin principal</span>'}
+                ${!isProtected ? `<button onclick="ui.openUserEditModalById(${Number(u.id)})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>` : ''}
+                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>` : '<span class="text-xs text-gray-300">Admin principal</span>'}
             </td>
         </tr>`;
     }
@@ -444,8 +485,8 @@ const components = (() => {
                 <span class="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-semibold">${garantiaLabel}</span>
             </td>
             <td class="px-6 py-3 text-right space-x-3">
-                <button onclick="ui.openEditProductForm(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
-                <button onclick="app.deleteProduct(${p.id})" class="text-red-500 hover:text-red-700 text-xs font-bold">Eliminar</button>
+                <button onclick="ui.openEditProductForm(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button onclick="app.deleteProduct(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </td>
         </tr>`;
     }
@@ -469,7 +510,7 @@ const components = (() => {
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-1 flex-wrap">
                     <span class="font-bold text-blue-600 text-sm">${esc(t.numero_rma)}</span>
-                    <span class="${statusClass(t.estado)} px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">${esc(t.estado)}</span>
+                    ${statusBadge(t.estado)}
                     ${priorityBadge(t.prioridad)}
                     ${slaBadge(t.deadline_sla, t.estado)}
                 </div>
@@ -479,7 +520,7 @@ const components = (() => {
             </div>
             <div class="text-right shrink-0">
                 <p class="text-xs text-gray-400">${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}</p>
-                ${t.tecnico_nombre ? `<p class="text-xs text-gray-500 mt-1">👷 ${esc(t.tecnico_nombre)}</p>` : ''}
+                ${t.tecnico_nombre ? `<p class="text-xs text-gray-500 mt-1">${icono('usuario', 'w-3 h-3 mr-0.5')}${esc(t.tecnico_nombre)}</p>` : ''}
             </div>
         </div>`;
     }
@@ -510,7 +551,7 @@ const components = (() => {
                     data-part-id="${p.id}" title="Aumentar cantidad">+</button>
                 <button type="button"
                     class="part-remove ml-1 w-6 h-6 rounded text-red-400 hover:text-red-600 hover:bg-red-50 text-xs font-bold flex items-center justify-center border border-transparent hover:border-red-200 transition"
-                    data-part-id="${p.id}" title="Quitar repuesto">✕</button>
+                    data-part-id="${p.id}" title="Quitar repuesto">${icono('x', 'w-3.5 h-3.5')}</button>
             </div>
         </div>`;
     }
@@ -542,11 +583,11 @@ const components = (() => {
                 <p class="text-xs text-gray-400 mt-1 line-clamp-2">${esc(p.texto)}</p>
             </div>
             <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
-                <button type="button" class="plantilla-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
+                <button type="button" class="plantilla-edit-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
                     data-id="${p.id}" data-nombre="${esc(p.nombre)}" data-orden="${esc(p.orden)}"
-                    data-texto="${esc(p.texto)}">Editar</button>
-                <button type="button" class="plantilla-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
-                    data-id="${p.id}" data-nombre="${esc(p.nombre)}">Eliminar</button>
+                    data-texto="${esc(p.texto)}" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button type="button" class="plantilla-del-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                    data-id="${p.id}" data-nombre="${esc(p.nombre)}" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </div>
         </div>`;
     }
@@ -568,12 +609,12 @@ const components = (() => {
                 <div class="flex gap-1">${activoBadge}${finalBadge}</div>
             </div>
             <div class="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition">
-                <button type="button" class="estado-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold"
+                <button type="button" class="estado-edit-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
                     data-id="${s.id}" data-valor="${esc(s.valor)}" data-etiqueta="${esc(s.etiqueta)}"
                     data-color="${colorSeguro(s.color)}" data-orden="${esc(s.orden)}"
-                    data-activo="${s.activo}" data-final="${s.es_final}">Editar</button>
-                <button type="button" class="estado-del-btn text-xs text-red-400 hover:text-red-600 font-semibold"
-                    data-id="${s.id}" data-etiqueta="${esc(s.etiqueta)}">Eliminar</button>
+                    data-activo="${s.activo}" data-final="${s.es_final}" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button type="button" class="estado-del-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                    data-id="${s.id}" data-etiqueta="${esc(s.etiqueta)}" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </div>
         </div>`;
     }
@@ -581,20 +622,18 @@ const components = (() => {
     // Public API
     // ── Admin panel rows ─────────────────────────────────────────────────────
     function adminUserRow(u) {
-        const rolColors = { administrador: 'bg-red-100 text-red-700', tecnico: 'bg-purple-100 text-purple-700', cliente: 'bg-slate-100 text-slate-600' };
-        const activoCls = u.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400';
         const isProtected = u.username === 'admin';
         return `
         <tr class="hover:bg-gray-50 transition ${u.activo ? '' : 'opacity-60'}">
-            <td class="px-5 py-3 font-mono text-xs font-bold text-gray-700">${esc(u.username)}</td>
+            <td class="px-5 py-3 text-sm font-medium text-gray-700" translate="no">${esc(u.username)}</td>
             <td class="px-5 py-3 text-gray-700">${esc(u.nombre || '—')}</td>
             <td class="px-5 py-3 text-gray-400 text-xs">${esc(u.email || '—')}</td>
             <td class="px-5 py-3"><span class="text-xs text-gray-400 capitalize">${esc(u.tipo_cliente || 'persona')}</span></td>
-            <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${rolColors[u.rol] || 'bg-gray-100 text-gray-600'}">${esc(u.rol)}</span></td>
-            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${activoCls}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+            <td class="px-5 py-3">${rolBadge(u.rol)}</td>
+            <td class="px-5 py-3 text-center">${activoBadge(u.activo)}</td>
             <td class="px-5 py-3 text-right space-x-3">
-                ${!isProtected ? `<button onclick="ui.openUserEditModalById(${Number(u.id)})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>` : ''}
-                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>` : '<span class="text-xs text-gray-300">Principal</span>'}
+                ${!isProtected ? `<button onclick="ui.openUserEditModalById(${Number(u.id)})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>` : ''}
+                ${!isProtected ? `<button onclick="app.deleteUser(${u.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>` : '<span class="text-xs text-gray-300">Principal</span>'}
             </td>
         </tr>`;
     }
@@ -612,8 +651,8 @@ const components = (() => {
             <td class="px-5 py-3 font-mono text-xs text-gray-400">${esc(p.numero_parte || '—')}</td>
             <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-semibold">${g}</span></td>
             <td class="px-5 py-3 text-right space-x-3">
-                <button onclick="ui.openAdminEditProduct(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
-                <button onclick="app.deleteProduct(${p.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>
+                <button onclick="ui.openAdminEditProduct(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button onclick="app.deleteProduct(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </td>
         </tr>`;
     }
@@ -628,14 +667,16 @@ const components = (() => {
             <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span>${stockMinTxt(p)}</td>
             <td class="px-5 py-3 text-right font-semibold text-gray-700">${precioARS(p.precio)}</td>
             <td class="px-5 py-3 text-right space-x-3">
-                <button onclick="ui.openAdminEditPart(${p.id})" class="text-blue-500 hover:text-blue-700 text-xs font-bold">Editar</button>
-                <button onclick="app.deletePart(${p.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">Eliminar</button>
+                <button onclick="ui.openAdminEditPart(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button onclick="app.deletePart(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </td>
         </tr>`;
     }
 
     return {
         statusClass, slaBadge, setSlaAvisoHoras, priorityBadge,
+        badge, statusBadge, pintarEstado, rolBadge, activoBadge, garantiaBadge,
+        ticketHead, COLS_TALLER, COLS_CLIENTE, diasEnTaller,
         ticketRow, ticketEmptyState, vacio, vacioFila,
         statCard,
         comment, commentEmptyState, stockMovRow, tagCard, creatorBadge, historyEntry,

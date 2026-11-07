@@ -26,7 +26,7 @@ const Kanban = (() => {
             <p class="text-xs text-gray-500 truncate">${esc(t.usuario_nombre || '')}</p>
             <div class="flex items-center justify-between mt-2 gap-1">
                 <span class="text-[11px] ${t.tecnico_nombre ? 'text-gray-600' : 'text-gray-400 italic'} truncate">
-                    ${t.tecnico_nombre ? '🔧 ' + esc(t.tecnico_nombre) : 'Sin técnico'}</span>
+                    ${t.tecnico_nombre ? icono('usuario', 'w-3 h-3 mr-0.5') + esc(t.tecnico_nombre) : 'Sin técnico'}</span>
                 ${components.slaBadge(t.deadline_sla, t.estado).replace('ml-2', '')}
             </div>
         </div>`;

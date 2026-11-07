@@ -54,6 +54,48 @@ const Ajustes = (() => {
         </div>`;
     }
 
+    // Logo del taller: barra superior, pantalla de ingreso y pestaña del navegador
+    function bloqueLogo() {
+        const m = window.Barra?.datosMarca() || {};
+        return `
+        <div class="py-2 flex items-start gap-4">
+            <div id="aj-logo-prev" class="w-16 h-16 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden text-gray-300 shrink-0">
+                ${m.logo ? `<img src="/config/logo?v=${m.logo}" alt="" class="w-full h-full object-contain">` : icono('imagen', 'w-7 h-7')}</div>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-gray-700">Logo del taller</p>
+                <p class="text-xs text-gray-400 mt-0.5">PNG, JPG o WEBP de hasta 2 MB (mejor cuadrado). Se ve en la barra superior, la pantalla de ingreso y la pestaña del navegador.</p>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <label class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition cursor-pointer">
+                        ${icono('subir', 'w-4 h-4 mr-1.5')}${m.logo ? 'Cambiar logo' : 'Subir logo'}
+                        <input type="file" id="aj-logo-input" accept="image/png,image/jpeg,image/webp" class="sr-only"></label>
+                    ${m.logo ? '<button type="button" id="aj-logo-quitar" class="text-sm font-semibold text-red-600 hover:text-red-800 px-2 py-1.5">Quitar</button>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }
+
+    async function subirLogo(archivo) {
+        if (!archivo) return;
+        if (archivo.size > 2 * 1024 * 1024) { toast.error('El logo puede pesar hasta 2 MB.'); return; }
+        const form = new FormData();
+        form.append('archivo', archivo);
+        const res = await fetch('/config/logo', { method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }, body: form });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { toast.error(data.detail || 'No se pudo subir el logo.'); return; }
+        await window.Barra?.marca();
+        render();
+        toast.success('Logo actualizado.');
+    }
+
+    async function quitarLogo() {
+        try {
+            await api.request('config/logo', { method: 'DELETE' });
+            await window.Barra?.marca();
+            render();
+            toast.success('Logo quitado.');
+        } catch (e) { toast.error(e.message); }
+    }
+
     function render() {
         const cont = document.getElementById('ajustes-form');
         if (!cont) return;
@@ -65,8 +107,8 @@ const Ajustes = (() => {
                     <button type="button" id="aj-guia-btn" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Mostrar la guía de primer uso en el panel</button>
                 </div>` : g.id === 'impresion' ? `
                 <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap gap-2">
-                    <button type="button" id="aj-prueba-etiqueta" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">🏷️ Etiqueta de prueba</button>
-                    <button type="button" id="aj-prueba-ticket" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">🧾 Comprobante de prueba</button>
+                    <button type="button" id="aj-prueba-etiqueta" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">${icono('etiqueta', 'w-4 h-4 mr-1.5')}Etiqueta de prueba</button>
+                    <button type="button" id="aj-prueba-ticket" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">${icono('recibo', 'w-4 h-4 mr-1.5')}Comprobante de prueba</button>
                     <p class="w-full text-xs text-gray-400">Con datos de ejemplo, para revisar tamaño y lectura del código de barras. Guardá los cambios antes de probar.</p>
                 </div>` : g.id === 'email' ? `
                 <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap items-center gap-2">
@@ -82,7 +124,7 @@ const Ajustes = (() => {
                     <h3 class="font-bold text-gray-800">${g.titulo}</h3>
                     <p class="text-xs text-gray-400 mt-0.5">${g.desc}</p>
                 </div>
-                <div class="px-5 py-3">${items.map(campo).join('')}${extra}</div>
+                <div class="px-5 py-3">${g.id === 'general' ? bloqueLogo() : ''}${items.map(campo).join('')}${extra}</div>
             </section>`;
         }).join('');
         toggleSmtp();
@@ -98,6 +140,8 @@ const Ajustes = (() => {
             } catch (e) { toast.error(e.message); }
         });
         document.getElementById('aj-test-dest')?.addEventListener('input', e => { _destinoPrueba = e.target.value; });
+        document.getElementById('aj-logo-input')?.addEventListener('change', e => subirLogo(e.target.files[0]));
+        document.getElementById('aj-logo-quitar')?.addEventListener('click', quitarLogo);
     }
 
     function toggleSmtp() {
@@ -136,6 +180,7 @@ const Ajustes = (() => {
             return;
         }
         _items = data;
+        if ('empresa_nombre' in cambios || 'registro_publico' in cambios) await window.Barra?.marca();
         render();
         toast.success('Ajustes guardados.');
     }

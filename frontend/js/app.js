@@ -19,6 +19,7 @@ const app = {
         if (this._eventsController) this._eventsController.abort();
         this._eventsController = new AbortController();
         const sig = { signal: this._eventsController.signal };
+        window.Barra?.pintarMarca();      // nombre y logo del taller en la pantalla nueva (ingreso)
 
         // Selectores de idioma (barra superior, login y registro)
         document.querySelectorAll('[data-idioma-selector]:empty').forEach(el =>
@@ -513,7 +514,7 @@ const app = {
         document.addEventListener('vacio:limpiar', e => {
             const en = id => e.target.closest(`#${id}`);
             const vaciar = ids => ids.forEach(id => { const c = document.getElementById(id); if (c) c.value = ''; });
-            if (en('ticket-list-body'))        { vaciar(['filter-status']); ui.loadTickets(); }
+            if (en('ticket-list-body'))        ui.loadTickets({ status: '' });
             if (en('product-list-body'))       { vaciar(['product-search-input', 'product-filter-categoria']); ui.filterProducts(); }
             if (en('admin-product-list-body')) { vaciar(['admin-product-search', 'admin-product-filter-cat']); ui.adminRenderProducts(); }
             if (en('admin-user-list-body'))    { vaciar(['admin-user-filter-rol', 'admin-user-filter-activo']); ui.adminRenderUsers(); }
@@ -521,10 +522,6 @@ const app = {
         }, sig);
 
         // ── Filters ───────────────────────────────────────────────────────
-        on('apply-filters', 'click', () => {
-            const status = document.getElementById('filter-status').value;
-            ui.loadTickets(status ? { status } : {});
-        });
 
         // ── Ticket modal ──────────────────────────────────────────────────
         on('mostrador-btn', 'click', () => Recepcion.abrirMostrador());
@@ -604,7 +601,7 @@ const app = {
                 const tog = document.getElementById('is-internal-toggle');
                 if (tog) tog.checked = false;
                 ui.loadComments(ui.currentTicketId);
-                toast.success(isInternal ? '🔒 Nota interna guardada.' : 'Comentario enviado.');
+                toast.success(isInternal ? 'Nota interna guardada.' : 'Comentario enviado.');
             } catch (err) { toast.error(err.message); }
         });
 

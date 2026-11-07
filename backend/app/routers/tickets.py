@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from sqlalchemy import case, func
+from sqlalchemy.orm import Session, aliased
 from typing import List, Optional
 
 from .. import database, models, schemas, auth
@@ -109,6 +109,7 @@ def resumen(
         "nuevos": por_estado.get(nuevo, 0),
         "en_proceso": sum(n for e, n in por_estado.items() if e != nuevo and e not in finales),
         "cerrados": sum(n for e, n in por_estado.items() if e in finales and e != models.TicketStatus.CANCELADO.value),
+        "por_estado": por_estado,
     }
 
 # ── SLA: vencidos o por vencer (panel de alertas del dashboard) ──────────────
@@ -206,16 +207,40 @@ def list_tickets(
     tecnico_id: Optional[int] = None,
     usuario_id: Optional[int] = None,
     skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=1000),
+    orden: str = Query("fecha_desc", pattern="^(fecha|rma|producto|cliente|tecnico|estado|prioridad|dias)_(asc|desc)$"),
+    response: Response = None,
     db: Session = Depends(database.get_db),
     current_user: models.Usuario = Depends(auth.get_current_user)
 ):
-    query = con_relaciones(db.query(models.Ticket))
+    """Lista paginada. `orden` = columna_(asc|desc); el total va en el encabezado X-Total-Count."""
+    T = models.Ticket
+    query = con_relaciones(db.query(T))
     if current_user.rol == models.UserRole.CLIENTE:
-        query = query.filter(models.Ticket.usuario_id == current_user.id)
-    if status:     query = query.filter(models.Ticket.estado     == status)
-    if tecnico_id: query = query.filter(models.Ticket.tecnico_asignado == tecnico_id)
-    if usuario_id: query = query.filter(models.Ticket.usuario_id == usuario_id)
-    tickets = query.order_by(models.Ticket.fecha_creacion.desc(), models.Ticket.id.desc()).offset(skip).limit(limit).all()
+        query = query.filter(T.usuario_id == current_user.id)
+    if status:     query = query.filter(T.estado     == status)
+    if tecnico_id: query = query.filter(T.tecnico_asignado == tecnico_id)
+    if usuario_id: query = query.filter(T.usuario_id == usuario_id)
+    if response is not None:
+        response.headers["X-Total-Count"] = str(query.order_by(None).count())
+    campo, sentido = orden.rsplit("_", 1)
+    if campo == "cliente":
+        C = aliased(models.Usuario)
+        query = query.outerjoin(C, C.id == T.usuario_id)
+        clave = func.lower(func.coalesce(C.nombre, ""))
+    elif campo == "tecnico":
+        Tec = aliased(models.Usuario)
+        query = query.outerjoin(Tec, Tec.id == T.tecnico_asignado)
+        clave = func.lower(func.coalesce(Tec.nombre, "~"))          # sin técnico, al final
+    else:
+        clave = {
+            "fecha": T.fecha_creacion, "dias": T.fecha_creacion, "rma": T.numero_rma,
+            "producto": func.lower(func.coalesce(T.producto, "")), "estado": T.estado,
+            "prioridad": case({"Urgente": 0, "Alta": 1, "Media": 2, "Normal": 2, "Baja": 3}, value=T.prioridad, else_=2),
+        }[campo]
+    # "días en el taller" crece hacia atrás en el tiempo: más días = fecha más vieja
+    desc = (sentido == "desc") != (campo in ("dias", "prioridad"))
+    query = query.order_by(clave.desc() if desc else clave.asc(), T.id.desc())
+    tickets = query.offset(skip).limit(limit).all()
     return [schemas.Ticket.for_viewer(t, current_user) for t in tickets]
 
 # ── Get single ────────────────────────────────────────────────────────────────

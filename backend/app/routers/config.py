@@ -3,7 +3,10 @@ config.py — Admin-configurable items:
   /config/plantillas  — CRUD for diagnosis templates
   /config/estados     — CRUD for ticket status config
 """
-from fastapi import APIRouter, Depends, HTTPException
+import os
+
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database, models, schemas, auth, ajustes as ajustes_mod
@@ -251,6 +254,70 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
             "sla_aviso_horas": ajustes_mod.get(db, "sla_aviso_horas"),
             "etiqueta_tamano": ajustes_mod.get(db, "etiqueta_tamano"),
             "encuesta_activa": ajustes_mod.get(db, "encuesta_activa")}
+
+
+# ── Marca del taller: nombre y logo (barra, ingreso, favicon) ────────────────
+LOGO_MAX = 2 * 1024 * 1024
+LOGO_LADO = 512
+
+
+def _logo_path() -> str:
+    from .. import config as cfg
+    return os.path.join(cfg.UPLOAD_DIR, "marca", "logo.png")
+
+
+@router.get("/marca")
+def marca(db: Session = Depends(database.get_db)):
+    """Público: lo necesita la pantalla de ingreso antes de iniciar sesión."""
+    ruta = _logo_path()
+    return {"nombre": ajustes_mod.get(db, "empresa_nombre") or "GEZARMA",
+            "logo": int(os.path.getmtime(ruta)) if os.path.exists(ruta) else None,
+            "registro_publico": ajustes_mod.get(db, "registro_publico"),
+            "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico")}
+
+
+@router.get("/logo")
+def logo():
+    ruta = _logo_path()
+    if not os.path.exists(ruta):
+        raise HTTPException(404, "El taller no cargó un logo")
+    return FileResponse(ruta, media_type="image/png",
+                        headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
+
+
+@router.put("/logo")
+async def subir_logo(archivo: UploadFile = File(...),
+                     current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    """PNG, JPG o WEBP de hasta 2 MB. Se vuelve a guardar como PNG de hasta 512 px
+    (no se guarda el archivo original: así no puede llevar nada más que la imagen)."""
+    from io import BytesIO
+    from PIL import Image, UnidentifiedImageError
+    datos = await archivo.read(LOGO_MAX + 1)
+    if len(datos) > LOGO_MAX:
+        raise HTTPException(400, "El logo puede pesar hasta 2 MB.")
+    try:
+        img = Image.open(BytesIO(datos))
+        if img.format not in ("PNG", "JPEG", "WEBP"):
+            raise HTTPException(400, "El logo tiene que ser una imagen PNG, JPG o WEBP.")
+        img.load()
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(400, "El logo tiene que ser una imagen PNG, JPG o WEBP.")
+    img = img.convert("RGBA")
+    img.thumbnail((LOGO_LADO, LOGO_LADO))
+    ruta = _logo_path()
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    tmp = ruta + ".tmp"
+    img.save(tmp, "PNG", optimize=True)
+    os.replace(tmp, ruta)
+    return {"logo": int(os.path.getmtime(ruta))}
+
+
+@router.delete("/logo", status_code=204)
+def borrar_logo(current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    ruta = _logo_path()
+    if os.path.exists(ruta):
+        os.replace(ruta, ruta + ".anterior")      # se puede recuperar a mano si fue un error
+    return Response(status_code=204)
 
 
 # ── Guía de primer uso (dashboard del administrador) ─────────────────────────

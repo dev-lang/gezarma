@@ -6,12 +6,12 @@
 
 const POLL_INTERVAL_MS = 30_000;
 const TIPO_ICONS = {
-    comentario:    "💬",
-    cambio_estado: "🔄",
-    campo_editado: "✏️",
-    presupuesto:   "💰",
-    asignacion:    "👤",
-    repuesto:      "🔧",
+    comentario:    "mensaje",
+    cambio_estado: "cambio",
+    campo_editado: "lapiz",
+    presupuesto:   "billete",
+    asignacion:    "usuario",
+    repuesto:      "paquete",
 };
 
 let _pollTimer     = null;
@@ -45,8 +45,8 @@ export async function poll() {
 /* ── Bell button ────────────────────────────────────────────────────────── */
 function _injectBell() {
     if (document.getElementById("notif-bell-btn")) return;
-    const logoutBtn = document.getElementById("logout-btn");
-    if (!logoutBtn) return;
+    const ancla = document.getElementById("user-menu-wrap");
+    if (!ancla) return;
 
     _bellBtn = document.createElement("button");
     _bellBtn.type = "button";
@@ -55,15 +55,12 @@ function _injectBell() {
         "relative w-9 h-9 rounded-lg flex items-center justify-center text-blue-200 hover:bg-blue-700 transition";
     _bellBtn.title = "Notificaciones";
     _bellBtn.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-        </svg>
+        ${icono("campana", "w-5 h-5")}
         <span id="notif-badge"
             class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center hidden">
             0
         </span>`;
-    logoutBtn.parentElement.insertBefore(_bellBtn, logoutBtn);
+    ancla.parentElement.insertBefore(_bellBtn, ancla);
 }
 
 function _updateBadge(count) {
@@ -120,7 +117,7 @@ async function _loadDropdown() {
     try {
         const items = await api.getNotifications(_showAll);
         if (!items.length) {
-            list.innerHTML = `<p class="text-sm text-gray-400 text-center py-6">${_showAll ? "Sin notificaciones" : "No hay notificaciones sin leer 🎉"}</p>`;
+            list.innerHTML = `<p class="text-sm text-gray-400 text-center py-6">${_showAll ? "Sin notificaciones" : "No hay notificaciones sin leer"}</p>`;
             return;
         }
         list.innerHTML = items.map(n => _renderItem(n)).join("");
@@ -174,13 +171,13 @@ async function _loadDropdown() {
 }
 
 function _renderItem(n) {
-    const icon    = TIPO_ICONS[n.tipo] || "🔔";
+    const icon    = icono(TIPO_ICONS[n.tipo] || "campana", "w-4 h-4");
     const timeAgo = _timeAgo(new Date(n.fecha));
     const unread  = !n.leida;
     return `
         <div data-notif-id="${n.id}"
             class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer group ${unread ? "bg-blue-50/40" : ""}">
-            <span class="text-lg mt-0.5 shrink-0">${icon}</span>
+            <span class="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center">${icon}</span>
             <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-1">
                     <p class="text-xs font-bold text-gray-800 leading-snug">${esc(n.titulo)}</p>

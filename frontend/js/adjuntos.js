@@ -9,7 +9,7 @@
 const Adjuntos = (() => {
     const PERMITIDOS = ['pdf', 'txt', 'jpg', 'jpeg', 'png'];
     const MAX_ARCHIVO = 10 * 1024 * 1024;
-    const ICONOS = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', txt: '📃' };
+    const ICONOS = { pdf: 'documento', jpg: 'imagen', jpeg: 'imagen', png: 'imagen', txt: 'documento' };
     let _pendientes = null;   // { ticketId, files }
 
     const $ = id => document.getElementById(id);
@@ -39,7 +39,7 @@ const Adjuntos = (() => {
         const usadoDespues = espacio.used_mb + nuevoMb;
         $('upload-preview-list').innerHTML = files.map(f => `
             <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm">
-                <span>${ICONOS[ext(f)] || '📎'}</span>
+                <span class="text-gray-400">${icono(ICONOS[ext(f)] || 'clip')}</span>
                 <span class="flex-1 font-medium text-gray-800 truncate">${esc(f.name)}</span>
                 <span class="text-gray-400 text-xs shrink-0">${esc(ext(f).toUpperCase())} · ${tam(f.size)}</span>
             </div>`).join('');
@@ -52,7 +52,7 @@ const Adjuntos = (() => {
         restante.classList.toggle('text-blue-600', !sinLugar);
         const err = $('upload-preview-error');
         err.classList.toggle('hidden', !sinLugar);
-        if (sinLugar) err.textContent = `⚠ Sin espacio suficiente. Disponible: ${fmtMb(espacio.remaining_mb)}, necesario: ${fmtMb(nuevoMb)}.`;
+        if (sinLugar) err.textContent = `Sin espacio suficiente. Disponible: ${fmtMb(espacio.remaining_mb)}, necesario: ${fmtMb(nuevoMb)}.`;
         $('upload-preview-confirm').disabled = sinLugar;
 
         _pendientes = { ticketId, files };

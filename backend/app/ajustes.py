@@ -25,7 +25,8 @@ DEFS = {
                        ayuda="Se usa en los QR y en los links de los mails (ej. https://rma.tuempresa.com). "
                              "Si queda vacía, se usa la dirección con la que se accede al sistema."),
     "empresa_nombre": dict(grupo="general", tipo="str", default="GEZARMA",
-                           label="Nombre que figura en documentos y mails"),
+                           label="Nombre del taller",
+                           ayuda="Figura en la barra superior, la pantalla de ingreso, los documentos y los mails."),
     "empresa_datos": dict(grupo="general", tipo="text", default="",
                           label="Datos de contacto para los documentos",
                           ayuda="Dirección, teléfono, mail, CUIT… (una línea por dato)."),
@@ -35,6 +36,9 @@ DEFS = {
                                   label="Idioma predeterminado",
                                   ayuda="Para los mails y documentos de quien no eligió idioma, y los pedidos a proveedores. "
                                         "Cada usuario puede elegir el suyo desde la barra superior."),
+    "registro_publico": dict(grupo="general", tipo="bool", default=True,
+                             label="Los clientes pueden crearse una cuenta",
+                             ayuda="Muestra \"Registrate\" en la pantalla de ingreso. Si lo desactivás, las cuentas las crea el taller."),
     "seguimiento_publico": dict(grupo="general", tipo="bool", default=True,
                                 label="Seguimiento público de reparaciones",
                                 ayuda="Permite consultar el estado con N° de RMA + N° de serie, sin iniciar sesión."),

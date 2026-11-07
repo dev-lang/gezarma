@@ -8,10 +8,10 @@
  */
 const Importar = (() => {
     const TIPOS = {
-        productos: { titulo: 'Importar productos', actuales: '⬇ Mis productos actuales (para editar)',
+        productos: { titulo: 'Importar productos', actuales: 'Mis productos actuales (para editar)',
                      ayuda: 'Se reconocen por nombre, en cualquier orden. Si ya existe uno con la misma marca y modelo (o el mismo N° de parte), se actualiza; una celda vacía no cambia ese dato.',
                      columnas: 'Marca, Modelo, Categoría, Garantía (meses), N° de parte' },
-        repuestos: { titulo: 'Importar repuestos', actuales: '⬇ Mis repuestos actuales (para editar)',
+        repuestos: { titulo: 'Importar repuestos', actuales: 'Mis repuestos actuales (para editar)',
                      ayuda: 'Se reconocen por nombre, en cualquier orden. Si ya existe uno con el mismo código, se actualiza; una celda vacía no cambia ese dato.',
                      columnas: 'Código, Nombre, Proveedor, Precio, Stock, Stock mínimo, Categoría' },
     };
@@ -148,12 +148,12 @@ const Importar = (() => {
                     <p class="text-xs text-gray-500"><span>${T.ayuda}</span>${tipo === 'repuestos' ? ' <span>Los cambios de stock quedan en el historial como ajuste.</span>' : ''}</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-sm">
-                    <button type="button" data-bajar="0:xlsx" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 hover:bg-gray-50">⬇ Plantilla Excel</button>
-                    <button type="button" data-bajar="0:csv" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 hover:bg-gray-50">⬇ Plantilla CSV</button>
-                    <button type="button" data-bajar="1:xlsx" class="border border-blue-200 rounded-lg px-3 py-1.5 font-semibold text-blue-700 hover:bg-blue-50">${T.actuales}</button>
+                    <button type="button" data-bajar="0:xlsx" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 hover:bg-gray-50">${icono('descargar', 'w-4 h-4 mr-1')}Plantilla Excel</button>
+                    <button type="button" data-bajar="0:csv" class="border border-gray-300 rounded-lg px-3 py-1.5 font-semibold text-gray-700 hover:bg-gray-50">${icono('descargar', 'w-4 h-4 mr-1')}Plantilla CSV</button>
+                    <button type="button" data-bajar="1:xlsx" class="border border-blue-200 rounded-lg px-3 py-1.5 font-semibold text-blue-700 hover:bg-blue-50">${icono('descargar', 'w-4 h-4 mr-1')}${T.actuales}</button>
                 </div>
                 <label data-zona class="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-300 rounded-xl px-4 py-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition text-center">
-                    <span class="text-3xl" aria-hidden="true">📄</span>
+                    <span class="text-gray-400" aria-hidden="true">${icono('subir', 'w-8 h-8')}</span>
                     <span class="text-sm font-semibold text-gray-700">Elegí el archivo o arrastralo acá</span>
                     <span class="text-xs text-gray-400" data-nombre translate="no">.xlsx o .csv · hasta 5000 filas</span>
                     <input type="file" accept=".xlsx,.csv" class="hidden" data-input>

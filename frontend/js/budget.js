@@ -72,7 +72,7 @@ function renderPresupuestoCard(budget, userRole) {
     const badge = $("presupuesto-estado-badge");
     const cfg   = ESTADO_COLORS[budget.estado] || ESTADO_COLORS.borrador;
     badge.textContent = cfg.label;
-    badge.className   = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${cfg.bg} ${cfg.text}`;
+    badge.className   = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.text}`;
     badge.classList.remove("hidden");
 
     // Totals — clients only see the price (the API doesn't send cost/profit to them)
@@ -89,7 +89,7 @@ function renderPresupuestoCard(budget, userRole) {
     const list = $("presupuesto-items-list");
     list.innerHTML = budget.items.map(i =>
         `<div class="flex justify-between text-gray-600 py-0.5 border-b border-gray-50">
-            <span class="truncate flex-1">${i.repuesto_codigo ? '📦 ' : ''}${escHtml(i.descripcion)} <span class="text-gray-400">×${i.cantidad}</span>${
+            <span class="truncate flex-1">${i.repuesto_codigo ? icono('paquete', 'w-3.5 h-3.5 mr-1 text-indigo-500') : ''}${escHtml(i.descripcion)} <span class="text-gray-400">×${i.cantidad}</span>${
                 i.stock_disponible != null && i.stock_disponible < i.cantidad && budget.estado !== "aprobado"
                     ? ' <span class="text-red-600 font-semibold">(stock insuficiente)</span>' : ''}</span>
             <span class="font-semibold ml-2">${fmt(i.precio_total)}</span>
@@ -139,7 +139,7 @@ function bindCardEvents(userRole) {
         try {
             _currentBudget = await api.updateEstadoPresupuesto(_currentTicketId, "aprobado");
             renderPresupuestoCard(_currentBudget, userRole);
-            showToast("Presupuesto aprobado ✓", "success");
+            showToast("Presupuesto aprobado.", "success");
         } catch (e) { showToast(e.message || "Error", "error"); }
     };
 
@@ -256,7 +256,7 @@ function addItemRow(data = {}) {
         tr.dataset.stock = data.stock_disponible ?? "";
     }
     const repBadge = data.repuesto_id
-        ? `<div class="item-rep text-[10px] mt-0.5 text-indigo-600 font-semibold">📦 ${escHtml(data.repuesto_codigo || "")} · stock ${data.stock_disponible ?? "?"}<span class="item-rep-warn text-red-600"></span></div>`
+        ? `<div class="item-rep text-[10px] mt-0.5 text-indigo-600 font-semibold">${icono("paquete", "w-3 h-3 mr-0.5")}${escHtml(data.repuesto_codigo || "")} · stock ${data.stock_disponible ?? "?"}<span class="item-rep-warn text-red-600"></span></div>`
         : "";
     tr.innerHTML = `
         <td class="px-1 py-1">
@@ -455,7 +455,7 @@ function _renderPlantillaRows(items) {
                     <span class="text-sm font-semibold text-gray-800">${escHtml(p.nombre)}</span>
                     <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">${escHtml(p.categoria || "General")}</span>
                     ${!p.activo ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-500 font-bold">inactivo</span>' : ""}
-                    ${p.producto_nombre ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">📦 ${escHtml(p.producto_nombre)}</span>` : ""}
+                    ${p.producto_nombre ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">${icono("notebook", "w-3 h-3 mr-1")}${escHtml(p.producto_nombre)}</span>` : ""}
                 </div>
                 <p class="text-xs text-gray-400 mt-0.5 truncate">${escHtml(p.descripcion)}</p>
                 <p class="text-xs text-gray-500 mt-0.5">
@@ -467,8 +467,8 @@ function _renderPlantillaRows(items) {
                 </p>
             </div>
             <div class="flex gap-3 shrink-0">
-                <button type="button" class="edit-pp-btn text-xs text-blue-500 hover:text-blue-700 font-semibold" data-id="${p.id}">Editar</button>
-                <button type="button" class="del-pp-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-id="${p.id}">Eliminar</button>
+                <button type="button" class="edit-pp-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" data-id="${p.id}" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
+                <button type="button" class="del-pp-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" data-id="${p.id}" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </div>
         </div>`).join("");
 
@@ -538,7 +538,7 @@ function _renderCatsModalList() {
     list.innerHTML = _ppCategories.map(c => `
         <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
             <span class="text-sm font-medium text-gray-700">${escHtml(c)}</span>
-            ${c !== "General" ? `<button type="button" class="del-cat-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-cat="${escHtml(c)}">Eliminar</button>` : '<span class="text-xs text-gray-300">predeterminada</span>'}
+            ${c !== "General" ? `<button type="button" class="del-cat-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" data-cat="${escHtml(c)}" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>` : '<span class="text-xs text-gray-300">predeterminada</span>'}
         </div>`).join("");
     list.querySelectorAll(".del-cat-btn").forEach(btn => {
         btn.onclick = () => {

@@ -159,7 +159,7 @@ Al arrancar, la app avisa en el log si generó la `SECRET_KEY`, si ignoró la cl
 
 En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor:
 
-- **General**: nombre y datos de contacto que salen en documentos y mails, URL pública, idioma predeterminado y si el seguimiento público está habilitado.
+- **General**: nombre y logo del taller (se ven en la barra superior, la pantalla de ingreso, la pestaña del navegador, los documentos y los mails), datos de contacto, URL pública, idioma predeterminado, si los clientes pueden crearse una cuenta solos y si el seguimiento público está habilitado.
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
 - **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
 - **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
@@ -169,11 +169,17 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
 
+### Interfaz
+
+- **Barra superior**: el nombre y el logo del taller, el buscador (`/`), las notificaciones y el menú del usuario (idioma, mis horas, modo oscuro, atajos de teclado y cerrar sesión).
+- **Lista de tickets**: estados con su cantidad, que filtran con un clic; columnas de cliente, técnico, días en el taller y prioridad (el cliente ve sus equipos, estado y fecha); se ordena tocando el título de cada columna, se pagina (25, 50 o 100 por página) y tiene una *vista compacta* que se recuerda. Toda la fila abre el ticket (también con Enter). En el celular, cada ticket es una tarjeta.
+- **Íconos y etiquetas**: íconos SVG propios (sin emojis, que se ven distinto en cada sistema) y etiquetas de estado, prioridad, garantía, rol y SLA con la misma forma en todo el sistema. En las tablas de administración, *Editar* y *Eliminar* son íconos.
+
 ### Idiomas
 
 El sistema está escrito en español rioplatense y se traduce a **español (España)**, **inglés** y **portugués (Brasil)**:
 
-- **Interfaz**: cada usuario elige el idioma en la barra superior (o en el login y el registro). Se guarda en su cuenta y, la primera vez, se toma el del navegador. El seguimiento público tiene su propio selector.
+- **Interfaz**: cada usuario elige el idioma en su menú (arriba a la derecha) o en el login y el registro. Se guarda en su cuenta y, la primera vez, se toma el del navegador. El seguimiento público tiene su propio selector.
 - **Mails, documentos y comprobantes**: los del cliente (orden de ingreso, remito, presupuesto, tickets de ticketera) salen en el idioma del cliente; la etiqueta, en el de quien la imprime; los pedidos a proveedor, en el idioma predeterminado del taller (*Ajustes → General*), que también se usa para quien no eligió idioma.
 - **Mensajes de error** de la API en el idioma del navegador (encabezado `Accept-Language`).
 - Fechas y precios con el formato de cada idioma (los montos siguen en pesos).

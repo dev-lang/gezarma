@@ -55,3 +55,58 @@ def test_frontend_se_revalida_en_cada_carga(client):
         assert r.status_code == 200 and r.headers.get("cache-control") == "no-cache", ruta
     r = client.get("/js/recepcion.js")
     assert client.get("/js/recepcion.js", headers={"If-None-Match": r.headers["etag"]}).status_code == 304
+
+
+def test_lista_de_tickets_ordenada_y_con_total(client, admin, make_user, make_ticket):
+    h, _ = make_user()
+    for serie in ("SN-B", "SN-A", "SN-C"):
+        make_ticket(h, serie=serie)
+    r = client.get("/tickets/", headers=admin, params={"limit": 2, "orden": "rma_asc"})
+    assert r.status_code == 200 and len(r.json()) == 2
+    total = int(r.headers["x-total-count"])
+    assert total >= 3
+    rmas = [t["numero_rma"] for t in client.get("/tickets/", headers=admin, params={"limit": 1000, "orden": "rma_asc"}).json()]
+    assert rmas == sorted(rmas)
+    for orden in ("cliente_desc", "tecnico_asc", "dias_desc", "prioridad_desc", "estado_asc", "producto_asc", "fecha_asc"):
+        assert client.get("/tickets/", headers=admin, params={"orden": orden}).status_code == 200, orden
+    assert client.get("/tickets/", headers=admin, params={"orden": "password_asc"}).status_code == 422
+    # El cliente solo cuenta los suyos
+    assert client.get("/tickets/", headers=h).headers["x-total-count"] == "3"
+    por = client.get("/tickets/stats/resumen", headers=h).json()["por_estado"]
+    assert sum(por.values()) == 3
+
+
+def test_marca_del_taller_y_logo(client, admin, make_user):
+    import io
+    from PIL import Image
+    m = client.get("/config/marca").json()                       # público: lo usa la pantalla de ingreso
+    assert m["nombre"] and "registro_publico" in m
+    buf = io.BytesIO(); Image.new("RGB", (900, 300), (200, 0, 0)).save(buf, "JPEG")
+    h, _ = make_user()
+    assert client.put("/config/logo", headers=h, files={"archivo": ("l.jpg", buf.getvalue(), "image/jpeg")}).status_code == 403
+    r = client.put("/config/logo", headers=admin, files={"archivo": ("l.jpg", buf.getvalue(), "image/jpeg")})
+    assert r.status_code == 200, r.text
+    logo = client.get("/config/logo")
+    assert logo.status_code == 200 and logo.headers["content-type"] == "image/png"
+    assert Image.open(io.BytesIO(logo.content)).size == (512, 171)          # achicado a 512 px
+    assert client.get("/config/marca").json()["logo"]
+    # Un archivo que no es imagen (aunque diga .png) no se acepta
+    r = client.put("/config/logo", headers=admin, files={"archivo": ("x.png", b"<svg onload=alert(1)>", "image/png")})
+    assert r.status_code == 400
+    assert client.delete("/config/logo", headers=admin).status_code == 204
+    assert client.get("/config/logo").status_code == 404 and client.get("/config/marca").json()["logo"] is None
+    assert client.get("/favicon.svg").headers["content-type"].startswith("image/svg")
+
+
+def test_registro_publico_desactivable(client, admin):
+    import uuid
+    datos = lambda: {"username": f"cli_{uuid.uuid4().hex[:6]}", "nombre": "Cliente", "email": f"{uuid.uuid4().hex[:6]}@t.com",
+                     "password": "secret1", "rol": "cliente"}
+    client.put("/config/ajustes", headers=admin, json={"registro_publico": False})
+    try:
+        r = client.post("/register", json=datos())
+        assert r.status_code == 403 and "desactivado" in r.json()["detail"]
+        assert client.get("/config/marca").json()["registro_publico"] is False
+        assert client.post("/register", headers=admin, json=datos()).status_code == 200   # el taller sí crea cuentas
+    finally:
+        client.put("/config/ajustes", headers=admin, json={"registro_publico": True})

@@ -117,4 +117,5 @@ def test_resumen_cuenta_todo_y_respeta_al_cliente(client, admin, make_user, make
     despues = client.get("/tickets/stats/resumen", headers=admin).json()
     assert despues["total"] - antes["total"] == 4
     assert despues["cerrados"] - antes["cerrados"] == 1
-    assert client.get("/tickets/stats/resumen", headers=h).json() == {"total": 3, "nuevos": 2, "en_proceso": 0, "cerrados": 1}
+    assert client.get("/tickets/stats/resumen", headers=h).json() == {"total": 3, "nuevos": 2, "en_proceso": 0, "cerrados": 1,
+                                                                         "por_estado": {"Nuevo": 2, "Cerrado": 1}}

@@ -30,8 +30,7 @@ const Gestion = (() => {
         if (ui._ticketCache) ui._ticketCache[ticketId] = t;
         const badge = $('detail-status-badge');
         if (badge) {
-            badge.innerText = t.estado;
-            badge.className = `px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${components.statusClass(t.estado)}`;
+            components.pintarEstado(badge, t.estado);
         }
         if ($('detail-tecnico')) $('detail-tecnico').innerText = t.tecnico_nombre || I18N.t('Sin asignar');
         const c = card();

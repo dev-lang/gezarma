@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GEZARMA - Gestión de RMA</title>
+    <link rel="icon" id="favicon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Íconos SVG (js/ui/iconos.js): alineados con el texto y del color del texto */
+        :where(.ico) { display: inline-block; flex-shrink: 0; vertical-align: -0.125em; }
         body { font-family: 'Inter', sans-serif; }
         /* Respaldo por si no carga Tailwind; :where() no le gana a md:flex & co. */
         :where(.hidden) { display: none; }
@@ -159,15 +162,35 @@
         .admin-tab-content :has(> table) { overflow-x: auto; }
         @media (max-width: 1023px) {
             /* La columna de acciones (Editar, Eliminar, Ver) queda siempre a la vista al desplazar la tabla */
-            .admin-tab-content table tr > :last-child, #ticket-list-wrap table tr > :last-child, #parts-section table tr > :last-child {
+            .admin-tab-content table tr > :last-child, #parts-section table tr > :last-child {
                 position: sticky; right: 0; background: #fff; box-shadow: -8px 0 8px -8px rgba(15, 23, 42, .25);
             }
-            .admin-tab-content thead tr > :last-child, #ticket-list-wrap thead tr > :last-child { background: #f9fafb; }
-            .dark .admin-tab-content table tr > :last-child, .dark #ticket-list-wrap table tr > :last-child,
+            .admin-tab-content thead tr > :last-child { background: #f9fafb; }
+            .dark .admin-tab-content table tr > :last-child,
             .dark #parts-section table tr > :last-child { background: #1e293b; }
             /* El menú de Administración se desplaza de costado: el borde se desvanece para que se note */
             #admin-menu nav { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); scrollbar-width: none; }
             #admin-menu nav::-webkit-scrollbar { display: none; }
+        }
+        /* Lista de tickets: fila entera clickeable; vista compacta; en el celular, cada ticket es una tarjeta */
+        #ticket-list-body tr[data-ticket-id] { cursor: pointer; }
+        #ticket-list-body tr[data-ticket-id]:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+        #ticket-tabla.compacta td { padding-top: .45rem; padding-bottom: .45rem; }
+        #ticket-tabla.compacta td .t-sub { display: none; }
+        @media (max-width: 639px) {
+            #ticket-filters { flex-wrap: nowrap; }
+            #ticket-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
+            #ticket-chips > * { flex-shrink: 0; }
+            #ticket-densidad span { display: none; }
+            #ticket-tabla { min-width: 0; }
+            #ticket-tabla thead { display: none; }
+            #ticket-tabla tr[data-ticket-id] { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "ticket estado" "equipo equipo" "cliente dias"; gap: .2rem .75rem; padding: .8rem 1rem; }
+            #ticket-tabla tr[data-ticket-id] td { padding: 0 !important; border: 0; }
+            #ticket-tabla td[data-col=ticket] { grid-area: ticket; } #ticket-tabla td[data-col=estado] { grid-area: estado; }
+            #ticket-tabla td[data-col=equipo] { grid-area: equipo; } #ticket-tabla td[data-col=cliente] { grid-area: cliente; color: #6b7280; font-size: .8rem; }
+            #ticket-tabla td[data-col=dias], #ticket-tabla td[data-col=fecha] { grid-area: dias; text-align: right; font-size: .8rem; }
+            #ticket-tabla td[data-col=tecnico], #ticket-tabla td[data-col=prioridad] { display: none; }
+            #ticket-tabla td[data-col=dias] .t-dias::after { content: " d"; }
         }
     </style>
 </head>
@@ -176,70 +199,64 @@
     <!-- Navigation Bar -->
     <nav id="navbar" class="bg-blue-800 text-white shadow-md hidden">
         <div class="container mx-auto px-6 py-3 flex items-center gap-3">
-            <h1 class="text-xl font-bold tracking-tight">
-                <a href="/" id="logo-home" translate="no" title="Ir al panel de control"
-                    class="rounded px-1 -mx-1 select-none hover:text-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">GEZARMA</a>
+            <h1 class="text-lg font-bold tracking-tight min-w-0">
+                <a href="/" id="logo-home" title="Ir al panel de control"
+                    class="flex items-center gap-2.5 rounded-lg px-1 -mx-1 select-none hover:text-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <span id="marca-logo" class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden shrink-0"><i data-icono="llave" class="w-4 h-4"></i></span>
+                    <span id="marca-nombre" translate="no" class="truncate max-w-[10rem] sm:max-w-[16rem]">GEZARMA</span>
+                </a>
             </h1>
-            <div id="search-container" class="hidden flex-1 max-w-md mx-8">
+            <div id="search-container" class="hidden flex-1 max-w-md mx-4 lg:mx-8">
                 <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300 pointer-events-none"><i data-icono="buscar" class="w-4 h-4"></i></span>
                     <input type="text" id="global-search"
-                        class="w-full bg-blue-900 text-blue-100 px-4 py-2 rounded-lg border border-blue-700 outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        class="w-full bg-blue-900 text-blue-100 pl-9 pr-4 py-2 rounded-lg border border-blue-700 outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                         placeholder="Buscar por serie, RMA o producto... (Enter para ver todos)" aria-label="Buscar">
                     <div id="search-results"
                         class="absolute top-full left-0 right-0 bg-white shadow-2xl rounded-b-lg border mt-1 text-gray-800 z-50 hidden max-h-96 overflow-y-auto">
                     </div>
                 </div>
             </div>
-            <div class="ml-auto flex items-center gap-2 md:gap-3">
+            <div class="ml-auto flex items-center gap-1.5 md:gap-2">
                 <!-- Celular: la búsqueda se abre con la lupa -->
                 <button type="button" id="search-toggle" class="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center text-blue-200 hover:bg-blue-700 transition"
                     aria-label="Buscar" aria-controls="search-container" aria-expanded="false">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/>
-                    </svg>
+                    <i data-icono="buscar" class="w-5 h-5"></i>
                 </button>
 
-                <span id="user-info" class="hidden md:inline text-sm font-medium"></span>
+                <!-- Ancla del cronómetro en curso (js/tiempo.js) -->
+                <span id="user-info" class="hidden"></span>
 
-                <!-- Idioma -->
-                <span class="hidden md:inline-block" data-idioma-selector="bg-blue-700 text-blue-50 text-xs rounded-lg px-1.5 py-1.5 border-0 focus:ring-2 focus:ring-blue-300"></span>
-
-                <!-- Dark mode toggle -->
-                <button type="button" id="dark-toggle"
-                    class="hidden md:flex w-9 h-9 rounded-lg items-center justify-center text-blue-200 hover:bg-blue-700 transition"
-                    title="Alternar modo oscuro" aria-label="Modo oscuro">
-                    <!-- Sun icon (shown in dark mode) -->
-                    <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    <!-- Moon icon (shown in light mode) -->
-                    <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                    </svg>
-                </button>
-
-                <button type="button" id="logout-btn" class="hidden md:inline-block text-sm bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded transition">Cerrar Sesión</button>
-
-                <!-- Celular: usuario, idioma, modo oscuro y salir en un menú -->
-                <div class="relative md:hidden">
+                <!-- Usuario: idioma, horas, modo oscuro, atajos y salir en un menú (la campana se agrega antes) -->
+                <div class="relative" id="user-menu-wrap">
                     <button type="button" id="user-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="user-menu" aria-label="Menú de usuario"
-                        class="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-sm font-bold transition">
-                        <span id="user-iniciales" translate="no">·</span>
+                        class="flex items-center gap-2 rounded-full md:rounded-lg p-0.5 md:pl-1 md:pr-2 md:py-1 hover:bg-blue-700 transition">
+                        <span class="w-8 h-8 rounded-full bg-blue-600 ring-2 ring-blue-500/60 flex items-center justify-center text-xs font-bold shrink-0">
+                            <span id="user-iniciales" translate="no">·</span>
+                        </span>
+                        <span class="hidden md:block text-left leading-tight max-w-[11rem]">
+                            <span id="user-nombre-barra" translate="no" class="block text-sm font-semibold truncate"></span>
+                            <span id="user-rol-barra" class="block text-[11px] text-blue-200"></span>
+                        </span>
+                        <i data-icono="abajo" class="hidden md:block w-4 h-4 text-blue-200"></i>
                     </button>
-                    <div id="user-menu" class="hidden absolute right-0 top-11 z-[95] w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
+                    <div id="user-menu" class="hidden absolute right-0 top-12 z-[95] w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden py-1">
                         <div class="px-4 py-3 border-b">
                             <p id="user-info-menu" class="text-sm font-semibold"></p>
                         </div>
-                        <div class="px-4 py-3 border-b flex items-center justify-between gap-3">
-                            <span class="text-sm text-gray-600">Idioma</span>
+                        <div class="px-4 py-2.5 border-b flex items-center justify-between gap-3">
+                            <span class="text-sm text-gray-600 flex items-center gap-2.5"><i data-icono="idioma" class="w-4 h-4 text-gray-400"></i>Idioma</span>
                             <span data-idioma-selector="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"></span>
                         </div>
-                        <button type="button" id="menu-horas" class="hidden w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b">⏱ Horas</button>
-                        <button type="button" id="menu-dark" class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b">🌓 Modo oscuro</button>
-                        <button type="button" id="menu-atajos" class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b">⌨️ Atajos de teclado</button>
-                        <button type="button" id="menu-logout" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">Cerrar Sesión</button>
+                        <button type="button" id="menu-horas" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 items-center gap-2.5"><i data-icono="reloj" class="w-4 h-4 text-gray-400"></i>Mis horas</button>
+                        <button type="button" id="menu-dark" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2.5">
+                            <span id="icon-moon" class="text-gray-400"><i data-icono="luna" class="w-4 h-4"></i></span>
+                            <span id="icon-sun" class="hidden text-gray-400"><i data-icono="sol" class="w-4 h-4"></i></span>
+                            Modo oscuro
+                        </button>
+                        <button type="button" id="menu-atajos" class="hidden md:flex w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 items-center gap-2.5"><i data-icono="teclado" class="w-4 h-4 text-gray-400"></i>Atajos de teclado</button>
+                        <div class="border-t my-1"></div>
+                        <button type="button" id="menu-logout" class="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2.5"><i data-icono="salir" class="w-4 h-4"></i>Cerrar Sesión</button>
                     </div>
                 </div>
             </div>
@@ -278,6 +295,7 @@
         document.addEventListener('submit', e => e.preventDefault(), true);
     </script>
     <script src="js/ui/escape.js"></script>
+    <script src="js/ui/iconos.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>

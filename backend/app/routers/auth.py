@@ -162,6 +162,9 @@ def register(
 
     es_admin = current_user is not None and current_user.rol == models.UserRole.ADMINISTRADOR
     if not es_admin:
+        from .. import ajustes as ajustes_mod
+        if not ajustes_mod.get(db, "registro_publico"):
+            raise HTTPException(status_code=403, detail="El registro de clientes está desactivado: pedile al taller que te cree la cuenta.")
         _check_registro(request.client.host if request.client else "desconocida")
     user_data.email = (user_data.email or "").strip().lower()
     if db.query(models.Usuario).filter_by(username=user_data.username).first():

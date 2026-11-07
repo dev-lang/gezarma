@@ -68,10 +68,15 @@ const ui = {
         const quien = `${user.nombre || user.username || user.sub} (${I18N.t(ROLES[user.role] || user.role)})`;
         document.getElementById('user-info').innerText = quien;
         const enMenu = document.getElementById('user-info-menu');
-        if (enMenu) enMenu.innerText = quien;
+        if (enMenu) enMenu.innerHTML = `<span translate="no">${esc(user.nombre || user.username || '')}</span>
+            <span class="block text-xs font-normal text-gray-500"><span translate="no">${esc(user.username || '')}</span> · ${esc(I18N.t(ROLES[user.role] || user.role))}</span>`;
+        const nombreBarra = document.getElementById('user-nombre-barra');
+        if (nombreBarra) nombreBarra.textContent = user.nombre || user.username || '';
+        const rolBarra = document.getElementById('user-rol-barra');
+        if (rolBarra) rolBarra.textContent = I18N.t(ROLES[user.role] || user.role);
         const iniciales = document.getElementById('user-iniciales');
         if (iniciales) iniciales.textContent = (user.nombre || user.username || '?').split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
-        document.getElementById('role-badge').innerText = `Rol: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`;
+        document.getElementById('role-badge').innerText = I18N.t('Rol: {0}', I18N.t(ROLES[user.role] || user.role));
         document.getElementById('search-container').classList.remove('hidden');
 
         const isAdmin    = user.role === 'administrador';
@@ -93,6 +98,7 @@ const ui = {
             horasBtn.classList.toggle('flex', isTechOrAdmin);
         }
         document.getElementById('menu-horas')?.classList.toggle('hidden', !isTechOrAdmin);
+        document.getElementById('menu-horas')?.classList.toggle('flex', isTechOrAdmin);
         const mostradorBtn = document.getElementById('mostrador-btn');
         if (mostradorBtn) {
             mostradorBtn.classList.toggle('hidden', !isTechOrAdmin);
@@ -117,15 +123,36 @@ const ui = {
 
     // ── Ticket list ────────────────────────────────────────────────────────
 
-    async loadTickets(filters = {}) {
-        skeleton.tableRows('ticket-list-body', 6, 5);
-        skeleton.cards('stats-container', 4);
+    // Estado de la lista: filtro por estado, orden, página y densidad (se conserva al volver al panel)
+    _lista: { status: '', orden: 'fecha_desc', pagina: 0, porPagina: 50, total: 0 },
+    _estadosOrden: null,
+
+    _columnasLista() {
+        return ['administrador', 'tecnico'].includes(auth.getUser()?.role) ? components.COLS_TALLER : components.COLS_CLIENTE;
+    },
+
+    async loadTickets(filters) {
+        const L = this._lista;
+        if (filters && 'status' in filters) { L.status = filters.status || ''; L.pagina = 0; }
+        const cols = this._columnasLista();
+        this._bindLista();
+        const head = document.getElementById('ticket-list-head');
+        if (head) head.innerHTML = components.ticketHead(cols, L.orden);
+        const tbody = document.getElementById('ticket-list-body');
+        if (tbody?.querySelector('tr[data-ticket-id]')) tbody.classList.add('opacity-60');      // ordenar o paginar: sin parpadeo
+        else skeleton.tableRows('ticket-list-body', 6, cols.length);
+        if (document.getElementById('stats-container') && !document.getElementById('stats-container').children.length) skeleton.cards('stats-container', 4);
         try {
-            const queryParams = { ...filters, skip: app.currentPage * app.pageSize, limit: app.pageSize };
-            const tickets = await api.getTickets(queryParams);
-            this.renderTicketList(tickets, !!filters.status);
-            // Totales reales (no solo los de esta página)
-            api.request('tickets/stats/resumen').then(r => this.renderStats(r)).catch(() => {});
+            const params = { skip: L.pagina * L.porPagina, limit: L.porPagina, orden: L.orden };
+            if (L.status) params.status = L.status;
+            const { items, total } = await api.getTicketsPagina(params);
+            L.total = total;
+            if (!items.length && L.pagina > 0) { L.pagina = 0; return this.loadTickets(); }
+            tbody?.classList.remove('opacity-60');
+            this.renderTicketList(items, !!L.status);
+            this._renderPaginas();
+            // Totales reales (no solo los de esta página) y contadores de los filtros
+            api.request('tickets/stats/resumen').then(r => { this.renderStats(r); this._renderChips(r); }).catch(() => {});
         } catch (err) {
             toast.error('Error al cargar los tickets.');
             console.error(err);
@@ -135,9 +162,95 @@ const ui = {
     renderTicketList(tickets, filtered = false) {
         const tbody = document.getElementById('ticket-list-body');
         if (!tbody) return;
+        const cols = this._columnasLista();
         tbody.innerHTML = tickets.length
-            ? tickets.map(components.ticketRow).join('')
+            ? tickets.map(t => components.ticketRow(t, cols)).join('')
             : components.ticketEmptyState(filtered);
+    },
+
+    async _renderChips(r) {
+        const cont = document.getElementById('ticket-chips');
+        if (!cont) return;
+        if (!this._estadosOrden) {
+            try { this._estadosOrden = (await api.getEstadosConfig()).sort((a, b) => a.orden - b.orden).map(e => e.valor); }
+            catch { this._estadosOrden = []; }
+        }
+        const por = r.por_estado || {}, L = this._lista;
+        const estados = [...this._estadosOrden, ...Object.keys(por).filter(e => !this._estadosOrden.includes(e))]
+            .filter(e => por[e] || e === L.status);
+        const chip = (valor, texto, n) => {
+            const on = (L.status || '') === valor;
+            return `<button type="button" data-estado="${esc(valor)}" aria-pressed="${on}"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition
+                ${on ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}">
+                <span>${esc(texto)}</span><span class="text-xs tabular-nums ${on ? 'text-blue-100' : 'text-gray-400'}">${n || 0}</span></button>`;
+        };
+        cont.innerHTML = chip('', 'Todos', r.total) + estados.map(e => chip(e, e, por[e])).join('');
+    },
+
+    _renderPaginas() {
+        const el = document.getElementById('ticket-paginas');
+        if (!el) return;
+        const L = this._lista;
+        if (L.total <= 25) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+        const desde = L.pagina * L.porPagina + 1, hasta = Math.min(L.total, (L.pagina + 1) * L.porPagina);
+        const ultima = Math.max(0, Math.ceil(L.total / L.porPagina) - 1);
+        const btn = (dir, texto, off) => `<button type="button" data-pagina="${dir}" ${off ? 'disabled' : ''}
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">${texto}</button>`;
+        el.innerHTML = `
+            <span class="tabular-nums">${esc(I18N.t('Mostrando {0}–{1} de {2}', desde, hasta, L.total))}</span>
+            <div class="flex items-center gap-2">
+                <select data-por-pagina class="border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-sm" aria-label="${esc(I18N.t('Tickets por página'))}">
+                    ${[25, 50, 100].map(n => `<option value="${n}" ${n === L.porPagina ? 'selected' : ''}>${esc(I18N.t('{0} por página', n))}</option>`).join('')}
+                </select>
+                ${btn(-1, icono('abajo', 'w-4 h-4 rotate-90') + esc(I18N.t('Anterior')), L.pagina === 0)}
+                ${btn(1, esc(I18N.t('Siguiente')) + icono('abajo', 'w-4 h-4 -rotate-90'), L.pagina >= ultima)}
+            </div>`;
+        el.classList.remove('hidden');
+    },
+
+    // Los controles de la lista se conectan una vez por cada vez que se dibuja el panel
+    _bindLista() {
+        const wrap = document.getElementById('ticket-list-wrap');
+        if (!wrap || wrap.dataset.conectada) return;
+        wrap.dataset.conectada = '1';
+        const L = this._lista;
+        const tabla = document.getElementById('ticket-tabla');
+        let compacta = false;
+        try { compacta = localStorage.getItem('gezarma-densidad') === 'compacta'; } catch { /* sin almacenamiento */ }
+        const densidad = document.getElementById('ticket-densidad');
+        const pintarDensidad = () => { tabla?.classList.toggle('compacta', compacta); densidad?.setAttribute('aria-pressed', String(compacta));
+            densidad?.classList.toggle('text-blue-700', compacta); densidad?.classList.toggle('border-blue-300', compacta); };
+        pintarDensidad();
+        densidad?.addEventListener('click', () => {
+            compacta = !compacta; pintarDensidad();
+            try { localStorage.setItem('gezarma-densidad', compacta ? 'compacta' : 'normal'); } catch { /* sin almacenamiento */ }
+        });
+        document.getElementById('ticket-chips')?.addEventListener('click', e => {
+            const b = e.target.closest('[data-estado]');
+            if (b) this.loadTickets({ status: b.dataset.estado });
+        });
+        wrap.addEventListener('click', e => {
+            const orden = e.target.closest('[data-orden]');
+            if (orden) {
+                const campo = orden.dataset.orden, [actual, sentido] = L.orden.split('_');
+                const porDefecto = ['fecha', 'dias', 'prioridad'].includes(campo) ? 'desc' : 'asc';
+                L.orden = `${campo}_${campo === actual ? (sentido === 'asc' ? 'desc' : 'asc') : porDefecto}`;
+                L.pagina = 0;
+                return this.loadTickets();
+            }
+            const pag = e.target.closest('[data-pagina]');
+            if (pag) { L.pagina = Math.max(0, L.pagina + Number(pag.dataset.pagina)); wrap.scrollIntoView({ block: 'start', behavior: 'smooth' }); return this.loadTickets(); }
+            const fila = e.target.closest('tr[data-ticket-id]');
+            if (fila && !e.target.closest('a,button,input,select')) app.viewTicket(Number(fila.dataset.ticketId));
+        });
+        wrap.addEventListener('change', e => {
+            if (e.target.matches('[data-por-pagina]')) { L.porPagina = Number(e.target.value); L.pagina = 0; this.loadTickets(); }
+        });
+        wrap.addEventListener('keydown', e => {
+            const fila = e.target.closest?.('tr[data-ticket-id]');
+            if (fila && (e.key === 'Enter' || e.key === ' ') && e.target === fila) { e.preventDefault(); app.viewTicket(Number(fila.dataset.ticketId)); }
+        });
     },
 
     renderStats(r) {
@@ -212,7 +325,8 @@ const ui = {
         if (favBtn && (userRole === 'administrador' || userRole === 'tecnico')) {
             favBtn.classList.remove('hidden');
             const setFavUI = isFav => {
-                favBtn.textContent = isFav ? '★' : '☆';
+                favBtn.innerHTML = icono('estrella', 'w-6 h-6', { relleno: isFav });
+                favBtn.dataset.fav = isFav ? '1' : '';
                 favBtn.title       = isFav ? 'Quitar de favoritos' : 'Marcar como favorito';
                 favBtn.classList.toggle('text-yellow-400', isFav);
                 favBtn.classList.toggle('text-gray-300',   !isFav);
@@ -220,7 +334,7 @@ const ui = {
             setFavUI(!!ticket.es_favorito);
             favBtn.onclick = async () => {
                 try {
-                    const isFav = favBtn.textContent === '★';
+                    const isFav = favBtn.dataset.fav === '1';
                     if (isFav) {
                         await api.removeFavorite(ticket.id);
                         setFavUI(false);
@@ -228,7 +342,7 @@ const ui = {
                     } else {
                         await api.addFavorite(ticket.id);
                         setFavUI(true);
-                        toast.success('Agregado a favoritos ⭐');
+                        toast.success('Agregado a favoritos.');
                     }
                 } catch (err) { toast.error(err.message); }
             };
@@ -279,8 +393,7 @@ const ui = {
 
         // Status badge
         const badge = document.getElementById('detail-status-badge');
-        badge.innerText   = ticket.estado;
-        badge.className   = `px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${components.statusClass(ticket.estado)}`;
+        components.pintarEstado(badge, ticket.estado);
 
         // Shipping
         const shippingEl = document.getElementById('detail-shipping-container');
@@ -567,7 +680,7 @@ const ui = {
         const tbody = document.getElementById('user-list-body');
         if (tbody) tbody.innerHTML = users.length
             ? users.map(components.userRow).join('')
-            : components.vacioFila(6, { icono: '🔎', titulo: 'No hay usuarios con esos filtros.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
+            : components.vacioFila(6, { icono: 'buscar', titulo: 'No hay usuarios con esos filtros.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
     },
 
     // Los botones "Editar" pasan solo el id (antes iba el usuario entero como JSON
@@ -652,7 +765,7 @@ const ui = {
             this._partsCache = parts;
             document.getElementById('parts-list-body').innerHTML = parts.length
                 ? parts.map(components.partRow).join('')
-                : components.vacioFila(6, { icono: '🔩', titulo: 'No hay repuestos cargados',
+                : components.vacioFila(6, { icono: 'chip', titulo: 'No hay repuestos cargados',
                     texto: 'Cargá los repuestos que usás para descontarlos del stock y presupuestarlos.',
                     acciones: document.getElementById('new-part-btn') ? [{ texto: 'Nuevo repuesto', clic: 'new-part-btn' }] : [] });
         } catch (err) { toast.error(err.message); }
@@ -739,8 +852,8 @@ const ui = {
         if (tbody) tbody.innerHTML = prods.length
             ? prods.map(components.productRow).join('')
             : (this._productsCache?.length
-                ? components.vacioFila(5, { icono: '🔎', titulo: 'No hay productos con esos criterios.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
-                : components.vacioFila(5, { icono: '💻', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
+                ? components.vacioFila(5, { icono: 'buscar', titulo: 'No hay productos con esos criterios.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
+                : components.vacioFila(5, { icono: 'notebook', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
                                             acciones: [{ texto: 'Nuevo producto', clic: 'admin-new-product-btn' }] }));
     },
 
@@ -783,25 +896,24 @@ const ui = {
         try {
             const tickets = await api.getFavorites();
             if (!tickets.length) {
-                container.innerHTML = components.vacio({ icono: '☆', titulo: 'No tenés tickets favoritos todavía.',
-                    texto: 'Marcá un ticket con ⭐ para verlo aquí.', acciones: [{ texto: 'Volver al listado', clic: 'back-to-list' }] });
+                container.innerHTML = components.vacio({ icono: 'estrella', titulo: 'No tenés tickets favoritos todavía.',
+                    texto: 'Marcá un ticket con la estrella para verlo aquí.', acciones: [{ texto: 'Volver al listado', clic: 'back-to-list' }] });
                 return;
             }
             container.innerHTML = tickets.map(t => {
-                const statusCls = components.statusClass(t.estado);
                 return `
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between gap-4 hover:shadow-md transition cursor-pointer fav-ticket-row"
                      data-ticket-id="${t.id}">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-mono font-bold text-blue-700">${esc(t.numero_rma)}</span>
-                            <span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase ${statusCls}">${esc(t.estado)}</span>
+                            ${components.statusBadge(t.estado)}
                         </div>
                         <p class="text-sm text-gray-700 mt-0.5 font-medium truncate">${esc(t.producto)}</p>
                         <p class="text-xs text-gray-400">${esc(t.usuario_nombre || '—')} · ${new Date(t.fecha_creacion).toLocaleDateString(I18N.locale)}</p>
                     </div>
                     <button type="button" class="fav-remove-btn shrink-0 text-yellow-400 hover:text-gray-300 text-2xl transition"
-                        data-ticket-id="${t.id}" title="Quitar de favoritos">★</button>
+                        data-ticket-id="${t.id}" title="Quitar de favoritos">${icono('estrella', 'w-6 h-6', { relleno: true })}</button>
                 </div>`;
             }).join('');
 
@@ -954,7 +1066,7 @@ const ui = {
         if (!tbody) return;
         tbody.innerHTML = users.length
             ? users.map(u => components.adminUserRow(u)).join('')
-            : components.vacioFila(7, { icono: '🔎', titulo: 'No hay usuarios con esos filtros.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
+            : components.vacioFila(7, { icono: 'buscar', titulo: 'No hay usuarios con esos filtros.', acciones: [{ texto: 'Limpiar filtros', limpiar: true }] });
     },
 
     // ── Admin: Products ───────────────────────────────────────────────────────
@@ -989,8 +1101,8 @@ const ui = {
         tbody.innerHTML = prods.length
             ? prods.map(p => components.adminProductRow(p)).join('')
             : (this._adminProductsCache?.length
-                ? components.vacioFila(5, { icono: '🔎', titulo: 'Sin resultados.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
-                : components.vacioFila(5, { icono: '💻', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
+                ? components.vacioFila(5, { icono: 'buscar', titulo: 'Sin resultados.', chico: true, acciones: [{ texto: 'Limpiar filtros', limpiar: true }] })
+                : components.vacioFila(5, { icono: 'notebook', titulo: 'Todavía no hay productos', texto: 'Marca, modelo y garantía de lo que reparás.',
                                             chico: true, acciones: [{ texto: 'Nuevo producto', clic: 'admin-new-product-btn' }] }));
     },
 
@@ -1067,7 +1179,7 @@ const ui = {
         if (!el) return;
         el.innerHTML = list.length
             ? list.map(p => components.plantillaRow(p)).join('')
-            : components.vacio({ icono: '📝', titulo: 'No hay plantillas definidas.', texto: 'Textos de diagnóstico que se cargan con un click.', chico: true,
+            : components.vacio({ icono: 'documento', titulo: 'No hay plantillas definidas.', texto: 'Textos de diagnóstico que se cargan con un click.', chico: true,
                                  acciones: [{ texto: 'Nueva plantilla', clic: 'admin-new-plantilla-btn' }] });
         el.querySelectorAll('.plantilla-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1187,7 +1299,7 @@ const ui = {
         if (!container) return;
         container.innerHTML = tags.length
             ? tags.map(t => components.tagCard(t)).join('')
-            : `<div class="col-span-3">${components.vacio({ icono: '🏷️', titulo: 'No hay etiquetas definidas.', chico: true,
+            : `<div class="col-span-3">${components.vacio({ icono: 'etiqueta', titulo: 'No hay etiquetas definidas.', chico: true,
                                                          acciones: [{ texto: 'Nueva etiqueta', clic: 'admin-new-tag-btn' }] })}</div>`;
         container.querySelectorAll('.tag-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {

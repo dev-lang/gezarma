@@ -232,10 +232,10 @@ const Horas = (() => {
             ${r.producto ? `<div class="truncate text-gray-600">${esc(r.producto)}</div>` : ''}
             ${r.nota ? `<div class="truncate text-gray-500 italic">${esc(r.nota)}</div>` : ''}
             <div class="flex flex-wrap items-center gap-1 mt-0.5">
-                ${esAdmin() && !st.tecnico ? `<span class="text-[11px] text-gray-500">👤 ${esc(r.usuario_nombre || '')}</span>` : ''}
-                ${r.en_curso ? `<span class="text-[11px] font-semibold text-emerald-700">⏱ ${esc(I18N.t('en curso'))}</span>` : ''}
+                ${esAdmin() && !st.tecnico ? `<span class="text-[11px] text-gray-500">${icono('usuario', 'w-3 h-3 mr-0.5')}${esc(r.usuario_nombre || '')}</span>` : ''}
+                ${r.en_curso ? `<span class="text-[11px] font-semibold text-emerald-700">${icono('reloj', 'w-3 h-3 mr-0.5')}${esc(I18N.t('en curso'))}</span>` : ''}
                 ${r.editado ? `<span class="text-[11px] text-gray-500 bg-white border rounded px-1">${esc(I18N.t('editado'))}</span>` : ''}
-                ${!r.editable && !r.en_curso ? '<span class="text-[11px]" title="' + esc(I18N.t(r.motivo_no_editable)) + '">🔒</span>' : ''}
+                ${!r.editable && !r.en_curso ? '<span class="text-[11px] text-gray-400" title="' + esc(I18N.t(r.motivo_no_editable)) + '">' + icono('candado', 'w-3 h-3') + '</span>' : ''}
                 ${r.editable && movil() ? `<button type="button" data-mover="${r.id}" class="ml-auto text-[11px] font-semibold text-blue-700 underline px-1 py-1">${esc(I18N.t('Mover a…'))}</button>` : ''}
             </div>
         </div>`;

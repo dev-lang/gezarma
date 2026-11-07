@@ -13,7 +13,7 @@ const Barra = (() => {
         const abierto = abrir ?? m.classList.contains('hidden');
         m.classList.toggle('hidden', !abierto);
         b.setAttribute('aria-expanded', String(abierto));
-        if (abierto) m.querySelector('#menu-dark')?.focus();
+        if (abierto) m.querySelector('button:not(.hidden)')?.focus();
     }
 
     function busqueda(abrir) {
@@ -56,6 +56,42 @@ const Barra = (() => {
         });
     }
 
-    return { iniciar, busqueda };
+    // ── Marca del taller: nombre y logo (Ajustes → General) ───────────────
+    let _marca = { nombre: 'GEZARMA', logo: null, registro_publico: true };
+    async function marca() {
+        try {
+            const r = await fetch('/config/marca');
+            if (r.ok) _marca = await r.json();
+        } catch { /* se queda con la marca por defecto */ }
+        pintarMarca();
+    }
+    function pintarMarca() {
+        const m = _marca, src = m.logo ? `/config/logo?v=${m.logo}` : null;
+        const img = cls => `<img src="${src}" alt="" class="${cls}">`;
+        const nombre = $('marca-nombre');
+        if (nombre) nombre.textContent = m.nombre;
+        const logo = $('marca-logo');
+        if (logo) {
+            logo.innerHTML = src ? img('w-full h-full object-contain') : icono('llave', 'w-4 h-4');
+            logo.classList.toggle('bg-white', !!src);
+            logo.classList.toggle('bg-white/15', !src);
+        }
+        const lLogo = $('login-marca-logo');
+        if (lLogo) {
+            lLogo.innerHTML = src ? img('w-full h-full object-contain') : icono('llave', 'w-8 h-8');
+            lLogo.classList.toggle('bg-blue-600', !src);
+            lLogo.classList.toggle('text-white', !src);
+            lLogo.classList.toggle('bg-white', !!src);
+        }
+        document.querySelectorAll('[data-marca-nombre]').forEach(el => { el.textContent = m.nombre; });
+        $('login-registro')?.classList.toggle('hidden', !m.registro_publico);
+        $('login-seguimiento')?.classList.toggle('hidden', m.seguimiento_publico === false);
+        document.title = `${m.nombre} - ${I18N.t('Gestión de RMA')}`;
+        const fav = $('favicon');
+        if (fav) { fav.type = src ? 'image/png' : 'image/svg+xml'; fav.href = src || '/favicon.svg'; }
+    }
+    marca();
+
+    return { iniciar, busqueda, marca, pintarMarca, datosMarca: () => _marca };
 })();
 window.Barra = Barra;

@@ -42,7 +42,7 @@ const Guia = (() => {
             <ol class="divide-y">${g.pasos.map((p, i) => `
                 <li class="px-5 py-3 flex flex-wrap items-center gap-3">
                     <span class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold
-                        ${p.hecho ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}" aria-hidden="true">${p.hecho ? '✓' : i + 1}</span>
+                        ${p.hecho ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}" aria-hidden="true">${p.hecho ? icono('check', 'w-4 h-4') : i + 1}</span>
                     <div class="flex-1 min-w-[12rem]">
                         <p class="text-sm font-semibold ${p.hecho ? 'text-gray-400 line-through' : 'text-gray-800'}">${esc(p.titulo)}</p>
                         ${p.hecho ? '' : `<p class="text-xs text-gray-500">${esc(p.detalle)}</p>`}

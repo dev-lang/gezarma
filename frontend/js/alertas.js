@@ -81,7 +81,7 @@ const Alertas = (() => {
         const conAlgo = items.filter(i => i.n > 0);
         if (!conAlgo.length) {
             return `<div class="lg:col-span-2 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-                <span aria-hidden="true">✓</span><span>Todo al día: nada vencido ni esperando.</span></div>`;
+                ${icono('check-circulo', 'w-4 h-4')}<span>Todo al día: nada vencido ni esperando.</span></div>`;
         }
         return `
         <div class="lg:col-span-2">

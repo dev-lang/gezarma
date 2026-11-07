@@ -272,7 +272,7 @@ const Recepcion = (() => {
             $('ing-fotos-lista').innerHTML = _estado.fotos.map((f, i) => `
                 <div class="relative w-24 h-24 rounded-lg overflow-hidden border">
                     <img src="${f.url}" alt="Foto ${i + 1}" class="w-full h-full object-cover">
-                    <button type="button" data-quitar="${i}" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 text-xs" aria-label="Quitar foto">✕</button>
+                    <button type="button" data-quitar="${i}" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center" aria-label="Quitar foto">${icono('x', 'w-3.5 h-3.5')}</button>
                 </div>`).join('');
             $('ing-fotos-lista').querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', () => {
                 URL.revokeObjectURL(_estado.fotos[+b.dataset.quitar].url);
@@ -448,8 +448,9 @@ const Recepcion = (() => {
                 const t = _serieAbiertos[0] || lista[0];
                 aviso.className = `text-xs mt-1 font-semibold ${_serieAbiertos.length ? 'text-amber-700' : 'text-blue-700'}`;
                 aviso.textContent = _serieAbiertos.length
-                    ? I18N.t('⚠ Este equipo ya tiene un ticket abierto: {0} ({1}, de {2}).', t.numero_rma, I18N.t(t.estado), t.cliente || '—')
+                    ? I18N.t('Este equipo ya tiene un ticket abierto: {0} ({1}, de {2}).', t.numero_rma, I18N.t(t.estado), t.cliente || '—')
                     : I18N.t('Ya pasó por el taller: {0} ({1}). Si vuelve por la misma falla, se marca como reingreso.', t.numero_rma, I18N.t(t.estado));
+                if (_serieAbiertos.length) aviso.insertAdjacentHTML('afterbegin', icono('alerta', 'w-3.5 h-3.5 mr-1'));
                 aviso.classList.remove('hidden');
             } catch { /* el aviso es una ayuda: si falla, se sigue igual */ }
         }
@@ -580,7 +581,7 @@ const Recepcion = (() => {
                 ${f ? `<img data-firma="${momento}" alt="Firma de ${titulo.toLowerCase()}" class="h-12 max-w-full object-contain">
                        <p class="text-xs text-gray-500 mt-1">${esc(f.aclaracion || '')} · ${new Date(f.fecha).toLocaleString(I18N.locale, { hour12: false })}</p>`
                     : '<p class="text-xs text-gray-400 italic">Sin firma</p>'}
-                ${taller ? `<button type="button" data-firmar="${momento}" class="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800">✍️ ${f ? 'Volver a firmar' : 'Firmar ahora'}</button>` : ''}
+                ${taller ? `<button type="button" data-firmar="${momento}" class="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800">${icono('firma', 'w-3.5 h-3.5 mr-1')}${f ? 'Volver a firmar' : 'Firmar ahora'}</button>` : ''}
             </div>`;
         };
         card.innerHTML = `
@@ -588,8 +589,8 @@ const Recepcion = (() => {
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <h3 class="text-gray-600 font-bold text-xs uppercase">Recepción del equipo</h3>
                 ${taller ? `<div class="flex gap-3">
-                    <button type="button" data-editar class="text-xs font-semibold text-blue-600 hover:text-blue-800">✎ ${lineas.length ? 'Editar' : 'Cargar'} checklist</button>
-                    <button type="button" data-foto class="text-xs font-semibold text-blue-600 hover:text-blue-800">📷 Foto de ingreso</button>
+                    <button type="button" data-editar class="text-xs font-semibold text-blue-600 hover:text-blue-800">${icono('checklist', 'w-3.5 h-3.5 mr-1')}${lineas.length ? 'Editar' : 'Cargar'} checklist</button>
+                    <button type="button" data-foto class="text-xs font-semibold text-blue-600 hover:text-blue-800">${icono('camara', 'w-3.5 h-3.5 mr-1')}Foto de ingreso</button>
                     <input type="file" data-foto-input accept="image/jpeg,image/png" capture="environment" multiple class="hidden">
                 </div>` : ''}
             </div>

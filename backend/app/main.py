@@ -102,6 +102,11 @@ def diccionario_js(codigo: str):
 def read_index():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
+@app.get("/favicon.svg")
+def favicon():
+    """Ícono por defecto de la pestaña (si el taller carga su logo, se usa ese: /config/logo)."""
+    return FileResponse(os.path.join(FRONTEND_DIR, "favicon.svg"), media_type="image/svg+xml")
+
 @app.get("/seguimiento")
 def read_seguimiento():
     """Página pública de seguimiento de reparaciones (sin login)."""
