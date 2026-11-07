@@ -22,7 +22,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Encuesta de satisfacción** al cerrar (de 1 a 5, desde la cuenta o el seguimiento público), con promedio y comentarios en el panel.
 - **Garantía de la reparación**: si el mismo equipo vuelve dentro del plazo, el ticket se marca como reingreso, sube de prioridad y se avisa al técnico que lo reparó.
 - **Tiempo de trabajo** por técnico (iniciar / pausar o cargar a mano), con costo de mano de obra y horas por técnico.
-- **Pedidos a proveedor** armados con los repuestos bajo el mínimo: PDF, CSV o mail al proveedor, y recepción parcial o total que suma al stock.
+- **Pedidos a proveedor** en tres pasos: armar (con los repuestos bajo el mínimo o a mano), mandar (por mail con PDF y CSV, o marcarlo como pedido por otro medio) y recibir (todo o en partes, se suma al stock).
 - **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
 - **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
 - **Notificaciones por email**: cambios de estado y presupuestos al cliente (con el PDF adjunto), asignaciones al técnico, stock bajo y SLA al taller.
