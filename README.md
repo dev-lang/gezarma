@@ -134,6 +134,38 @@ Se ejecuta desde la raíz del repo. Por defecto la base (`rma_system.db`) y los 
 
 > El frontend carga Tailwind CSS y Chart.js desde CDN, así que el navegador necesita acceso a internet.
 
+#### En Windows (PowerShell)
+
+La primera vez, **parado en la carpeta del repo** (la que tiene `backend`, `frontend` y este README):
+
+```powershell
+cd C:\ruta\a\gezarma
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+copy .env.example .env         # opcional
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+Abrí <http://localhost:8000>. Para frenarlo: `Ctrl + C`.
+
+Los días siguientes alcanza con entrar a la carpeta, activar el entorno y arrancar:
+
+```powershell
+cd C:\ruta\a\gezarma
+.venv\Scripts\Activate.ps1
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+Para actualizar, con el servidor frenado: `git pull` y después `pip install -r backend\requirements.txt`. La base y los adjuntos no se tocan, y las migraciones corren solas al arrancar.
+
+Problemas comunes:
+
+- **"la ejecución de scripts está deshabilitada en este sistema"** al activar el entorno: es la política de PowerShell. Habilitala solo para tu usuario (una vez) con `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, o usá `cmd` y activá con `.venv\Scripts\activate.bat`.
+- **`ModuleNotFoundError: No module named 'backend'`**: `uvicorn` se ejecutó desde otra carpeta (por ejemplo, dentro de `.venv` o de `backend`). Volvé a la raíz del repo y ejecutalo de nuevo.
+- **El prompt no muestra `(.venv)` adelante**: el entorno no está activo y `uvicorn` o los paquetes no se encuentran. Activalo de nuevo.
+- **El puerto 8000 está ocupado**: usá otro, por ejemplo `--port 8080`.
+
 ### Primer ingreso
 
 Usuario **`admin`** con la contraseña de `ADMIN_PASSWORD`. Si no la definiste, la contraseña es `admin123` y el sistema pide cambiarla en el primer login. Ese usuario solo se crea si la base está vacía; cambiar `ADMIN_PASSWORD` después no modifica la clave de un admin existente.
