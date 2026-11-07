@@ -125,6 +125,10 @@ DEFS = {
                                      ayuda="Si el mismo equipo (N° de serie) vuelve dentro de este plazo desde que se "
                                            "cerró, el ticket se marca como reingreso en garantía, sube la prioridad y se "
                                            "avisa al técnico que lo reparó. 0 = desactivado."),
+    "horas_dias_correccion": dict(grupo="taller", tipo="int", default=7, minimo=0, maximo=365,
+                                  label="Días para corregir horas",
+                                  ayuda="Hasta cuántos días atrás un técnico puede cargar, mover o corregir sus horas. "
+                                        "Después solo un administrador. 0 = solo el día de hoy."),
     "tarifa_hora": dict(grupo="taller", tipo="int", default=0, minimo=0,
                         label="Costo de la hora de trabajo ($)",
                         ayuda="Para calcular el costo de mano de obra con el tiempo registrado. 0 = no se calcula."),
@@ -191,6 +195,8 @@ def _validate(clave: str, value) -> str:
             raise ValueError("Debe ser un número entero")
         if n < d.get("minimo", 0):
             raise ValueError(f"Debe ser al menos {d.get('minimo', 0)}")
+        if "maximo" in d and n > d["maximo"]:
+            raise ValueError(f"Debe ser como mucho {d['maximo']}")
         return str(n)
     if t == "choice":
         if value not in d["opciones"]:

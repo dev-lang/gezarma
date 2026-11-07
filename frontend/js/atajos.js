@@ -4,6 +4,7 @@
  *   /      buscar                 N    nuevo ticket
  *   G D    panel de control       G T  tablero (Kanban)
  *   G M    ingreso en mostrador   G A  administración
+ *   G H    horas
  *   ?      esta ayuda
  */
 const Atajos = (() => {
@@ -15,6 +16,7 @@ const Atajos = (() => {
         { teclas: ['G', 'D'], texto: 'Ir al panel de control' },
         { teclas: ['G', 'T'], texto: 'Ir al tablero' },
         { teclas: ['G', 'M'], texto: 'Ingreso en mostrador' },
+        { teclas: ['G', 'H'], texto: 'Ir a Horas' },
         { teclas: ['G', 'A'], texto: 'Ir a Administración' },
         { teclas: ['Esc'], texto: 'Cerrar ventana o menú' },
         { teclas: ['?'], texto: 'Ver los atajos' },
@@ -75,6 +77,7 @@ const Atajos = (() => {
                 document.querySelector('[data-vista="tablero"]')?.click();
                 break;
             case 'mostrador': if (taller() && window.Recepcion) Recepcion.abrirMostrador(); break;
+            case 'horas': if (taller() && window.Horas) Horas.abrir(); break;
             case 'admin': if (rol() === 'administrador') ui.loadAdminPanel(); break;
         }
     }
@@ -89,7 +92,7 @@ const Atajos = (() => {
             const k = e.key.toLowerCase();
             if (_g && Date.now() - _g < 1200) {
                 _g = 0;
-                const destino = { d: 'dashboard', t: 'tablero', m: 'mostrador', a: 'admin' }[k];
+                const destino = { d: 'dashboard', t: 'tablero', m: 'mostrador', h: 'horas', a: 'admin' }[k];
                 if (destino) { e.preventDefault(); ejecutar(destino); }
                 return;
             }

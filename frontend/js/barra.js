@@ -31,6 +31,7 @@ const Barra = (() => {
         $('user-menu-btn')?.addEventListener('click', e => { e.stopPropagation(); menu(); });
         $('menu-dark')?.addEventListener('click', () => { ui.toggleDark(); menu(false); });
         $('menu-logout')?.addEventListener('click', () => auth.logout());
+        $('menu-horas')?.addEventListener('click', () => { menu(false); window.Horas?.abrir(); });
         $('menu-atajos')?.addEventListener('click', () => { menu(false); window.Atajos?.ayuda(); });
         $('search-toggle')?.addEventListener('click', () => busqueda());
         // El nombre lleva al panel de control (o al login si no hay sesión).

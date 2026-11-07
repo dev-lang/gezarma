@@ -87,6 +87,12 @@ const ui = {
             favBtn.classList.toggle('flex', isTechOrAdmin);
         }
         document.getElementById('advanced-stats')?.classList.toggle('hidden', !isAdmin);
+        const horasBtn = document.getElementById('horas-btn');
+        if (horasBtn) {
+            horasBtn.classList.toggle('hidden', !isTechOrAdmin);
+            horasBtn.classList.toggle('flex', isTechOrAdmin);
+        }
+        document.getElementById('menu-horas')?.classList.toggle('hidden', !isTechOrAdmin);
         const mostradorBtn = document.getElementById('mostrador-btn');
         if (mostradorBtn) {
             mostradorBtn.classList.toggle('hidden', !isTechOrAdmin);

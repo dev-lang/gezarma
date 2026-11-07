@@ -528,6 +528,7 @@ const app = {
 
         // ── Ticket modal ──────────────────────────────────────────────────
         on('mostrador-btn', 'click', () => Recepcion.abrirMostrador());
+        on('horas-btn', 'click', () => Horas.abrir());
         on('create-ticket-btn', 'click', () => {
             ui.loadProductsSelect();
             // La prioridad la decide el taller: para el cliente se calcula sola

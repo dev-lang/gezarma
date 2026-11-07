@@ -295,6 +295,7 @@ const components = (() => {
         ticket_clonado:   { icon: "📋", color: "teal" },
         ticket_relacionado:{ icon:"🔗", color: "teal" },
         ticket_desasociado:{ icon:"🔓", color: "gray" },
+        tiempo_editado:   { icon: "⏱", color: "emerald" },
     };
 
     function historyEntry(h) {

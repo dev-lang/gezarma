@@ -405,7 +405,9 @@ def get_ticket_history(
     query = db.query(models.HistorialEstado).filter_by(ticket_id=ticket_id)
     if current_user.rol == models.UserRole.CLIENTE:
         # Las notas internas se registran en el historial con su texto: no son para el cliente
-        query = query.filter(models.HistorialEstado.tipo_evento != models.EventoHistorial.NOTA_INTERNA)
+        # ni las correcciones de horas del taller
+        query = query.filter(models.HistorialEstado.tipo_evento.notin_([models.EventoHistorial.NOTA_INTERNA,
+                                                                         models.EventoHistorial.TIEMPO_EDITADO]))
     entries = query.order_by(models.HistorialEstado.fecha.desc()).all()
     return _historial_out(entries)
 

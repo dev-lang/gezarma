@@ -22,6 +22,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Encuesta de satisfacción** al cerrar (de 1 a 5, desde la cuenta o el seguimiento público), con promedio y comentarios en el panel.
 - **Garantía de la reparación**: si el mismo equipo vuelve dentro del plazo, el ticket se marca como reingreso, sube de prioridad y se avisa al técnico que lo reparó.
 - **Tiempo de trabajo** por técnico (iniciar / pausar o cargar a mano), con costo de mano de obra y horas por técnico.
+- **Horas** (atajo `G H`): calendario de horas de cada técnico por día, semana o mes; cargar a mano, mover entre días (arrastrando, o *Mover a…* en el celular), corregir y borrar con registro de cambios, tareas del taller sin ticket y exportación a Excel/CSV.
 - **Pedidos a proveedor** en tres pasos: armar (con los repuestos bajo el mínimo o a mano), mandar (por mail con PDF y CSV, o marcarlo como pedido por otro medio) y recibir (todo o en partes, se suma al stock).
 - **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
 - **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
@@ -81,6 +82,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Aprobar / rechazar presupuesto | los suyos | ✅ | ✅ |
 | Mis equipos (portal) y calificar la reparación | los suyos | — | — |
 | Registrar tiempo de trabajo | — | ✅ | ✅ |
+| Ver y corregir horas de otros técnicos, o fuera del plazo | — | — | ✅ |
 | Dashboard con estadísticas, alertas de SLA y stock, tablero Kanban, favoritos | — | ✅ | ✅ |
 | Documentos: orden de ingreso, remito, presupuesto | los suyos | ✅ | ✅ |
 | Etiqueta del equipo y comprobantes de ticketera | — | ✅ | ✅ |
@@ -188,6 +190,11 @@ Los diccionarios están en `backend/app/traducciones/<idioma>.json`: `{"texto en
 
 - **Garantía de la reparación**: al cargar un ticket, si ese N° de serie se entregó o cerró dentro del plazo, el ticket queda marcado como *reingreso en garantía*, vinculado al anterior y con prioridad Alta (o Urgente, si ya la tenía). El técnico que lo reparó recibe un aviso con el diagnóstico anterior. Se ve en el detalle, en el tablero y en la orden de ingreso.
 - **Tiempo de trabajo**: en cada ticket, *Iniciar* / *Pausar* o cargar minutos a mano. Cada técnico tiene un solo trabajo en curso (al iniciar otro, el anterior se pausa solo) y lo ve en la barra superior con un contador. Con el costo de la hora en *Ajustes* se calcula la mano de obra; el administrador ve las horas por técnico de los últimos 30 días en el panel.
+- **Horas** (botón *⏱ Horas* del panel, menú de usuario o atajo `G H`): cada técnico ve sus horas día por día; el administrador elige un técnico o ve a todos. Vista de día, semana o mes (en el celular, un día por vez), con totales y avisos de días hábiles sin horas, tramos superpuestos y cronómetros que quedaron corriendo.
+  - **Cargar a mano**: en un ticket o en una *tarea del taller* (capacitación, limpieza, administración u otra: cuentan en las horas del técnico pero no en el costo de ningún ticket), con *desde / hasta* o *solo duración* (se ubica después de lo último cargado ese día).
+  - **Reglas**: el fin después del inicio, nada a futuro, sin superposiciones y hasta 16 h por día. Un técnico corrige sus horas de los últimos *Días para corregir horas* (Ajustes, 7 por defecto); antes de eso, solo un administrador. Un cronómetro en curso se pausa antes de editarlo.
+  - **Mover y corregir**: arrastrar un tramo a otro día (con *Deshacer*), o abrirlo para cambiar el día, el horario, el ticket o la nota. Cada cambio queda registrado (quién, cuándo, antes y después), el tramo se marca *editado* y el ticket lo anota en su historial interno.
+  - **Exportar** el período a Excel o CSV.
 - **Pedidos a proveedor** (*Administración → Pedidos a proveedor*, o desde la alerta de stock bajo): el sistema sugiere qué pedir, agrupado por proveedor, para llevar cada repuesto al doble de su mínimo (descontando lo que ya está pedido). El borrador se edita, se baja en PDF o CSV y se marca enviado; si se carga el email del proveedor, se le manda con los dos archivos. Cuando llega la mercadería se registra lo recibido (todo o una parte) y se suma al stock.
 - **Plantillas por producto**: en *Plantillas Presupuesto*, cada plantilla puede asociarse a un modelo. Al presupuestar un equipo de ese modelo, sus ítems típicos aparecen primero y se pueden cargar todos juntos.
 

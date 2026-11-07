@@ -1,0 +1,127 @@
+<section id="horas-section" class="max-w-7xl mx-auto">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-3">
+            <button type="button" id="back-to-list" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Volver
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">⏱ Horas</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <select id="horas-tecnico" class="hidden border rounded-lg px-3 py-2 text-sm bg-white" aria-label="Técnico"></select>
+            <div class="hidden sm:inline-flex rounded-lg border bg-white overflow-hidden text-sm" role="group" aria-label="Vista">
+                <button type="button" data-horas-vista="dia" class="px-3 py-2">Día</button>
+                <button type="button" data-horas-vista="semana" class="px-3 py-2 border-l">Semana</button>
+                <button type="button" data-horas-vista="mes" class="px-3 py-2 border-l">Mes</button>
+            </div>
+            <button type="button" id="horas-nueva" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow text-sm">+ Cargar horas</button>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-1">
+            <button type="button" id="horas-ant" class="w-10 h-10 rounded-lg border bg-white hover:bg-gray-50 text-lg" aria-label="Anterior">‹</button>
+            <button type="button" id="horas-hoy" class="h-10 px-3 rounded-lg border bg-white hover:bg-gray-50 text-sm font-semibold">Hoy</button>
+            <button type="button" id="horas-sig" class="w-10 h-10 rounded-lg border bg-white hover:bg-gray-50 text-lg" aria-label="Siguiente">›</button>
+            <span id="horas-rango" class="ml-2 font-semibold text-gray-700"></span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+            <span class="text-gray-500">Exportar:</span>
+            <button type="button" data-horas-exportar="xlsx" class="px-3 py-1.5 rounded-lg border bg-white hover:bg-gray-50">Excel</button>
+            <button type="button" data-horas-exportar="csv" class="px-3 py-1.5 rounded-lg border bg-white hover:bg-gray-50">CSV</button>
+        </div>
+    </div>
+
+    <div id="horas-resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+    <p id="horas-ayuda" class="text-xs text-gray-500 mb-3"></p>
+    <div id="horas-cuerpo"><div class="text-center py-12 text-gray-400 text-sm">Cargando...</div></div>
+</section>
+
+<!-- Cargar / corregir un tramo (frontend/js/horas.js) -->
+<div id="horas-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-[60] p-0 sm:p-4 overflow-y-auto">
+    <form id="horas-form" novalidate class="bg-white w-full sm:max-w-lg sm:rounded-2xl shadow-2xl min-h-full sm:min-h-0" role="dialog" aria-modal="true" aria-labelledby="horas-modal-titulo">
+        <div class="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white sm:rounded-t-2xl z-10">
+            <h3 id="horas-modal-titulo" class="font-bold text-gray-800">Cargar horas</h3>
+            <button type="button" id="horas-cerrar" data-cerrar class="text-gray-400 hover:text-gray-600 text-2xl leading-none w-10 h-10" aria-label="Cerrar">×</button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div id="horas-f-tecnico-wrap" class="hidden">
+                <label for="horas-f-tecnico" class="block text-sm font-semibold text-gray-700 mb-1">Técnico</label>
+                <select id="horas-f-tecnico" class="w-full border rounded-lg px-3 py-2"></select>
+            </div>
+
+            <fieldset>
+                <legend class="block text-sm font-semibold text-gray-700 mb-1">¿En qué se trabajó?</legend>
+                <div class="inline-flex rounded-lg border overflow-hidden text-sm mb-2">
+                    <label data-seg class="px-3 py-2 cursor-pointer"><input type="radio" name="horas-tipo" value="ticket" class="sr-only" checked> En un ticket</label>
+                    <label data-seg class="px-3 py-2 cursor-pointer border-l"><input type="radio" name="horas-tipo" value="taller" class="sr-only"> Tarea del taller</label>
+                </div>
+                <div id="horas-f-ticket-wrap" class="relative">
+                    <input id="horas-f-ticket" type="search" autocomplete="off" placeholder="Buscar por RMA, serie o producto…"
+                        class="w-full border rounded-lg px-3 py-2" aria-describedby="horas-f-ticket-err">
+                    <div id="horas-f-ticket-sel" class="hidden mt-2 flex items-center justify-between gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm"></div>
+                    <ul id="horas-f-ticket-res" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto text-sm"></ul>
+                    <p id="horas-f-ticket-err" class="hidden text-xs text-red-600 mt-1"></p>
+                </div>
+                <div id="horas-f-cat-wrap" class="hidden">
+                    <select id="horas-f-categoria" class="w-full border rounded-lg px-3 py-2" aria-label="Tarea del taller"></select>
+                    <p class="text-xs text-gray-500 mt-1">Cuenta en las horas del técnico, no en el costo de ningún ticket.</p>
+                </div>
+            </fieldset>
+
+            <div>
+                <label for="horas-f-dia" class="block text-sm font-semibold text-gray-700 mb-1">Día</label>
+                <input id="horas-f-dia" type="date" class="w-full border rounded-lg px-3 py-2" aria-describedby="horas-f-dia-err">
+                <p id="horas-f-dia-err" class="hidden text-xs text-red-600 mt-1"></p>
+            </div>
+
+            <fieldset id="horas-f-modo-wrap">
+                <legend class="block text-sm font-semibold text-gray-700 mb-1">Tiempo</legend>
+                <div class="inline-flex rounded-lg border overflow-hidden text-sm mb-2">
+                    <label data-seg class="px-3 py-2 cursor-pointer"><input type="radio" name="horas-modo" value="horario" class="sr-only" checked> Desde / hasta</label>
+                    <label data-seg class="px-3 py-2 cursor-pointer border-l"><input type="radio" name="horas-modo" value="duracion" class="sr-only"> Solo duración</label>
+                </div>
+            </fieldset>
+            <div id="horas-f-horario" class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="horas-f-desde" class="block text-xs text-gray-500 mb-1">Desde</label>
+                    <input id="horas-f-desde" type="time" class="w-full border rounded-lg px-3 py-2">
+                </div>
+                <div>
+                    <label for="horas-f-hasta" class="block text-xs text-gray-500 mb-1">Hasta</label>
+                    <input id="horas-f-hasta" type="time" class="w-full border rounded-lg px-3 py-2">
+                </div>
+            </div>
+            <div id="horas-f-duracion" class="hidden">
+                <div class="flex items-center gap-2">
+                    <input id="horas-f-h" type="number" min="0" max="16" inputmode="numeric" class="w-20 border rounded-lg px-3 py-2" aria-label="Horas"> <span class="text-sm text-gray-600">h</span>
+                    <input id="horas-f-m" type="number" min="0" max="59" step="5" inputmode="numeric" class="w-20 border rounded-lg px-3 py-2" aria-label="Minutos"> <span class="text-sm text-gray-600">min</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Se ubica a continuación de lo último cargado ese día (o a las 9:00).</p>
+            </div>
+            <p id="horas-f-tiempo-err" class="hidden text-xs text-red-600 -mt-2"></p>
+            <p id="horas-f-total" class="text-sm text-gray-600 -mt-2"></p>
+
+            <div>
+                <label for="horas-f-nota" class="block text-sm font-semibold text-gray-700 mb-1">Nota <span class="font-normal text-gray-400">(opcional)</span></label>
+                <input id="horas-f-nota" type="text" maxlength="200" class="w-full border rounded-lg px-3 py-2" placeholder="Qué se hizo">
+            </div>
+
+            <p id="horas-f-error" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert"></p>
+
+            <details id="horas-f-cambios-wrap" class="hidden text-sm">
+                <summary class="cursor-pointer text-gray-600 font-semibold">Historial de cambios</summary>
+                <ul id="horas-f-cambios" class="mt-2 space-y-2"></ul>
+            </details>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-t bg-gray-50 sm:rounded-b-2xl sticky bottom-0">
+            <button type="button" id="horas-borrar" class="hidden text-red-600 hover:text-red-800 font-semibold text-sm px-2 py-2">Borrar</button>
+            <div class="flex gap-2 ml-auto">
+                <button type="button" id="horas-cancelar" class="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 font-semibold text-sm">Cancelar</button>
+                <button type="submit" id="horas-guardar" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm">Guardar</button>
+            </div>
+        </div>
+    </form>
+</div>

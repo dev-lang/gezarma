@@ -60,6 +60,7 @@ class EventoHistorial(str, enum.Enum):
     ARCHIVO_ELIMINADO= "archivo_eliminado"
     CHECKLIST_INGRESO= "checklist_ingreso"
     FIRMA_REGISTRADA = "firma_registrada"
+    TIEMPO_EDITADO   = "tiempo_editado"     # horas cargadas, movidas o corregidas desde el calendario
 
 # ── Models ────────────────────────────────────────────────────────────────────
 class Usuario(Base):
@@ -347,17 +348,35 @@ class PedidoItem(Base):
 
 
 class TiempoTrabajo(Base):
-    """Un tramo de trabajo de un técnico sobre un ticket (fin vacío = en curso)."""
+    """Un tramo de trabajo de un técnico (fin vacío = en curso): sobre un ticket o,
+    sin ticket, en una tarea del taller (categoria: capacitación, limpieza…)."""
     __tablename__ = "tiempos_trabajo"
     id         = Column(Integer, primary_key=True, index=True)
-    ticket_id  = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    ticket_id  = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=True, index=True)
+    categoria  = Column(String, nullable=True)   # solo si no hay ticket (ver services/horas.py)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
-    inicio     = Column(DateTime, nullable=False, default=utcnow)
+    inicio     = Column(DateTime, nullable=False, default=utcnow, index=True)
     fin        = Column(DateTime, nullable=True)
     nota       = Column(String, nullable=True)
     manual     = Column(Boolean, nullable=False, default=False, server_default="0")
+    editado    = Column(Boolean, nullable=False, default=False, server_default="0")
     ticket  = relationship("Ticket", back_populates="tiempos")
     usuario = relationship("Usuario")
+
+
+class TiempoCambio(Base):
+    """Registro de cada alta, edición, movimiento o borrado de horas hecho a mano
+    (quién, cuándo, antes y después). Sobrevive al borrado del tramo."""
+    __tablename__ = "tiempo_cambios"
+    id          = Column(Integer, primary_key=True, index=True)
+    registro_id = Column(Integer, ForeignKey("tiempos_trabajo.id", ondelete="SET NULL"), nullable=True, index=True)
+    tecnico_id  = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)   # dueño de las horas
+    usuario_id  = Column(Integer, ForeignKey("usuarios.id"), nullable=False)               # quién hizo el cambio
+    fecha       = Column(DateTime, nullable=False, default=utcnow)
+    accion      = Column(String, nullable=False)   # alta / edicion / movido / borrado
+    antes       = Column(JSON, nullable=True)
+    despues     = Column(JSON, nullable=True)
+    usuario = relationship("Usuario", foreign_keys=[usuario_id])
 
 
 class Encuesta(Base):
