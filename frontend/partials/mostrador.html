@@ -1,19 +1,18 @@
-<section id="mostrador-section" class="max-w-4xl mx-auto">
-    <button type="button" id="mostrador-volver" class="flex items-center text-blue-600 hover:text-blue-800 mb-6 transition">
-        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-        Volver al panel
-    </button>
-
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Ingreso en mostrador</h2>
-        <p class="text-gray-500 text-sm">Cliente, equipo, cómo llega y firma de conformidad, en una sola pantalla. Al terminar se imprimen la etiqueta y el comprobante.</p>
+<!-- Se abre como modal sobre la pantalla actual (js/recepcion.js → abrirMostrador) -->
+<section id="mostrador-section">
+    <div class="sticky top-0 z-30 -mx-4 sm:-mx-6 mb-5 px-4 sm:px-6 py-4 bg-white border-b flex items-start justify-between gap-3">
+        <div>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800">Ingreso en mostrador</h2>
+            <p class="text-gray-500 text-sm hidden sm:block">Cliente, equipo, cómo llega y firma de conformidad, en una sola pantalla. Al terminar se imprimen la etiqueta y el comprobante.</p>
+        </div>
+        <button type="button" id="mostrador-cerrar" data-cerrar aria-label="Cerrar" class="shrink-0 text-gray-400 hover:text-gray-600 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
     </div>
 
     <form id="mostrador-form" class="space-y-6" autocomplete="off">
         <!-- 1. Cliente -->
-        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 class="font-bold text-gray-800 mb-3">1. Cliente</h3>
             <div id="ing-cli-busqueda">
                 <div class="relative">
@@ -58,7 +57,7 @@
         </div>
 
         <!-- 2. Equipo -->
-        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 class="font-bold text-gray-800 mb-3">2. Equipo</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
@@ -92,13 +91,13 @@
         </div>
 
         <!-- 3. Recepción -->
-        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 class="font-bold text-gray-800 mb-3">3. Cómo llega el equipo</h3>
             <div id="ing-checklist"></div>
         </div>
 
         <!-- 4. Fotos -->
-        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 class="font-bold text-gray-800 mb-1">4. Fotos del equipo <span class="text-xs font-normal text-gray-400">(opcional)</span></h3>
             <p class="text-xs text-gray-400 mb-3">Desde el celular abre la cámara. Se achican antes de subir para no ocupar el espacio de adjuntos del ticket.</p>
             <input type="file" id="ing-fotos" accept="image/jpeg,image/png" capture="environment" multiple class="hidden">
@@ -107,7 +106,7 @@
         </div>
 
         <!-- 5. Firma -->
-        <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 class="font-bold text-gray-800 mb-1">5. Firma del cliente <span class="text-xs font-normal text-gray-400">(opcional)</span></h3>
             <p class="text-xs text-gray-400 mb-3">Conformidad con el ingreso y el estado del equipo. Sale en la orden de ingreso y en el comprobante.</p>
             <div id="ing-firma"></div>
@@ -120,7 +119,7 @@
     </form>
 
     <!-- Resultado -->
-    <div id="mostrador-listo" class="hidden bg-white p-8 rounded-xl shadow border border-gray-100 text-center">
+    <div id="mostrador-listo" class="hidden bg-white p-6 sm:p-8 rounded-xl border border-gray-200 text-center">
         <p class="text-4xl mb-2">✅</p>
         <h3 class="text-xl font-bold text-gray-800">Ingreso registrado</h3>
         <p class="font-mono text-2xl font-bold text-blue-700 mt-2" id="mostrador-listo-rma"></p>

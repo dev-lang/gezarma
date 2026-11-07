@@ -177,9 +177,27 @@ const Recepcion = (() => {
     // ── Pantalla de ingreso en mostrador ─────────────────────────────────────
     let _estado = null;
 
+    /** Cierra el modal del mostrador; si se registró un ingreso, refresca el listado de atrás. */
+    function cerrarMostrador() {
+        document.getElementById('mostrador-modal')?.remove();
+        document.body.classList.remove('overflow-hidden');
+        if (_estado?.ticket && document.getElementById('dashboard-section')) ui.initDashboard();
+    }
+
     async function abrirMostrador() {
-        await ui.showSection('mostrador');
-        document.getElementById('search-container')?.classList.remove('hidden');
+        // Modal sobre la pantalla actual (como "Nuevo ticket"): al cerrarlo se vuelve a donde estaba
+        document.getElementById('mostrador-modal')?.remove();
+        let html;
+        try { html = await ui.loadPartial('mostrador'); } catch (e) { toast.error(e.message); return; }
+        const overlay = document.createElement('div');
+        overlay.id = 'mostrador-modal';
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 sm:p-4';
+        overlay.innerHTML = `<div role="dialog" aria-modal="true" aria-labelledby="mostrador-titulo"
+            class="bg-gray-50 w-full sm:max-w-3xl h-full sm:h-auto sm:max-h-[92vh] overflow-y-auto sm:rounded-2xl shadow-2xl px-4 sm:px-6 pb-4 sm:pb-6">${html}</div>`;
+        document.body.appendChild(overlay);
+        document.body.classList.add('overflow-hidden');
+        overlay.querySelector('h2')?.setAttribute('id', 'mostrador-titulo');
+        const caja = overlay.firstElementChild;
         const $ = id => document.getElementById(id);
         _estado = { cliente: null, fotos: [], ticket: null };
         const leerChecklist = checklistForm($('ing-checklist'));
@@ -272,10 +290,10 @@ const Recepcion = (() => {
         // Volver / cancelar
         const salir = async () => {
             const hayDatos = _estado.cliente || $('ing-serie').value || $('ing-descripcion').value || _estado.fotos.length || !pad.vacia();
-            if (hayDatos && !(await confirmDialog('¿Descartar el ingreso?', 'Se pierden los datos cargados.', 'Descartar'))) return;
-            ui.initDashboard();
+            if (!_estado.ticket && hayDatos && !(await confirmDialog('¿Descartar el ingreso?', 'Se pierden los datos cargados.', 'Descartar'))) return;
+            cerrarMostrador();
         };
-        $('mostrador-volver').addEventListener('click', salir);
+        $('mostrador-cerrar').addEventListener('click', salir);
         $('mostrador-cancelar').addEventListener('click', salir);
 
         // Registrar
@@ -325,7 +343,7 @@ const Recepcion = (() => {
                     $('mostrador-listo-aviso').textContent = `No se pudieron subir ${fallidas.length} foto(s): ${fallidas[0]}. Podés subirlas desde el ticket.`;
                     $('mostrador-listo-aviso').classList.remove('hidden');
                 }
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                caja.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (err) {
                 toast.error(err.message);
             } finally {
@@ -334,8 +352,13 @@ const Recepcion = (() => {
         });
         document.querySelectorAll('.mostrador-doc').forEach(b =>
             b.addEventListener('click', () => Documentos.abrir(_estado.ticket.id, b.dataset.doc)));
-        $('mostrador-abrir').addEventListener('click', async () => ui.showTicketDetail(await api.getTicket(_estado.ticket.id)));
-        $('mostrador-otro').addEventListener('click', () => abrirMostrador());
+        $('mostrador-abrir').addEventListener('click', async () => {
+            const t = await api.getTicket(_estado.ticket.id);
+            _estado.ticket = null;   // no hace falta refrescar el listado: se va al detalle
+            cerrarMostrador();
+            ui.showTicketDetail(t);
+        });
+        $('mostrador-otro').addEventListener('click', () => { cerrarMostrador(); abrirMostrador(); });
     }
 
     // ── Modal simple ─────────────────────────────────────────────────────────
