@@ -1421,6 +1421,11 @@ const ui = {
             });
 
             const opts = { responsive: true, maintainAspectRatio: false, animation: false };
+            // Leyenda a la derecha, con puntos: entra entera en la tarjeta (abajo se cortaba)
+            // Nombres largos: recortados con "…" (el nombre completo queda en el tooltip)
+            const corto = (s, n = 16) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+            const leyenda = { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, boxHeight: 7, padding: 8, font: { size: 11 },
+                generateLabels: ch => Chart.overrides.doughnut.plugins.legend.labels.generateLabels(ch).map(l => ({ ...l, text: corto(l.text, 15) })) } };
 
             const stateColors = {
                 'Nuevo': '#3b82f6', 'En revisión': '#f59e0b', 'Aprobado para RMA': '#10b981',
@@ -1437,25 +1442,27 @@ const ui = {
                 type: 'doughnut',
                 data: {
                     labels: stateLabels.map(l => I18N.tr(l)),
-                    datasets: [{ data: stateData, backgroundColor: stateBgs }]
+                    datasets: [{ data: stateData, backgroundColor: stateBgs, borderWidth: 2 }]
                 },
-                options: { ...opts, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } },
+                options: { ...opts, cutout: '62%', plugins: { legend: leyenda } },
             });
             }
             if (!Object.keys(stats.fallas_por_producto).length) vacio('chart-products', 'Sin fallas registradas');
             else {
             window.myChart2 = new Chart(document.getElementById('chart-products').getContext('2d'), {
                 type: 'bar',
-                data: { labels: Object.keys(stats.fallas_por_producto), datasets: [{ label: I18N.tr('Fallas'), data: Object.values(stats.fallas_por_producto), backgroundColor: '#3b82f6' }] },
-                options: { ...opts, indexAxis: 'y', plugins: { legend: { display: false } } },
+                data: { labels: Object.keys(stats.fallas_por_producto), datasets: [{ label: I18N.tr('Fallas'), data: Object.values(stats.fallas_por_producto), backgroundColor: '#3b82f6', borderRadius: 4, maxBarThickness: 18 }] },
+                options: { ...opts, indexAxis: 'y', plugins: { legend: { display: false } },
+                    scales: { y: { grid: { display: false }, ticks: { font: { size: 11 }, callback(v) { return corto(this.getLabelForValue(v)); } } },
+                              x: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: 'rgba(148,163,184,.2)' } } } },
             });
             }
             if (!Object.keys(stats.tickets_por_tecnico).length) vacio('chart-techs', 'Ningún ticket asignado a un técnico todavía');
             else {
             window.myChart3 = new Chart(document.getElementById('chart-techs').getContext('2d'), {
-                type: 'pie',
-                data: { labels: Object.keys(stats.tickets_por_tecnico), datasets: [{ data: Object.values(stats.tickets_por_tecnico), backgroundColor: ['#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444'] }] },
-                options: opts,
+                type: 'doughnut',
+                data: { labels: Object.keys(stats.tickets_por_tecnico), datasets: [{ data: Object.values(stats.tickets_por_tecnico), backgroundColor: ['#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444'], borderWidth: 2 }] },
+                options: { ...opts, cutout: '62%', plugins: { legend: leyenda } },
             });
             }
         } catch (err) { console.error(err); }

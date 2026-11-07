@@ -39,6 +39,10 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 
 ## Capturas
 
+![Lista de tickets](docs/capturas/12-lista.png)
+
+Lista de tickets: estados con su cantidad (filtran con un clic), días en el taller, alertas de SLA y orden por cualquier columna.
+
 | Detalle del ticket (taller) | Detalle del ticket (cliente) |
 |---|---|
 | ![Detalle visto por el taller](docs/capturas/03-detalle-taller.png) | ![Detalle visto por el cliente](docs/capturas/04-detalle-cliente.png) |

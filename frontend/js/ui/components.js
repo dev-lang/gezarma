@@ -122,12 +122,12 @@ const components = (() => {
             ticket: `<td data-col="ticket" class="px-5 py-3.5">
                 <div class="font-semibold text-blue-700 whitespace-nowrap" translate="no">${esc(t.numero_rma)}</div>
                 <div class="t-sub text-xs text-gray-400 mt-0.5">#${t.id}</div></td>`,
-            equipo: `<td data-col="equipo" class="px-5 py-3.5 min-w-[11rem]">
+            equipo: `<td data-col="equipo" class="px-5 py-3.5 min-w-[14rem]">
                 <div class="font-medium text-gray-800">${esc(t.producto || 'Producto Genérico')}</div>
-                <div class="t-sub text-xs text-gray-400 mt-0.5"><span translate="no">SN ${esc(t.numero_serie)}</span>${garantiaBadge(t.en_garantia)}</div></td>`,
-            cliente: `<td data-col="cliente" class="px-5 py-3.5 text-sm text-gray-700" translate="no">${esc(t.usuario_nombre || '—')}</td>`,
-            estado: `<td data-col="estado" class="px-5 py-3.5"><div class="flex flex-wrap items-center gap-1">${statusBadge(t.estado)}${slaBadge(t.deadline_sla, t.estado, { soloAlertas: true }).replace('ml-2', '')}</div></td>`,
-            tecnico: `<td data-col="tecnico" class="px-5 py-3.5 text-sm">${t.tecnico_nombre ? `<span class="text-gray-700" translate="no">${esc(t.tecnico_nombre)}</span>` : '<span class="text-gray-400">Sin asignar</span>'}</td>`,
+                <div class="t-sub flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-400 mt-0.5"><span translate="no" class="whitespace-nowrap">SN ${esc(t.numero_serie)}</span>${garantiaBadge(t.en_garantia).replace('ml-1.5', '')}</div></td>`,
+            cliente: `<td data-col="cliente" class="px-5 py-3.5 text-sm text-gray-700 min-w-[10rem]" translate="no">${esc(t.usuario_nombre || '—')}</td>`,
+            estado: `<td data-col="estado" class="px-5 py-3.5"><div class="flex flex-col items-start gap-1">${statusBadge(t.estado)}${slaBadge(t.deadline_sla, t.estado, { soloAlertas: true }).replace('ml-2', '')}</div></td>`,
+            tecnico: `<td data-col="tecnico" class="px-5 py-3.5 text-sm whitespace-nowrap">${t.tecnico_nombre ? `<span class="text-gray-700" translate="no">${esc(t.tecnico_nombre)}</span>` : '<span class="text-gray-400">Sin asignar</span>'}</td>`,
             dias: `<td data-col="dias" class="px-5 py-3.5 text-sm text-right tabular-nums ${dias >= 7 ? 'text-amber-700 font-semibold' : 'text-gray-700'}"
                 title="${esc(new Date(t.fecha_creacion).toLocaleDateString(I18N.locale))}">${dias == null ? '<span class="text-gray-400">—</span>' : `<span class="t-dias">${dias}</span>`}</td>`,
             prioridad: `<td data-col="prioridad" class="px-5 py-3.5">${priorityBadge(t.prioridad)}</td>`,
