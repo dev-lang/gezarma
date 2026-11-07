@@ -35,7 +35,7 @@ def tickets_completos(client, admin, make_user):
             t = client.post("/mostrador/ingreso", headers=admin, json={
                 "cliente_nuevo": {"nombre": f"Cliente {i}", "telefono": f"11{uuid.uuid4().int % 10**8:08d}"},
                 "ticket": {"producto": marca, "numero_serie": f"{marca}-{i}", "fecha_compra": "2026-01-01T00:00:00",
-                           "descripcion": "x"},
+                           "descripcion": "No enciende"},
                 "firma": {"imagen": firma_png()}}).json()
             client.put(f"/tickets/{t['id']}/assign", headers=admin, json={"tecnico_id": tec["id"]})
             client.post(f"/tickets/{t['id']}/tags", headers=admin, json={"tag_nombre": "Garantía"})

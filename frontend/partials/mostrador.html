@@ -33,15 +33,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-semibold mb-1" for="ing-cli-nombre">Nombre y apellido / razón social *</label>
-                        <input type="text" id="ing-cli-nombre" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="ing-cli-nombre" maxlength="120" autocomplete="off" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1" for="ing-cli-telefono">Teléfono</label>
-                        <input type="tel" id="ing-cli-telefono" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="tel" id="ing-cli-telefono" maxlength="25" inputmode="tel" placeholder="Ej: 11 5555-1234" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1" for="ing-cli-email">Email</label>
-                        <input type="email" id="ing-cli-email" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="email" id="ing-cli-email" maxlength="254" placeholder="nombre@ejemplo.com" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold mb-1" for="ing-cli-tipo">Tipo</label>
@@ -68,11 +68,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1" for="ing-serie">N° de serie *</label>
-                    <input type="text" id="ing-serie" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="ing-serie" maxlength="50" autocapitalize="characters" spellcheck="false" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1" for="ing-compra">Fecha de compra *</label>
-                    <input type="date" id="ing-compra" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" id="ing-compra" min="1990-01-01" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1" for="ing-prioridad">Prioridad</label>
@@ -85,7 +85,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold mb-1" for="ing-descripcion">Falla que informa el cliente *</label>
-                    <textarea id="ing-descripcion" rows="3" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="ing-descripcion" maxlength="2000" rows="3" class="w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
             </div>
         </div>

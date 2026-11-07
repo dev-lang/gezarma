@@ -114,21 +114,52 @@ def username_para(db: Session, nombre: str) -> str:
             return candidato
 
 
+SERIE_VALIDA = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._/\-#]{1,48}[A-Za-z0-9]$")
+
+
+def validar_equipo(ticket) -> None:
+    """Reglas del ingreso en mostrador (el taller carga el equipo a mano)."""
+    serie = " ".join((ticket.numero_serie or "").split())
+    if not SERIE_VALIDA.match(serie):
+        _error("N° de serie inválido: entre 3 y 50 caracteres, con letras, números, espacios, puntos, guiones o barras.")
+    ticket.numero_serie = serie
+    falla = (ticket.descripcion or "").strip()
+    if len(falla) < 5:
+        _error("Describí la falla con un poco más de detalle (al menos 5 caracteres).")
+    if len(falla) > 2000:
+        _error("La descripción de la falla es demasiado larga (máximo 2000 caracteres).")
+    ticket.descripcion = falla
+    compra = ticket.fecha_compra.replace(tzinfo=None) if ticket.fecha_compra.tzinfo else ticket.fecha_compra
+    if compra.year < 1990:
+        _error("La fecha de compra es demasiado vieja: revisala.")
+
+
 def crear_cliente(db: Session, nombre: str, telefono: str, email: str, tipo_cliente: str) -> models.Usuario:
     """Cliente sin clave: no puede iniciar sesión hasta que un admin le genere una
     (Administración → Usuarios → resetear clave). Sigue su reparación con el QR."""
     nombre = (nombre or "").strip()
     telefono = (telefono or "").strip() or None
     email = (email or "").strip().lower() or None
+    nombre = " ".join(nombre.split())
     if not nombre:
         _error("Falta el nombre del cliente.")
+    if len(nombre) < 2 or not re.search(r"[^\W\d_]", nombre):
+        _error("El nombre del cliente tiene que tener al menos 2 letras.")
+    if len(nombre) > 120:
+        _error("El nombre del cliente es demasiado largo (máximo 120 caracteres).")
     if not telefono and not email:
         _error("Cargá al menos un teléfono o un email del cliente.")
     if telefono:   # mismo criterio que la edición de perfil
-        telefono = re.sub(r"[\s\-\(\)]", "", telefono)
-        if not re.match(r"^\+?\d{6,20}$", telefono):
+        telefono = re.sub(r"[\s\-\(\)\.]", "", telefono)
+        if not re.match(r"^\+?\d+$", telefono):
             _error("Teléfono inválido: usá solo números, opcionalmente con + al inicio.")
-    if email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        if not 8 <= len(telefono.lstrip("+")) <= 15:
+            _error("Teléfono inválido: tiene que tener entre 8 y 15 números (con código de área).")
+        otro = (db.query(models.Usuario.id).filter(models.Usuario.rol == models.UserRole.CLIENTE.value,
+                                                   models.Usuario.telefono == telefono).first())
+        if otro:
+            _error("Ya hay un cliente con ese teléfono: buscalo y elegilo de la lista.")
+    if email and (len(email) > 254 or not re.match(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$", email)):
         _error("Email inválido.")
     from ..routers.auth import email_en_uso
     if email and email_en_uso(db, email):

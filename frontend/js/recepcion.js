@@ -99,7 +99,7 @@ const Recepcion = (() => {
         const canvas = cont.querySelector('canvas');
         const ph = cont.querySelector('[data-ph]');
         const ctx = canvas.getContext('2d');
-        let trazos = 0, dibujando = false, ultimo = null;
+        let trazos = 0, dibujando = false, ultimo = null, largo = 0;
 
         function dimensionar() {
             const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -122,6 +122,7 @@ const Recepcion = (() => {
             if (!dibujando) return;
             const p = punto(e);
             ctx.beginPath(); ctx.moveTo(...ultimo); ctx.lineTo(...p); ctx.stroke();
+            largo += Math.hypot(p[0] - ultimo[0], p[1] - ultimo[1]);
             ultimo = p;
         });
         const fin = () => { dibujando = false; };
@@ -129,11 +130,12 @@ const Recepcion = (() => {
         canvas.addEventListener('pointercancel', fin);
         // Si cambia el ancho (rotar el celular) y todavía no firmó, se reajusta
         window.addEventListener('resize', () => { if (!trazos) dimensionar(); });
-        const limpiar = () => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); trazos = 0; ph.classList.remove('hidden'); };
+        const limpiar = () => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); trazos = 0; largo = 0; ph.classList.remove('hidden'); cont.dispatchEvent(new Event('firma-borrada')); };
         cont.querySelector('[data-limpiar]').addEventListener('click', limpiar);
         requestAnimationFrame(dimensionar);
         return {
             vacia: () => trazos === 0,
+            corta: () => trazos > 0 && largo < 60,   // un toque o un punto no es una firma
             datos: () => ({ imagen: canvas.toDataURL('image/png'), aclaracion: cont.querySelector('[data-aclaracion]').value.trim() }),
             limpiar,
         };
@@ -216,6 +218,8 @@ const Recepcion = (() => {
             $('ing-cli-elegido').classList.toggle('hidden', m !== 'elegido');
             $('ing-cli-elegido').classList.toggle('flex', m === 'elegido');
             $('ing-cli-nuevo').classList.toggle('hidden', m !== 'nuevo');
+            // Al cambiar de modo, los errores del modo anterior ya no aplican
+            ['ing-cli-buscar', 'ing-cli-nombre', 'ing-cli-telefono', 'ing-cli-email'].forEach(id => marcar(id, ''));
             // Foco inmediato (con demora, lo que se empieza a tipear podía ir al campo equivocado)
             if (m === 'buscar') { _estado.cliente = null; $('ing-cli-buscar').focus(); }
             if (m === 'nuevo') { _estado.cliente = null; $('ing-cli-nombre').focus(); }
@@ -297,37 +301,205 @@ const Recepcion = (() => {
         $('mostrador-cerrar').addEventListener('click', salir);
         $('mostrador-cancelar').addEventListener('click', salir);
 
+        // ── Validación ────────────────────────────────────────────────────
+        // Cada problema se marca debajo de su campo (y se revisa al salir de él);
+        // al registrar se revisa todo y se lleva el foco al primer error.
+        const hoy = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+        $('ing-compra').max = hoy();
+        const SERIE = /^[A-Za-z0-9][A-Za-z0-9 ._/\-#]{1,48}[A-Za-z0-9]$/;
+        const EMAIL = /^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/;
+        const digitos = t => t.replace(/\D/g, '');
+        const tocados = new Set();
+
+        function marcar(id, mensaje) {
+            const el = $(id);
+            if (!el) return;
+            const ancla = el.closest('[data-campo-wrap]') || el;
+            let p = document.getElementById(`${id}-error`);
+            el.classList.toggle('border-red-500', !!mensaje);
+            el.classList.toggle('ring-1', !!mensaje);
+            el.classList.toggle('ring-red-500', !!mensaje);
+            if (mensaje) {
+                el.setAttribute('aria-invalid', 'true');
+                if (!p) {
+                    p = document.createElement('p');
+                    p.id = `${id}-error`; p.className = 'text-xs font-semibold text-red-600 mt-1'; p.setAttribute('role', 'alert');
+                    ancla.insertAdjacentElement('afterend', p);
+                    el.setAttribute('aria-describedby', p.id);
+                }
+                p.textContent = I18N.t(mensaje);
+            } else {
+                el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby');
+                p?.remove();
+            }
+        }
+
+        // Cada regla devuelve el mensaje de error (o '' si está bien)
+        const reglas = {
+            'ing-cli-buscar': () => _estado.modoCliente === 'buscar' && !_estado.cliente
+                ? 'Elegí un cliente de la lista o cargalo como nuevo.' : '',
+            'ing-cli-nombre': () => {
+                if (_estado.modoCliente !== 'nuevo') return '';
+                const v = $('ing-cli-nombre').value.trim();
+                if (!v) return 'Falta el nombre del cliente.';
+                if (v.length < 2 || !/\p{L}.*\p{L}|\p{L}{2}/u.test(v)) return 'El nombre tiene que tener al menos 2 letras.';
+                return '';
+            },
+            'ing-cli-telefono': () => {
+                if (_estado.modoCliente !== 'nuevo') return '';
+                const v = $('ing-cli-telefono').value.trim();
+                if (!v) return $('ing-cli-email').value.trim() ? '' : 'Cargá un teléfono o un email para avisarle.';
+                if (!/^\+?[\d\s().-]+$/.test(v)) return 'Usá solo números (y + al inicio si es internacional).';
+                const n = digitos(v).length;
+                if (n < 8 || n > 15) return 'Tiene que tener entre 8 y 15 números, con código de área (ej: 11 5555-1234).';
+                return '';
+            },
+            'ing-cli-email': () => {
+                if (_estado.modoCliente !== 'nuevo') return '';
+                const v = $('ing-cli-email').value.trim();
+                return v && !EMAIL.test(v) ? 'Email inválido (ej: nombre@ejemplo.com).' : '';
+            },
+            'ing-producto': () => $('ing-producto').value ? '' : 'Elegí el producto.',
+            'ing-serie': () => {
+                const v = $('ing-serie').value.trim().replace(/\s+/g, ' ');
+                if (!v) return 'Falta el N° de serie.';
+                if (v.length < 3) return 'El N° de serie es muy corto (mínimo 3 caracteres).';
+                if (!SERIE.test(v)) return 'Usá letras, números, espacios, puntos, guiones o barras (sin símbolos al principio o al final).';
+                return '';
+            },
+            'ing-compra': () => {
+                const v = $('ing-compra').value;
+                if (!v) return 'Falta la fecha de compra (si no la sabe, una aproximada).';
+                if (v > hoy()) return 'La fecha de compra no puede ser futura.';
+                if (v < '1990-01-01') return 'La fecha de compra es demasiado vieja: revisala.';
+                return '';
+            },
+            'ing-descripcion': () => {
+                const v = $('ing-descripcion').value.trim();
+                if (!v) return 'Falta la falla que informa el cliente.';
+                if (v.length < 5) return 'Describí la falla con un poco más de detalle.';
+                return '';
+            },
+            'ing-fotos-btn': () => _estado.fotos.length > 10 ? 'Máximo 10 fotos: quitá alguna.' : '',
+            'ing-firma-aclaracion': () => {
+                const acl = $('ing-firma-aclaracion').value.trim();
+                if (!pad.vacia() && pad.corta()) return 'La firma es muy corta: pedile que firme de nuevo.';
+                if (!pad.vacia() && !acl) return 'Escribí la aclaración (nombre de quien firma).';
+                if (pad.vacia() && acl) return 'Falta la firma (o borrá la aclaración).';
+                return '';
+            },
+        };
+        $('ing-firma').querySelector('[data-aclaracion]').id = 'ing-firma-aclaracion';
+        $('ing-fotos-btn').setAttribute('data-campo-wrap', '');
+
+        // Lo que rechazó el servidor (p. ej. teléfono ya usado) sigue marcado hasta que se cambie ese valor
+        const delServidor = {};
+        const revisar = id => {
+            let m = reglas[id]();
+            const s = delServidor[id];
+            if (!m && s) { if ($(id)?.value === s.valor) m = s.mensaje; else delete delServidor[id]; }
+            marcar(id, m);
+            return m;
+        };
+        const revisarTodo = () => Object.keys(reglas).filter(id => revisar(id));
+        // Al salir de un campo se revisa lo que se escribió (formato, largo…). Que esté
+        // vacío se avisa recién al intentar registrar: si no, ir a tocar "Cliente nuevo"
+        // ya mostraba un error. Y se muestra un instante después, cuando el click que
+        // sacó el foco ya terminó: si el error aparece antes, empuja el botón y el click se pierde.
+        const alSalir = id => setTimeout(() => {
+            const el = $(id);
+            if (!el?.isConnected || el.closest('.hidden')) return;
+            const vacio = !(el.value || '').trim() && id !== 'ing-firma-aclaracion';
+            if (vacio && !_estado.intentado) return;
+            tocados.add(id); revisar(id);
+        }, 200);
+        Object.keys(reglas).forEach(id => {
+            const el = $(id);
+            if (!el || id === 'ing-cli-buscar') return;   // la búsqueda se revisa solo al registrar
+            el.addEventListener('blur', () => alSalir(id));
+            el.addEventListener('input', () => { if (tocados.has(id) || el.getAttribute('aria-invalid')) revisar(id); });
+            el.addEventListener('change', () => { if (tocados.has(id) || el.getAttribute('aria-invalid')) revisar(id); });
+        });
+        // teléfono y email se exigen uno u otro: revisar los dos juntos
+        ['ing-cli-telefono', 'ing-cli-email'].forEach(id => $(id).addEventListener('blur', () => setTimeout(() => {
+            if (tocados.has('ing-cli-telefono') || tocados.has('ing-cli-email')) { revisar('ing-cli-telefono'); revisar('ing-cli-email'); }
+        }, 220)));
+        $('ing-firma').querySelector('canvas').addEventListener('pointerup', () => { if (tocados.has('ing-firma-aclaracion')) revisar('ing-firma-aclaracion'); });
+        $('ing-firma').addEventListener('firma-borrada', () => marcar('ing-firma-aclaracion', ''));
+        $('ing-serie').addEventListener('blur', () => { $('ing-serie').value = $('ing-serie').value.trim().replace(/\s+/g, ' ').toUpperCase(); });
+
+        // ¿El equipo ya está en el taller? (mismo N° de serie)
+        let _serieAbiertos = [], _serieConsultada = '';
+        async function consultarSerie() {
+            const v = $('ing-serie').value.trim();
+            const aviso = $('ing-serie-aviso') || (() => {
+                const p = document.createElement('p'); p.id = 'ing-serie-aviso'; p.className = 'text-xs mt-1 hidden';
+                $('ing-serie').insertAdjacentElement('afterend', p); return p;
+            })();
+            if (v === _serieConsultada) return;
+            _serieConsultada = v; _serieAbiertos = [];
+            aviso.classList.add('hidden');
+            if (reglas['ing-serie']()) return;
+            try {
+                const lista = await api.request(`mostrador/serie?numero=${encodeURIComponent(v)}`);
+                if (v !== $('ing-serie').value.trim()) return;
+                _serieAbiertos = lista.filter(t => t.abierto);
+                if (!lista.length) return;
+                const t = _serieAbiertos[0] || lista[0];
+                aviso.className = `text-xs mt-1 font-semibold ${_serieAbiertos.length ? 'text-amber-700' : 'text-blue-700'}`;
+                aviso.textContent = _serieAbiertos.length
+                    ? I18N.t('⚠ Este equipo ya tiene un ticket abierto: {0} ({1}, de {2}).', t.numero_rma, I18N.t(t.estado), t.cliente || '—')
+                    : I18N.t('Ya pasó por el taller: {0} ({1}). Si vuelve por la misma falla, se marca como reingreso.', t.numero_rma, I18N.t(t.estado));
+                aviso.classList.remove('hidden');
+            } catch { /* el aviso es una ayuda: si falla, se sigue igual */ }
+        }
+        $('ing-serie').addEventListener('blur', consultarSerie);
+
+        // Errores que devuelve el servidor → al campo que corresponde
+        const CAMPO_DEL_ERROR = [[/tel[eé]fono/i, 'ing-cli-telefono'], [/email/i, 'ing-cli-email'], [/nombre del cliente/i, 'ing-cli-nombre'],
+                                 [/serie/i, 'ing-serie'], [/falla/i, 'ing-descripcion'], [/fecha de compra/i, 'ing-compra'],
+                                 [/producto/i, 'ing-producto'], [/firma/i, 'ing-firma-aclaracion'], [/cliente/i, 'ing-cli-buscar']];
+
         // Registrar
         $('mostrador-form').addEventListener('submit', async e => {
             e.preventDefault();
+            if (_estado.enviando) return;
+            _estado.intentado = true;
+            Object.keys(reglas).forEach(id => tocados.add(id));
+            const errores = revisarTodo();
+            if (errores.length) {
+                toast.error(errores.length === 1 ? I18N.t('Revisá el campo marcado.') : I18N.t('Revisá los {0} campos marcados.', errores.length));
+                const primero = $(errores[0]);
+                primero?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                primero?.focus({ preventScroll: true });
+                return;
+            }
+            await consultarSerie();
+            if (_serieAbiertos.length) {
+                const t = _serieAbiertos[0];
+                const seguir = await confirmDialog(I18N.t('Este equipo ya está en el taller'),
+                    I18N.t('El N° de serie tiene abierto el {0} ({1}). ¿Registrar igual un ingreso nuevo?', t.numero_rma, I18N.t(t.estado)),
+                    I18N.t('Registrar igual'), { peligro: false, cancelLabel: I18N.t('Revisar') });
+                if (!seguir) { $('ing-serie').focus(); return; }
+            }
             const prod = $('ing-producto');
-            const falta = [];
-            let cliente = {};
-            if (_estado.modoCliente === 'elegido' && _estado.cliente) cliente = { cliente_id: _estado.cliente.id };
-            else if (_estado.modoCliente === 'nuevo') {
-                cliente = { cliente_nuevo: {
-                    nombre: $('ing-cli-nombre').value.trim(), telefono: $('ing-cli-telefono').value.trim(),
-                    email: $('ing-cli-email').value.trim(), tipo_cliente: $('ing-cli-tipo').value } };
-                if (!cliente.cliente_nuevo.nombre) falta.push('el nombre del cliente');
-                else if (!cliente.cliente_nuevo.telefono && !cliente.cliente_nuevo.email) falta.push('un teléfono o email del cliente');
-            } else falta.push('el cliente');
-            if (!prod.value) falta.push('el producto');
-            if (!$('ing-serie').value.trim()) falta.push('el N° de serie');
-            if (!$('ing-compra').value) falta.push('la fecha de compra');
-            if (!$('ing-descripcion').value.trim()) falta.push('la falla');
-            if (falta.length) { toast.error('Falta ' + falta.join(', ') + '.'); return; }
-            if ($('ing-compra').value > new Date().toISOString().slice(0, 10)) { toast.error('La fecha de compra no puede ser futura.'); return; }
+            let cliente;
+            if (_estado.modoCliente === 'elegido') cliente = { cliente_id: _estado.cliente.id };
+            else cliente = { cliente_nuevo: {
+                nombre: $('ing-cli-nombre').value.trim().replace(/\s+/g, ' '), telefono: $('ing-cli-telefono').value.trim(),
+                email: $('ing-cli-email').value.trim(), tipo_cliente: $('ing-cli-tipo').value } };
 
             const cuerpo = {
                 ...cliente,
                 ticket: {
                     producto_id: parseInt(prod.value), producto: prod.options[prod.selectedIndex].text,
-                    numero_serie: $('ing-serie').value.trim(), fecha_compra: $('ing-compra').value + 'T00:00:00',
+                    numero_serie: $('ing-serie').value.trim().replace(/\s+/g, ' '), fecha_compra: $('ing-compra').value + 'T00:00:00',
                     descripcion: $('ing-descripcion').value.trim(), prioridad: $('ing-prioridad').value,
                 },
                 checklist: leerChecklist(),
                 firma: pad.vacia() ? null : pad.datos(),
             };
+            _estado.enviando = true;
             ui.setLoading('mostrador-submit', true);
             try {
                 const t = await api.request('mostrador/ingreso', { method: 'POST', body: JSON.stringify(cuerpo) });
@@ -346,8 +518,16 @@ const Recepcion = (() => {
                 }
                 caja.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (err) {
+                const campo = CAMPO_DEL_ERROR.find(([rx]) => rx.test(err.message))?.[1];
+                if (campo && $(campo) && !$(campo).closest('.hidden')) {
+                    delServidor[campo] = { valor: $(campo).value, mensaje: err.message };
+                    marcar(campo, err.message);
+                    $(campo).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    $(campo).focus({ preventScroll: true });
+                }
                 toast.error(err.message);
             } finally {
+                _estado.enviando = false;
                 ui.setLoading('mostrador-submit', false);
             }
         });

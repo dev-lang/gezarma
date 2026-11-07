@@ -216,3 +216,43 @@ def test_perfil_sin_email_no_choca_entre_clientes(client, tecnico, admin):
         r = client.patch(f"/users/{uid}/profile", headers=admin, json={"email": "", "telefono": "1144443333"})
         assert r.status_code == 200, r.text
         assert r.json()["email"] is None
+
+
+@pytest.mark.parametrize("cambio,mensaje", [
+    ({"numero_serie": "ab"}, "N° de serie inválido"),
+    ({"numero_serie": "-AB%12-"}, "N° de serie inválido"),
+    ({"descripcion": "mal"}, "más de detalle"),
+    ({"fecha_compra": "1985-01-01T00:00:00"}, "demasiado vieja"),
+    ({"fecha_compra": "2099-01-01T00:00:00"}, "futura"),
+])
+def test_validaciones_del_equipo(client, tecnico, cambio, mensaje):
+    r = client.post("/mostrador/ingreso", headers=tecnico, json={"cliente_nuevo": _nuevo(), "ticket": {**EQUIPO, **cambio}})
+    assert r.status_code == 400 and mensaje in r.json()["detail"], r.json()
+
+
+@pytest.mark.parametrize("cliente,mensaje", [
+    ({"nombre": "4", "telefono": "1155550000"}, "al menos 2 letras"),
+    ({"nombre": "Ana", "telefono": "1234"}, "entre 8 y 15"),
+    ({"nombre": "Ana", "telefono": "", "email": "ana@ejemplo"}, "Email inválido"),
+])
+def test_validaciones_del_cliente_nuevo(client, tecnico, cliente, mensaje):
+    r = client.post("/mostrador/ingreso", headers=tecnico, json={"cliente_nuevo": cliente, "ticket": EQUIPO})
+    assert r.status_code == 400 and mensaje in r.json()["detail"], r.json()
+
+
+def test_no_duplica_clientes_por_telefono_y_normaliza(client, tecnico):
+    tel = f"11 {uuid.uuid4().int % 10**4:04d}-{uuid.uuid4().int % 10**4:04d}"
+    serie = f"NORM-{uuid.uuid4().hex[:5]}"
+    r = client.post("/mostrador/ingreso", headers=tecnico, json={
+        "cliente_nuevo": _nuevo(telefono=tel), "ticket": {**EQUIPO, "numero_serie": f"  {serie.lower()}   x1 "}})
+    assert r.status_code == 200 and r.json()["numero_serie"] == f"{serie.lower()} x1"
+    otro = client.post("/mostrador/ingreso", headers=tecnico, json={"cliente_nuevo": _nuevo(nombre="Otra Persona", telefono=f"({tel[:2]}) {tel[3:]}"), "ticket": EQUIPO})
+    assert otro.status_code == 400 and "Ya hay un cliente con ese teléfono" in otro.json()["detail"]
+
+
+def test_aviso_de_serie_ya_en_el_taller(client, tecnico):
+    serie = f"TALLER-{uuid.uuid4().hex[:5]}".upper()
+    assert client.get("/mostrador/serie", params={"numero": serie}, headers=tecnico).json() == []
+    t = client.post("/mostrador/ingreso", headers=tecnico, json={"cliente_nuevo": _nuevo(), "ticket": {**EQUIPO, "numero_serie": serie}}).json()
+    lista = client.get("/mostrador/serie", params={"numero": f" {serie.lower()} "}, headers=tecnico).json()
+    assert [(x["numero_rma"], x["abierto"]) for x in lista] == [(t["numero_rma"], True)]

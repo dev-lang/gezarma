@@ -79,7 +79,7 @@ def test_urgente_se_mantiene(client, admin, make_user):
     """Si el taller lo carga como Urgente (el cliente no elige prioridad), no baja a Alta."""
     h, cli = make_user()
     _, tec = make_user(rol="tecnico")
-    cuerpo = {"producto": "X", "numero_serie": "GAR-600", "fecha_compra": "2026-01-01T00:00:00", "descripcion": "x"}
+    cuerpo = {"producto": "X", "numero_serie": "GAR-600", "fecha_compra": "2026-01-01T00:00:00", "descripcion": "No enciende"}
     t1 = client.post("/tickets/", headers=h, json=cuerpo).json()
     _reparado_y_cerrado(client, admin, tec["id"], t1)
     t2 = client.post("/mostrador/ingreso", headers=admin,

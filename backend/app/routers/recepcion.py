@@ -81,6 +81,7 @@ def ingreso(data: IngresoIn, request: Request, db: Session = Depends(database.ge
     checklist y, si el cliente firmó, su firma de conformidad."""
     if (data.cliente_id is None) == (data.cliente_nuevo is None):
         raise HTTPException(status_code=400, detail="Elegí un cliente de la lista o cargá uno nuevo.")
+    recepcion.validar_equipo(data.ticket)   # antes de crear nada
     # La firma se valida antes de crear nada: si es inválida no queda un ticket a medias
     firma = recepcion.procesar_firma(data.firma.imagen) if data.firma else None
 
@@ -104,6 +105,22 @@ def ingreso(data: IngresoIn, request: Request, db: Session = Depends(database.ge
         db.commit()
         db.refresh(ticket)
     return schemas.Ticket.for_viewer(ticket, current_user)
+
+
+@router.get("/mostrador/serie")
+def tickets_de_la_serie(numero: str = Query(..., min_length=1, max_length=60), db: Session = Depends(database.get_db),
+                        _: models.Usuario = Depends(TALLER)):
+    """Tickets con ese N° de serie (sin distinguir mayúsculas ni espacios), del más nuevo
+    al más viejo: para avisar en el mostrador si el equipo ya está en el taller."""
+    serie = numero.strip().upper()
+    finales = {e.valor for e in db.query(models.TicketStatusConfig).filter_by(es_final=True).all()}
+    T = models.Ticket
+    filas = (db.query(T).filter(func.upper(func.trim(T.numero_serie)) == serie)
+             .order_by(T.fecha_creacion.desc()).limit(5).all())
+    from ..timeutils import iso_utc
+    return [{"id": t.id, "numero_rma": t.numero_rma, "estado": t.estado, "abierto": t.estado not in finales,
+             "producto": t.producto, "cliente": t.cliente.nombre if t.cliente else None,
+             "fecha": iso_utc(t.fecha_creacion)} for t in filas]
 
 
 def _ticket(db: Session, ticket_id: int) -> models.Ticket:
