@@ -270,6 +270,12 @@
     <main class="container mx-auto px-6 py-8" id="app-root"></main>
 
     <!-- Scripts -->
+    <script>
+        // Ningún formulario de la app se envía "a la antigua" (recargando la página):
+        // todos los maneja JavaScript. Si un script no llegó a conectarse, mejor que
+        // el botón no haga nada a que recargue y parezca que guardó.
+        document.addEventListener('submit', e => e.preventDefault(), true);
+    </script>
     <script src="js/ui/escape.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>

@@ -10,7 +10,7 @@
  * Escape, foco y Tab los maneja ui/modales.js.
  */
 const confirmDialog = (title = '¿Estás seguro?', message = 'Esta acción no se puede deshacer.', okLabel = 'Eliminar',
-                       { peligro = true } = {}) => {
+                       { peligro = true, cancelLabel = 'Cancelar' } = {}) => {
     return new Promise((resolve) => {
         const modal   = document.getElementById('confirm-modal');
         const titleEl = document.getElementById('confirm-title');
@@ -23,6 +23,7 @@ const confirmDialog = (title = '¿Estás seguro?', message = 'Esta acción no se
         msgEl.textContent   = message || '';
         msgEl.classList.toggle('hidden', !message);
         okBtn.textContent   = okLabel;
+        cancelBtn.textContent = cancelLabel;
         okBtn.classList.toggle('bg-red-600', peligro);
         okBtn.classList.toggle('hover:bg-red-700', peligro);
         okBtn.classList.toggle('bg-blue-600', !peligro);

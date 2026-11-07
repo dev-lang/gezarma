@@ -45,3 +45,13 @@ def test_impresion_de_prueba_no_crea_nada(client, admin, make_user):
     assert len(client.get("/tickets/", headers=admin, params={"limit": 1000}).json()) == antes
     pasos = {p["id"]: p for p in client.get("/config/guia", headers=admin).json()["pasos"]}
     assert pasos["impresora"]["hecho"]
+
+
+def test_frontend_se_revalida_en_cada_carga(client):
+    """Sin Cache-Control el navegador podía usar un script viejo con una pantalla nueva
+    (botones que no hacían nada). Ahora se revalida (304 si no cambió)."""
+    for ruta in ("/", "/js/recepcion.js", "/partials/mostrador.html", "/i18n/en.js"):
+        r = client.get(ruta)
+        assert r.status_code == 200 and r.headers.get("cache-control") == "no-cache", ruta
+    r = client.get("/js/recepcion.js")
+    assert client.get("/js/recepcion.js", headers={"If-None-Match": r.headers["etag"]}).status_code == 304

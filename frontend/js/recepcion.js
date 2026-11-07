@@ -290,7 +290,8 @@ const Recepcion = (() => {
         // Volver / cancelar
         const salir = async () => {
             const hayDatos = _estado.cliente || $('ing-serie').value || $('ing-descripcion').value || _estado.fotos.length || !pad.vacia();
-            if (!_estado.ticket && hayDatos && !(await confirmDialog('¿Descartar el ingreso?', 'Se pierden los datos cargados.', 'Descartar'))) return;
+            if (!_estado.ticket && hayDatos && !(await confirmDialog('¿Descartar el ingreso?', 'Se pierden los datos cargados.', 'Sí, descartar',
+                                                                     { cancelLabel: 'Seguir cargando' }))) return;
             cerrarMostrador();
         };
         $('mostrador-cerrar').addEventListener('click', salir);

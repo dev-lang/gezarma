@@ -41,7 +41,15 @@ if config.CORS_ORIGINS:
 async def _recordar_base_url(request, call_next):
     # Para armar links (mails, QR) cuando no hay URL pública configurada
     ajustes_mod.request_base_url.set(str(request.base_url))
-    return await call_next(request)
+    respuesta = await call_next(request)
+    # El frontend (páginas, scripts y pantallas) se revalida en cada carga: sin
+    # esto, después de actualizar el navegador podía seguir usando un script
+    # viejo con una pantalla nueva (y botones que no hacían nada). Si no
+    # cambió, el servidor responde 304 sin reenviar el archivo.
+    ruta = request.url.path
+    if ruta in ("/", "/seguimiento") or ruta.startswith(("/js/", "/partials/", "/i18n/")):
+        respuesta.headers["Cache-Control"] = "no-cache"
+    return respuesta
 
 app.include_router(auth_router.router)
 app.include_router(tickets.router)
