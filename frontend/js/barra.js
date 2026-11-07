@@ -33,6 +33,17 @@ const Barra = (() => {
         $('menu-logout')?.addEventListener('click', () => auth.logout());
         $('menu-atajos')?.addEventListener('click', () => { menu(false); window.Atajos?.ayuda(); });
         $('search-toggle')?.addEventListener('click', () => busqueda());
+        // El nombre lleva al panel de control (o al login si no hay sesión).
+        // Ctrl/Cmd+click sigue abriendo otra pestaña, como cualquier link.
+        $('logo-home')?.addEventListener('click', e => {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+            e.preventDefault();
+            menu(false);
+            if (auth.isLoggedIn()) {
+                ui.initDashboard();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else location.href = '/';
+        });
         document.addEventListener('click', e => {
             if (!$('user-menu')?.contains(e.target)) menu(false);
         });
