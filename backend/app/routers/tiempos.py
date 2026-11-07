@@ -41,6 +41,14 @@ def _costo(db: Session, minutos: float):
     return round(minutos / 60 * tarifa, 2) if tarifa else None
 
 
+def _cerrar(db: Session, r: models.TiempoTrabajo, ahora) -> None:
+    """Pausa un cronómetro. Si duró menos de un minuto (iniciar y pausar enseguida),
+    no deja un tramo de 0 min en el calendario."""
+    r.fin = ahora
+    if ahora - r.inicio < timedelta(minutes=1):
+        db.delete(r)
+
+
 def _en_curso(db: Session, usuario_id: int):
     return db.query(models.TiempoTrabajo).filter_by(usuario_id=usuario_id, fin=None).first()
 
@@ -87,7 +95,7 @@ def iniciar(ticket_id: int, data: IniciarIn = IniciarIn(), db: Session = Depends
     if actual and actual.ticket_id == t.id:
         return _estado(db, t, u)              # ya estaba corriendo acá
     if actual:
-        actual.fin = ahora                    # un solo trabajo en curso por técnico
+        _cerrar(db, actual, ahora)            # un solo trabajo en curso por técnico
     db.add(models.TiempoTrabajo(ticket_id=t.id, usuario_id=u.id, inicio=ahora, nota=data.nota.strip() or None))
     db.commit()
     db.refresh(t)
@@ -99,7 +107,7 @@ def pausar(ticket_id: int, db: Session = Depends(database.get_db), u: models.Usu
     t = _ticket(db, ticket_id)
     actual = _en_curso(db, u.id)
     if actual and actual.ticket_id == t.id:
-        actual.fin = utcnow()
+        _cerrar(db, actual, utcnow())
         db.commit()
         db.refresh(t)
     return _estado(db, t, u)

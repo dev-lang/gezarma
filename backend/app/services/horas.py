@@ -122,6 +122,7 @@ def _validar(db: Session, usuario: models.Usuario, tecnico_id: int, inicio: date
     T = models.TiempoTrabajo
     pisa = (db.query(T).options(joinedload(T.ticket))
             .filter(T.usuario_id == tecnico_id, T.inicio < fin, func.coalesce(T.fin, ahora) > inicio,
+                    func.coalesce(T.fin, ahora) > T.inicio,
                     *( [T.id != excluir_id] if excluir_id else [] )).first())
     if pisa:
         cual = pisa.ticket.numero_rma if pisa.ticket else CATEGORIAS.get(pisa.categoria, "otra tarea")
@@ -161,17 +162,34 @@ def _tecnico(db: Session, usuario: models.Usuario, tecnico_id) -> int:
 
 
 def solo_duracion(db: Session, tecnico_id: int, d: date, minutos_: int) -> tuple[datetime, datetime]:
-    """Ubica un tramo de "solo duración" a continuación de lo cargado ese día (o a las 9)."""
+    """Ubica un tramo de "solo duración": a continuación de lo cargado ese día (o a las 9).
+    Si así terminaría en el futuro (hoy) o pasado la medianoche, usa el hueco libre más
+    tardío del día en el que entre, sin pisar otros tramos."""
     desde, hasta = limites_dia(d)
+    ahora = utcnow().replace(microsecond=0)
+    limite = min(hasta, ahora)
+    largo = timedelta(minutes=minutos_)
     T = models.TiempoTrabajo
-    ultimo = (db.query(func.max(func.coalesce(T.fin, utcnow())))
-              .filter(T.usuario_id == tecnico_id, T.inicio >= desde, T.inicio < hasta).scalar())
-    inicio = ultimo or a_utc(datetime.combine(d, INICIO_DIA))
-    fin = inicio + timedelta(minutes=minutos_)
-    if d == hoy() and fin > utcnow():                  # hoy: que termine ahora, no en el futuro
-        fin = utcnow().replace(microsecond=0)
-        inicio = fin - timedelta(minutes=minutos_)
-    return inicio, fin
+    ocupados = sorted((max(r.inicio, desde), min(r.fin or ahora, hasta)) for r in
+                      db.query(T).filter(T.usuario_id == tecnico_id, T.inicio < hasta,
+                                         func.coalesce(T.fin, ahora) > desde).all()
+                      if (r.fin or ahora) > r.inicio)
+    base = max([f for _, f in ocupados] + [a_utc(datetime.combine(d, INICIO_DIA)) if not ocupados else desde])
+    if base + largo <= limite:
+        return base, base + largo
+    # Huecos libres entre lo ocupado, del más tardío al más temprano
+    huecos, cursor = [], desde
+    for ini, fin in ocupados:
+        if ini > cursor:
+            huecos.append((cursor, min(ini, limite)))
+        cursor = max(cursor, fin)
+    huecos.append((cursor, limite))
+    for ini, fin in reversed(huecos):
+        if fin - ini >= largo:
+            return fin - largo, fin
+    h, m = divmod(minutos_, 60)
+    cuanto = f"{h} h {m:02d} min" if h else f"{m} min"
+    _error(f"Ese día no queda un hueco libre de {cuanto} sin pisar otros tramos: cargalo con desde / hasta.")
 
 
 def _registrar(db: Session, r, tecnico_id: int, usuario: models.Usuario, accion: str, antes, despues) -> None:

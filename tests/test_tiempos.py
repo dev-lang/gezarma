@@ -34,11 +34,12 @@ def test_iniciar_pausar_y_total(client, admin, make_user, make_ticket):
 
 def test_un_solo_trabajo_en_curso_por_tecnico(client, make_user, make_ticket):
     cli, _ = make_user()
-    tec, _ = make_user(rol="tecnico")
+    tec, yo = make_user(rol="tecnico")
     t1, t2 = make_ticket(cli), make_ticket(cli)
     client.post(f"/tickets/{t1['id']}/tiempo/iniciar", headers=tec)
     client.post(f"/tickets/{t1['id']}/tiempo/iniciar", headers=tec)          # repetir no duplica
     assert len(client.get(f"/tickets/{t1['id']}/tiempo", headers=tec).json()["registros"]) == 1
+    _atrasar_en_curso(yo["id"], 5)
     client.post(f"/tickets/{t2['id']}/tiempo/iniciar", headers=tec)          # pasa al otro ticket
     d1 = client.get(f"/tickets/{t1['id']}/tiempo", headers=tec).json()
     assert d1["en_curso_mio"] is None and not d1["registros"][0]["en_curso"]
@@ -76,3 +77,16 @@ def test_permisos(client, admin, make_user, make_ticket):
     assert client.delete(f"/tiempo/{rid}", headers=admin).status_code == 204     # el admin sí puede
     for minutos in (0, 1441):
         assert client.post(f"/tickets/{t['id']}/tiempo/manual", headers=tec1, json={"minutos": minutos}).status_code == 422
+
+
+def test_iniciar_y_pausar_enseguida_no_deja_tramos_de_0_min(client, make_user, make_ticket):
+    cli, _ = make_user()
+    tec, _ = make_user(rol="tecnico")
+    t1, t2 = make_ticket(cli), make_ticket(cli)
+    client.post(f"/tickets/{t1['id']}/tiempo/iniciar", headers=tec)
+    d = client.post(f"/tickets/{t1['id']}/tiempo/pausar", headers=tec).json()
+    assert d["registros"] == []
+    client.post(f"/tickets/{t1['id']}/tiempo/iniciar", headers=tec)
+    client.post(f"/tickets/{t2['id']}/tiempo/iniciar", headers=tec)          # cambiar enseguida tampoco
+    assert client.get(f"/tickets/{t1['id']}/tiempo", headers=tec).json()["registros"] == []
+    client.post(f"/tickets/{t2['id']}/tiempo/pausar", headers=tec)

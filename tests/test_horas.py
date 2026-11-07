@@ -172,3 +172,25 @@ def test_rango_y_exportar(client, admin, make_user, make_ticket):
     assert r.status_code == 200 and r.content[:2] == b"PK"
     # El resumen del admin no se rompe con horas sin ticket
     assert client.get("/tiempo/resumen", headers=admin).status_code == 200
+
+
+def test_solo_duracion_hoy_busca_un_hueco_libre(client, make_user, make_ticket):
+    """Caso real: hoy a las 23:42, con un tramo de 23:21 a 23:31, "1 h" daba superposición
+    (22:42–23:42). Tiene que usar el hueco libre anterior."""
+    from datetime import timezone
+    cli, _ = make_user()
+    tec, _ = make_user(rol="tecnico")
+    t = make_ticket(cli)
+    dia = HOY - timedelta(days=3)
+    # Un día "lleno" hasta las 23:50: la continuación no entra antes de medianoche
+    assert _tramo(client, tec, t["id"], dia=dia, desde=(23, 20), hasta=(23, 50)).status_code == 201
+    r = client.post("/tiempo", headers=tec, json={"categoria": "capacitacion", "fecha": dia.isoformat(), "minutos": 60})
+    assert r.status_code == 201, r.text
+    ini = horas.a_local(datetime.fromisoformat(r.json()["inicio"][:-1]))
+    fin = horas.a_local(datetime.fromisoformat(r.json()["fin"][:-1]))
+    assert (ini.strftime("%H:%M"), fin.strftime("%H:%M")) == ("22:20", "23:20")
+    # Sin lugar: mensaje claro
+    for h in range(0, 22, 2):
+        _tramo(client, tec, t["id"], dia=dia, desde=(h, 0), hasta=(h + 2, 0)) if h < 16 else None
+    r = client.post("/tiempo", headers=tec, json={"categoria": "otra", "fecha": dia.isoformat(), "minutos": 600})
+    assert r.status_code == 400 and "hueco libre" in r.json()["detail"]
