@@ -213,11 +213,11 @@ const components = (() => {
         const isDiag    = c.comentario.startsWith('DIAGNÓSTICO TÉCNICO:');
         const isInternal = c.is_internal === true;
 
-        let wrapCls, headerCls, badge = '';
+        let wrapCls, headerCls, etiq = '';
         if (isInternal) {
             wrapCls   = 'bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-700';
             headerCls = 'text-violet-800 dark:text-violet-300';
-            badge     = `<span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-200">Nota interna</span>`;
+            etiq      = badge('Nota interna', 'bg-violet-100 text-violet-700', { extra: 'ml-2' });
         } else if (isDiag) {
             wrapCls   = 'bg-amber-50 border-amber-200';
             headerCls = 'text-amber-800';
@@ -231,7 +231,7 @@ const components = (() => {
         <div class="p-4 rounded-lg border ${wrapCls}">
             <div class="flex justify-between items-start mb-2">
                 <span class="font-bold text-sm flex items-center flex-wrap gap-1 ${headerCls}">
-                    ${icon}${esc(c.usuario_nombre || 'Usuario #' + c.usuario_id)}${badge}
+                    ${icon}${esc(c.usuario_nombre || 'Usuario #' + c.usuario_id)}${etiq}
                 </span>
                 <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString(I18N.locale, { hour12: false })}</span>
             </div>
@@ -263,7 +263,7 @@ const components = (() => {
                 <div class="flex items-center justify-center gap-2">
                     <button type="button" class="stock-edit-btn text-xs text-blue-500 hover:text-blue-700 font-semibold" data-id="${m.id}" data-nota="${esc(m.nota)}">Nota</button>
                     ${anulable ? `<button type="button" class="stock-del-btn text-xs text-red-400 hover:text-red-600 font-semibold" data-id="${m.id}">Anular</button>` : ''}
-                    ${m.anulado ? '<span class="text-[10px] font-bold text-gray-400 uppercase">anulado</span>' : ''}
+                    ${m.anulado ? badge('Anulado', 'bg-gray-100 text-gray-500') : ''}
                 </div>
                </td>`;
         return `<tr class="hover:bg-gray-50 transition text-sm ${m.anulado ? 'line-through opacity-50' : ''}">
@@ -401,7 +401,7 @@ const components = (() => {
              data-adj-id="${a.id}">
             <span class="shrink-0 text-blue-500">${icon}</span>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-blue-900 truncate">${a.categoria === 'ingreso' ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded mr-1">Ingreso</span>' : ''}${esc(a.nombre_archivo)}</p>
+                <p class="text-sm font-medium text-blue-900 truncate">${a.categoria === 'ingreso' ? badge('Ingreso', 'bg-emerald-100 text-emerald-700', { extra: 'mr-1' }) : ''}${esc(a.nombre_archivo)}</p>
                 <p class="text-[10px] text-blue-400">${mimeLabel.toUpperCase()} · ${sizeStr}</p>
             </div>
             <div class="flex items-center gap-1 shrink-0">

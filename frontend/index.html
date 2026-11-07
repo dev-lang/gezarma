@@ -10,7 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Íconos SVG (js/ui/iconos.js): alineados con el texto y del color del texto */
-        :where(.ico) { display: inline-block; flex-shrink: 0; vertical-align: -0.125em; }
+        /* (más específico que el "svg { display: block }" de Tailwind, pero sin pisar a .hidden) */
+        .ico:not(.hidden) { display: inline-block; }
+        .ico { flex-shrink: 0; vertical-align: -0.125em; }
         body { font-family: 'Inter', sans-serif; }
         /* Respaldo por si no carga Tailwind; :where() no le gana a md:flex & co. */
         :where(.hidden) { display: none; }

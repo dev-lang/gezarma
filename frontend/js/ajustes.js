@@ -65,7 +65,7 @@ const Ajustes = (() => {
                 <p class="text-sm font-semibold text-gray-700">Logo del taller</p>
                 <p class="text-xs text-gray-400 mt-0.5">PNG, JPG o WEBP de hasta 2 MB (mejor cuadrado). Se ve en la barra superior, la pantalla de ingreso y la pestaña del navegador.</p>
                 <div class="flex flex-wrap gap-2 mt-2">
-                    <label class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition cursor-pointer">
+                    <label class="inline-flex items-center text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition cursor-pointer">
                         ${icono('subir', 'w-4 h-4 mr-1.5')}${m.logo ? 'Cambiar logo' : 'Subir logo'}
                         <input type="file" id="aj-logo-input" accept="image/png,image/jpeg,image/webp" class="sr-only"></label>
                     ${m.logo ? '<button type="button" id="aj-logo-quitar" class="text-sm font-semibold text-red-600 hover:text-red-800 px-2 py-1.5">Quitar</button>' : ''}

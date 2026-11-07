@@ -29,6 +29,8 @@ const Horas = (() => {
     const fechaLocal = iso => enZona(iso, { year: 'numeric', month: '2-digit', day: '2-digit' });
     const horaLocal = iso => enZona(iso, { hour: '2-digit', minute: '2-digit' }).replace(/^24/, '00');
     const hoy = () => st.datos?.hoy || new Date().toLocaleDateString('en-CA', { timeZone: st.zona });
+    // En los bloques, sin "min" para que entre en una línea: "2 h 30", "45 min"
+    const durCorta = m => { m = Math.round(m); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h} h ${String(r).padStart(2, '0')}` : `${h} h`) : `${r} min`; };
     const dur = m => {
         m = Math.round(m);
         const h = Math.floor(m / 60), r = m % 60;
@@ -225,8 +227,8 @@ const Horas = (() => {
         <div data-tramo="${r.id}" ${arrastrable ? 'draggable="true"' : ''} role="button" tabindex="0"
              class="rounded-lg border-l-4 ${color} ${r._pisa ? 'ring-2 ring-red-400' : ''} px-2 py-1.5 text-xs cursor-pointer hover:shadow ${arrastrable ? 'cursor-grab' : ''}">
             <div class="flex items-center justify-between gap-1 text-gray-600">
-                <span class="font-mono">${horaLocal(r.inicio)}–${esc(hasta)}</span>
-                <span class="font-semibold text-gray-800">${dur(minutos(r))}</span>
+                <span class="font-mono whitespace-nowrap">${horaLocal(r.inicio)}–${esc(hasta)}</span>
+                <span class="font-semibold text-gray-800 whitespace-nowrap" title="${dur(minutos(r))}">${durCorta(minutos(r))}</span>
             </div>
             <div class="truncate">${titulo}</div>
             ${r.producto ? `<div class="truncate text-gray-600">${esc(r.producto)}</div>` : ''}

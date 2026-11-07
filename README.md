@@ -57,10 +57,12 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 | Administración | Ajustes |
 |---|---|
 | ![Panel de administración](docs/capturas/05-admin.png) | ![Ajustes del sistema](docs/capturas/10-ajustes.png) |
+| Menú agrupado por tema; editar y eliminar desde los íconos de cada fila. | Nombre y logo del taller, mails, documentos, impresoras, SLA y más. |
 
-| Login | |
+| Horas | Login |
 |---|---|
-| ![Login](docs/capturas/01-login.png) | |
+| ![Horas de un técnico en la semana](docs/capturas/11-horas.png) | ![Login](docs/capturas/01-login.png) |
+| Las horas de cada técnico día por día: arrastrar un tramo lo mueve de día, con clic se corrige. | Con el nombre y el logo del taller. |
 
 *(Datos de demostración ficticios.)*
 
@@ -159,7 +161,7 @@ Al arrancar, la app avisa en el log si generó la `SECRET_KEY`, si ignoró la cl
 
 En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor:
 
-- **General**: nombre y logo del taller (se ven en la barra superior, la pantalla de ingreso, la pestaña del navegador, los documentos y los mails), datos de contacto, URL pública, idioma predeterminado, si los clientes pueden crearse una cuenta solos y si el seguimiento público está habilitado.
+- **General**: nombre del taller (barra superior, pantalla de ingreso, pestaña del navegador, documentos y mails) y logo (barra superior, pantalla de ingreso y pestaña del navegador), datos de contacto, URL pública, idioma predeterminado, si los clientes pueden crearse una cuenta solos y si el seguimiento público está habilitado.
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.
 - **Email**: activar las notificaciones, elegir si el SMTP se toma del `.env` o del panel (en el panel la contraseña se guarda cifrada con la `SECRET_KEY`; si la cambiás, hay que volver a cargarla), qué eventos se notifican, y un botón para mandar un mail de prueba que muestra el error real si algo falla.
 - **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
