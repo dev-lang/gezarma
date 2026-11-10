@@ -8,7 +8,11 @@
  *   ?      esta ayuda
  */
 const Atajos = (() => {
-    let _iniciados = false, _g = 0;
+    let _iniciados = false, _g = 0, _ultima = 0, _pend = null;
+    // Un lector de códigos "tipea" varias teclas en milisegundos: eso nunca es un atajo.
+    // Por eso el atajo se ejecuta un instante después y se cancela si llega otra tecla.
+    const RAFAGA = 40, ESPERA = 70;
+    const despues = fn => { _pend = setTimeout(() => { _pend = null; fn(); }, ESPERA); };
 
     const ATAJOS = [
         { teclas: ['/'], texto: 'Buscar' },
@@ -17,6 +21,7 @@ const Atajos = (() => {
         { teclas: ['G', 'T'], texto: 'Ir al tablero' },
         { teclas: ['G', 'M'], texto: 'Ingreso en mostrador' },
         { teclas: ['G', 'H'], texto: 'Ir a Horas' },
+        { teclas: ['G', 'F'], texto: 'Ir a Fuera del taller' },
         { teclas: ['G', 'A'], texto: 'Ir a Administración' },
         { teclas: ['Esc'], texto: 'Cerrar ventana o menú' },
         { teclas: ['?'], texto: 'Ver los atajos' },
@@ -78,6 +83,7 @@ const Atajos = (() => {
                 break;
             case 'mostrador': if (taller() && window.Recepcion) Recepcion.abrirMostrador(); break;
             case 'horas': if (taller() && window.Horas) Horas.abrir(); break;
+            case 'externos': if (taller() && window.Envios) Envios.abrir(); break;
             case 'admin': if (rol() === 'administrador') ui.loadAdminPanel(); break;
         }
     }
@@ -86,20 +92,24 @@ const Atajos = (() => {
         if (_iniciados) return;
         _iniciados = true;
         document.addEventListener('keydown', e => {
+            const ahora = Date.now(), rafaga = ahora - _ultima < RAFAGA;
+            _ultima = ahora;
+            if (_pend) { clearTimeout(_pend); _pend = null; }
+            if (rafaga) { _g = 0; return; }
             if (e.ctrlKey || e.metaKey || e.altKey || escribiendo(e) || !auth.isLoggedIn()) return;
             if (!document.getElementById('dashboard-section') && !document.getElementById('app-root')?.children.length) return;
             if (hayModal() && e.key !== '?') return;
             const k = e.key.toLowerCase();
-            if (_g && Date.now() - _g < 1200) {
+            if (_g && ahora - _g < 1200) {
                 _g = 0;
-                const destino = { d: 'dashboard', t: 'tablero', m: 'mostrador', h: 'horas', a: 'admin' }[k];
-                if (destino) { e.preventDefault(); ejecutar(destino); }
+                const destino = { d: 'dashboard', t: 'tablero', m: 'mostrador', h: 'horas', f: 'externos', a: 'admin' }[k];
+                if (destino) { e.preventDefault(); despues(() => ejecutar(destino)); }
                 return;
             }
-            if (k === 'g') { _g = Date.now(); return; }
-            if (e.key === '/') { e.preventDefault(); ejecutar('buscar'); }
-            else if (k === 'n') { e.preventDefault(); ejecutar('nuevo'); }
-            else if (e.key === '?') { e.preventDefault(); ayuda(); }
+            if (k === 'g') { _g = ahora; return; }
+            if (e.key === '/') { e.preventDefault(); despues(() => ejecutar('buscar')); }
+            else if (k === 'n') { e.preventDefault(); despues(() => ejecutar('nuevo')); }
+            else if (e.key === '?') { e.preventDefault(); despues(ayuda); }
         });
     }
 

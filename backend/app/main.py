@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from .database import SessionLocal, run_migrations
-from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos, importacion as importacion_router
+from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos, importacion as importacion_router, ubicaciones as ubicaciones_router, envios as envios_router
 from . import models, auth, config, idiomas
 from . import ajustes as ajustes_mod
 from .services import sla as sla_service
@@ -75,6 +75,8 @@ app.include_router(portal_router.router)
 app.include_router(tiempos_router.router)
 app.include_router(pedidos_router.router)
 app.include_router(importacion_router.router)
+app.include_router(ubicaciones_router.router)
+app.include_router(envios_router.router)
 
 # ── Idiomas ──────────────────────────────────────────────────────────────────
 @app.exception_handler(StarletteHTTPException)
@@ -185,6 +187,7 @@ def seed_data():
         ("En diagnóstico",      "En diagnóstico",       "#06b6d4", 4,  False),
         ("En reparación",       "En reparación",        "#8b5cf6", 5,  False),
         ("Esperando repuestos", "Esperando repuestos",  "#f97316", 6,  False),
+        ("En servicio técnico oficial", "En servicio técnico oficial", "#d946ef", 6, False),
         ("Reparado",            "Reparado",             "#14b8a6", 7,  False),
         ("Enviado al cliente",  "Enviado al cliente",   "#0ea5e9", 8,  False),
         ("Cerrado",             "Cerrado",              "#6b7280", 9,  True),

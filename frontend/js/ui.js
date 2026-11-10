@@ -98,6 +98,12 @@ const ui = {
             horasBtn.classList.toggle('flex', isTechOrAdmin);
         }
         document.getElementById('menu-horas')?.classList.toggle('hidden', !isTechOrAdmin);
+        const extBtn = document.getElementById('externos-btn');
+        if (extBtn) {
+            extBtn.classList.toggle('hidden', !isTechOrAdmin);
+            extBtn.classList.toggle('flex', isTechOrAdmin);
+            if (isTechOrAdmin && typeof Envios !== 'undefined') Envios.contador();
+        }
         document.getElementById('menu-horas')?.classList.toggle('flex', isTechOrAdmin);
         const mostradorBtn = document.getElementById('mostrador-btn');
         if (mostradorBtn) {
@@ -512,6 +518,8 @@ const ui = {
         if (typeof Recepcion !== 'undefined') Recepcion.cargarDetalle(ticket);
         if (typeof Encuesta !== 'undefined') Encuesta.cargarDetalle(ticket);
         if (typeof Tiempo !== 'undefined') { Tiempo.cargarDetalle(ticket.id); Tiempo.chip(); }
+        if (typeof Ubic !== 'undefined') Ubic.cargarDetalle(ticket);
+        if (typeof Envios !== 'undefined') Envios.cargarDetalle(ticket);
     },
 
     // ── Comments / History / Attachments ───────────────────────────────────
@@ -783,6 +791,7 @@ const ui = {
         const minEl = document.getElementById('part-form-stock-minimo');
         if (minEl) minEl.value = '0';
         document.getElementById('part-form-title').innerText = 'Nuevo Repuesto';
+        if (typeof Ubic !== 'undefined') Ubic.llenarSelect('part-form-ubicacion', null);
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },
 
@@ -810,6 +819,7 @@ const ui = {
         const minEl = document.getElementById('part-form-stock-minimo');
         if (minEl) minEl.value = part.stock_minimo ?? 0;
         document.getElementById('part-form-title').innerText = 'Editar Repuesto';
+        if (typeof Ubic !== 'undefined') Ubic.llenarSelect('part-form-ubicacion', part.ubicacion_id);
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },
 
@@ -1051,6 +1061,8 @@ const ui = {
         if (tab === 'pedidos' && typeof Pedidos !== 'undefined') {
             Pedidos.cargar();
         }
+        if (tab === 'ubicaciones' && typeof Ubic !== 'undefined') Ubic.cargarAdmin();
+        if (tab === 'parts' && typeof Ubic !== 'undefined') { Ubic.conectarRepuestos(); Ubic.filtroRepuestos(); }
     },
 
     // ── Admin: Users ──────────────────────────────────────────────────────────
@@ -1124,12 +1136,21 @@ const ui = {
     adminRenderParts() {
         const q = (document.getElementById('admin-parts-search')?.value || '').toLowerCase();
         let parts = this._adminPartsCache;
-        if (q) parts = parts.filter(p => `${p.codigo} ${p.nombre} ${p.proveedor}`.toLowerCase().includes(q));
+        if (q) parts = parts.filter(p => `${p.codigo} ${p.nombre} ${p.proveedor} ${p.ubicacion_ruta || ''}`.toLowerCase().includes(q));
+        if (typeof Ubic !== 'undefined') parts = Ubic.filtrar(parts);
         const tbody = document.getElementById('admin-parts-list-body');
         if (!tbody) return;
         tbody.innerHTML = parts.length
             ? parts.map(p => components.adminPartRow(p)).join('')
-            : `<tr><td colspan="6" class="px-5 py-10 text-center text-gray-400 italic text-sm">Sin resultados.</td></tr>`;
+            : `<tr><td colspan="8" class="px-5 py-10 text-center text-gray-400 italic text-sm">Sin resultados.</td></tr>`;
+        if (typeof Ubic !== 'undefined') Ubic.pintarSeleccion();
+    },
+
+    /** Vuelve a pedir los repuestos (después de un cambio en lote) */
+    async recargarRepuestosAdmin() {
+        this._adminPartsCache = await api.getParts();
+        document.getElementById('admin-parts-count').textContent = this._adminPartsCache.length;
+        this.adminRenderParts();
     },
 
     adminCheckStockAlerts(parts) {
@@ -1157,6 +1178,7 @@ const ui = {
         const minEl = document.getElementById('part-form-stock-minimo');
         if (minEl) minEl.value = part.stock_minimo ?? 0;
         document.getElementById('part-form-title').textContent = 'Editar Repuesto';
+        if (typeof Ubic !== 'undefined') Ubic.llenarSelect('part-form-ubicacion', part.ubicacion_id);
         document.getElementById('parts-form-modal').classList.remove('hidden');
     },
 

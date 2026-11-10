@@ -36,6 +36,9 @@ CAMPOS = {
         "stock":        ("Stock", ["stock", "cantidad", "existencia", "existencias", "qty", "quantity", "estoque", "quantidade"]),
         "stock_minimo": ("Stock mínimo", ["stock minimo", "minimo", "stock min", "min", "minimum stock", "min stock", "estoque minimo"]),
         "categoria":    ("Categoría", ["categoria", "rubro", "category", "tipo"]),
+        # "Depósito > Estante C > Cajón 4": las ubicaciones que no existan se crean
+        "ubicacion_ruta": ("Ubicación", ["ubicacion", "ubicación", "lugar", "estante", "deposito", "location", "bin",
+                                         "localizacao", "localização"]),
     },
     "productos": {
         "marca":        ("Marca", ["marca", "brand", "fabricante", "manufacturer"]),
@@ -52,8 +55,8 @@ OBLIGATORIOS = {"repuestos": ["codigo", "nombre"], "productos": ["marca", "model
 ENTEROS = {"stock", "stock_minimo", "periodo_garantia_meses"}
 DECIMALES = {"precio"}
 EJEMPLOS = {
-    "repuestos": [["PX-X515", "Pantalla 15.6\" FHD", "Distribuidora Sur", "85000", "4", "2", "Pantallas"],
-                  ["BAT-X515", "Batería ASUS X515", "ElectroParts", "42000,50", "6", "2", "Baterías"]],
+    "repuestos": [["PX-X515", "Pantalla 15.6\" FHD", "Distribuidora Sur", "85000", "4", "2", "Pantallas", "Depósito > Estante A"],
+                  ["BAT-X515", "Batería ASUS X515", "ElectroParts", "42000,50", "6", "2", "Baterías", "Depósito > Estante C > Cajón 4"]],
     "productos": [["ASUS", "X515 Laptop", "Notebooks", "12", "X515EA"],
                   ["Samsung", "Odyssey G5", "Monitores", "36", ""]],
 }
@@ -152,6 +155,9 @@ def _numero(texto: str) -> float:
 
 
 def _valor(campo: str, texto: str):
+    if campo == "ubicacion_ruta":
+        import re
+        return " › ".join(p.strip() for p in re.split(r"\s*[>›/]\s*", texto) if p.strip())
     if campo in ENTEROS:
         n = _numero(texto)
         if not n.is_integer():
@@ -271,6 +277,7 @@ def aplicar(db: Session, analisis: dict, usuario: models.Usuario, nombre_archivo
             datos = dict(r["datos"])
             if tipo == "repuestos":
                 stock = datos.pop("stock", 0) or 0
+                ubic = datos.pop("ubicacion_ruta", None)
                 datos.setdefault("categoria", "General")
                 datos.setdefault("proveedor", "")
                 obj = models.Repuesto(**datos, stock=0)
@@ -278,6 +285,8 @@ def aplicar(db: Session, analisis: dict, usuario: models.Usuario, nombre_archivo
                 db.flush()
                 if stock:
                     _mover_stock(db, obj, stock, usuario, nota)
+                if ubic:
+                    _ubicar(db, obj, ubic, usuario)
             else:
                 datos.setdefault("categoria", "General")
                 datos.setdefault("periodo_garantia_meses", 12)
@@ -288,6 +297,9 @@ def aplicar(db: Session, analisis: dict, usuario: models.Usuario, nombre_archivo
             obj = db.get(modelo, r["id"])
             datos = dict(r["datos"])
             stock = datos.pop("stock", None) if tipo == "repuestos" else None
+            ubic = datos.pop("ubicacion_ruta", None) if tipo == "repuestos" else None
+            if ubic:
+                _ubicar(db, obj, ubic, usuario)
             for campo, valor in datos.items():
                 setattr(obj, campo, valor)
             if stock is not None and stock != obj.stock:
@@ -299,6 +311,13 @@ def aplicar(db: Session, analisis: dict, usuario: models.Usuario, nombre_archivo
     return {"creados": creados, "actualizados": actualizados,
             "sin_cambios": analisis["resumen"]["sin_cambios"], "omitidos": analisis["resumen"]["omitir"],
             "con_error": analisis["resumen"]["error"]}
+
+
+def _ubicar(db, repuesto, ruta_texto, usuario):
+    from . import ubicaciones
+    destino = ubicaciones.desde_texto(db, ruta_texto)
+    db.flush()
+    ubicaciones.mover_repuestos(db, [repuesto.id], destino.id if destino else None, usuario, motivo="importacion")
 
 
 def _mover_stock(db, repuesto, delta, usuario, nota):

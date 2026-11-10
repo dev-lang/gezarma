@@ -219,6 +219,7 @@ const app = {
             const pr = document.getElementById('part-form-precio');  if (pr) pr.value = '0';
             const sm = document.getElementById('part-form-stock-minimo'); if (sm) sm.value = '0';
             document.getElementById('part-form-title').textContent = 'Nuevo Repuesto';
+            if (typeof Ubic !== 'undefined') Ubic.llenarSelect('part-form-ubicacion', null);
             document.getElementById('parts-form-modal').classList.remove('hidden');
         });
         on('admin-parts-search',  'input', () => ui.adminRenderParts());
@@ -491,6 +492,8 @@ const app = {
                 stock_minimo: parseInt(document.getElementById('part-form-stock-minimo')?.value || '0') || 0,
                 categoria:  document.getElementById('part-form-categoria')?.value || 'General',
             };
+            const ubicSel = document.getElementById('part-form-ubicacion');
+            if (ubicSel && ubicSel.options.length > 1) data.ubicacion_id = Number(ubicSel.value) || null;
             try {
                 ui.setLoading('part-form-btn', true);
                 id ? await api.updatePart(id, data) : await api.createPart(data);
@@ -526,6 +529,7 @@ const app = {
         // ── Ticket modal ──────────────────────────────────────────────────
         on('mostrador-btn', 'click', () => Recepcion.abrirMostrador());
         on('horas-btn', 'click', () => Horas.abrir());
+        on('externos-btn', 'click', () => Envios.abrir());
         on('create-ticket-btn', 'click', () => {
             ui.loadProductsSelect();
             // La prioridad la decide el taller: para el cliente se calcula sola

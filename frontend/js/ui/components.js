@@ -31,6 +31,7 @@ const components = (() => {
             'En reparación':    'bg-purple-100 text-purple-700',
             'Esperando repuestos': 'bg-orange-100 text-orange-700',
             'Reparado':         'bg-teal-100 text-teal-700',
+            'En servicio técnico oficial': 'bg-fuchsia-100 text-fuchsia-700',
             'Enviado al cliente':'bg-sky-100 text-sky-700',
             'Cerrado':          'bg-gray-100 text-gray-700',
             'Cancelado':        'bg-red-100 text-red-700',
@@ -126,7 +127,7 @@ const components = (() => {
                 <div class="font-medium text-gray-800">${esc(t.producto || 'Producto Genérico')}</div>
                 <div class="t-sub flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-400 mt-0.5"><span translate="no" class="whitespace-nowrap">SN ${esc(t.numero_serie)}</span>${garantiaBadge(t.en_garantia).replace('ml-1.5', '')}</div></td>`,
             cliente: `<td data-col="cliente" class="px-5 py-3.5 text-sm text-gray-700 min-w-[10rem]" translate="no">${esc(t.usuario_nombre || '—')}</td>`,
-            estado: `<td data-col="estado" class="px-5 py-3.5"><div class="flex flex-col items-start gap-1">${statusBadge(t.estado)}${slaBadge(t.deadline_sla, t.estado, { soloAlertas: true }).replace('ml-2', '')}</div></td>`,
+            estado: `<td data-col="estado" class="px-5 py-3.5"><div class="flex flex-col items-start gap-1">${statusBadge(t.estado)}${slaBadge(t.deadline_sla, t.estado, { soloAlertas: true }).replace('ml-2', '')}${t.ubicacion_ruta ? `<span class="text-[11px] text-gray-500 max-w-[11rem] truncate" title="${esc(t.ubicacion_ruta)}">${icono('pin', 'w-3 h-3 mr-0.5 text-gray-400')}${esc(t.ubicacion_ruta)}</span>` : ''}</div></td>`,
             tecnico: `<td data-col="tecnico" class="px-5 py-3.5 text-sm whitespace-nowrap">${t.tecnico_nombre ? `<span class="text-gray-700" translate="no">${esc(t.tecnico_nombre)}</span>` : '<span class="text-gray-400">Sin asignar</span>'}</td>`,
             dias: `<td data-col="dias" class="px-5 py-3.5 text-sm text-right tabular-nums ${dias >= 7 ? 'text-amber-700 font-semibold' : 'text-gray-700'}"
                 title="${esc(new Date(t.fecha_creacion).toLocaleDateString(I18N.locale))}">${dias == null ? '<span class="text-gray-400">—</span>' : `<span class="t-dias">${dias}</span>`}</td>`,
@@ -540,6 +541,7 @@ const components = (() => {
         <div class="flex items-center justify-between py-1.5 gap-2 group" data-part-id="${p.id}">
             <span class="text-sm flex-1 truncate">${esc(p.nombre)}
                 <span class="font-mono text-gray-400 text-xs ml-1">${esc(p.codigo)}</span>
+                ${p.ubicacion_ruta ? `<span class="block text-[11px] text-gray-400 truncate">${icono('pin', 'w-3 h-3 mr-0.5')}${esc(p.ubicacion_ruta)}</span>` : ''}
             </span>
             <div class="flex items-center gap-1 shrink-0">
                 <button type="button"
@@ -661,12 +663,15 @@ const components = (() => {
         const stockCls = stockClass(p);
         return `
         <tr class="hover:bg-gray-50 transition">
-            <td class="px-5 py-3 font-mono text-xs font-bold text-gray-600">${esc(p.codigo)}</td>
+            <td class="pl-5 py-3 w-8"><input type="checkbox" data-sel-part="${p.id}" class="w-4 h-4 accent-indigo-600" aria-label="${esc(I18N.t('Seleccionar {0}', p.codigo))}"></td>
+            <td class="px-5 py-3 font-mono text-xs font-bold text-gray-600 whitespace-nowrap">${esc(p.codigo)}</td>
             <td class="px-5 py-3 font-medium text-gray-800">${esc(p.nombre)}</td>
+            <td class="px-5 py-3 text-xs min-w-[9rem]">${p.ubicacion_ruta ? `<span class="text-gray-600">${icono('pin', 'w-3.5 h-3.5 mr-1 text-gray-400')}${esc(p.ubicacion_ruta)}</span>` : `<span class="text-amber-600">${esc(I18N.t('Sin ubicación'))}</span>`}</td>
             <td class="px-5 py-3 text-gray-500 text-xs">${esc(p.proveedor)}</td>
-            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${stockCls}">${p.stock} uds</span>${stockMinTxt(p)}</td>
+            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap ${stockCls}">${p.stock} uds</span>${stockMinTxt(p)}</td>
             <td class="px-5 py-3 text-right font-semibold text-gray-700">${precioARS(p.precio)}</td>
-            <td class="px-5 py-3 text-right space-x-3">
+            <td class="px-5 py-3 text-right space-x-3 whitespace-nowrap">
+                <button type="button" data-etiqueta-part="${p.id}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="${esc(I18N.t('Imprimir etiqueta'))}" title="${esc(I18N.t('Imprimir etiqueta'))}">${icono('impresora', 'w-4 h-4')}</button>
                 <button onclick="ui.openAdminEditPart(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" aria-label="Editar" title="Editar">${icono('lapiz', 'w-4 h-4')}</button>
                 <button onclick="app.deletePart(${p.id})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition" aria-label="Eliminar" title="Eliminar">${icono('papelera', 'w-4 h-4')}</button>
             </td>

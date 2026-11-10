@@ -300,43 +300,17 @@ def update_ticket_status(
         models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO
     ]))
 ):
-    # Los estados se configuran en Administración → Estados (no solo los de fábrica)
-    cfgs = {e.valor: e for e in db.query(models.TicketStatusConfig).all()}
-    cfg = cfgs.get(update.estado)
-    if cfgs:
-        if not cfg or not cfg.activo:
-            raise HTTPException(status_code=400, detail="Estado inválido o desactivado")
-    elif update.estado not in VALID_ESTADOS:
-        raise HTTPException(status_code=400, detail="Estado inválido")
+    from ..services import estados
+    estados.validar(db, update.estado)
     ticket = ticket_o_404(db, ticket_id)
-    # Guard: if the status hasn't actually changed, do nothing — no historial, no notification.
-    if ticket.estado == update.estado:
+    if ticket.estado == models.TicketStatus.SERVICIO_EXTERNO.value and update.estado != ticket.estado and \
+            db.query(models.EnvioExterno).filter_by(ticket_id=ticket.id, estado="enviado").first():
+        raise HTTPException(status_code=400, detail="El equipo está en el servicio técnico oficial: registrá primero la vuelta.")
+    if update.estado == models.TicketStatus.SERVICIO_EXTERNO.value and ticket.estado != update.estado and \
+            not db.query(models.EnvioExterno).filter_by(ticket_id=ticket.id, estado="enviado").first():
+        raise HTTPException(status_code=400, detail="Para pasarlo a este estado, usá \"Enviar al fabricante\" en el ticket.")
+    if not estados.cambiar(db, ticket, update.estado, current_user):
         return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)
-    estado_ant = ticket.estado
-    ticket.estado = update.estado
-    ticket.fecha_actualizacion = utcnow()
-    es_final = cfg.es_final if cfg else update.estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO)
-    if es_final:
-        ticket.fecha_cierre = utcnow()
-    else:
-        ticket.fecha_cierre = None   # reabierto: deja de contar como cerrado (promedios, garantía)
-    ticket.deadline_sla = calculate_sla_deadline(update.estado)
-    if retiro_service.al_cambiar_estado(db, ticket) and ticket.cliente:
-        avisos.notificar(db, [ticket.cliente], models.TipoNotificacion.CAMBIO_ESTADO,
-                         f"Listo para retirar: {ticket.numero_rma}",
-                         f"Tu {ticket.producto} está listo. {ajustes.politica_retiro(db)}", ticket_id=ticket.id)
-    log_event(db, ticket_id, current_user.id,
-              models.EventoHistorial.CAMBIO_ESTADO,
-              detalle=f"Estado: {estado_ant} → {update.estado}",
-              estado_ant=estado_ant, estado_nuevo=update.estado)
-    notify_ticket_actors(
-        db, ticket,
-        tipo=models.TipoNotificacion.CAMBIO_ESTADO,
-        titulo=f"Estado actualizado: {ticket.numero_rma}",
-        mensaje=f"{current_user.nombre} cambió el estado a «{update.estado}»",
-        origen_usuario_id=current_user.id,
-    )
-    email.cliente_cambio_estado(db, ticket)   # se envía después del commit
     db.commit()
     db.refresh(ticket)
     return schemas.Ticket.from_orm_with_tecnico(ticket, current_user.id)

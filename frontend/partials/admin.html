@@ -45,6 +45,11 @@
                     <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="barras" class="w-[18px] h-[18px]"></i></span>
                     <span>Stock</span>
                 </button>
+                <button type="button" data-tab="ubicaciones"
+                    class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
+                    <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="pin" class="w-[18px] h-[18px]"></i></span>
+                    <span>Ubicaciones</span>
+                </button>
                 <button type="button" data-tab="pedidos"
                     class="admin-tab-btn shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition text-left text-gray-600 hover:bg-gray-50">
                     <span class="w-5 h-5 shrink-0 flex items-center justify-center text-gray-400 tab-icon"><i data-icono="camion" class="w-[18px] h-[18px]"></i></span>
@@ -201,6 +206,10 @@
                             <input type="text" id="admin-parts-search"
                                 class="text-sm border rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 w-48 bg-white"
                                 placeholder="Buscar repuesto...">
+                            <select id="admin-parts-ubic" aria-label="Filtrar por ubicación"
+                                class="text-sm border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 bg-white max-w-[12rem]">
+                                <option value="">Todas las ubicaciones</option>
+                            </select>
                             <button type="button" id="admin-import-parts-btn" title="Importar desde Excel o CSV"
                                 class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition">
                                 <i data-icono="subir" class="w-4 h-4 mr-1.5"></i>Importar
@@ -218,12 +227,21 @@
                         <span id="admin-parts-alert-msg"></span>
                     </div>
 
+                    <!-- Cambio de ubicación en lote -->
+                    <div id="admin-parts-lote" class="hidden flex-wrap items-center gap-3 px-5 py-2.5 border-b bg-indigo-50 text-sm">
+                        <span id="admin-parts-lote-n" class="font-semibold text-indigo-800"></span>
+                        <button type="button" id="admin-parts-lote-mover" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg font-semibold"><i data-icono="pin" class="w-4 h-4 mr-1"></i>Cambiar ubicación</button>
+                        <button type="button" id="admin-parts-lote-limpiar" class="text-indigo-700 hover:underline">Quitar selección</button>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead>
                                 <tr class="text-xs uppercase text-gray-400 border-b bg-gray-50">
+                                    <th class="pl-5 py-3 w-8"><input type="checkbox" id="admin-parts-sel-todos" class="w-4 h-4 accent-indigo-600" aria-label="Seleccionar todos"></th>
                                     <th class="px-5 py-3">Código</th>
                                     <th class="px-5 py-3">Nombre</th>
+                                    <th class="px-5 py-3">Ubicación</th>
                                     <th class="px-5 py-3">Proveedor</th>
                                     <th class="px-5 py-3 text-center">Stock</th>
                                     <th class="px-5 py-3 text-right">Precio</th>
@@ -234,6 +252,15 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <!-- UBICACIONES TAB (frontend/js/ubicaciones.js) -->
+            <div id="admin-tab-ubicaciones" class="admin-tab-content hidden">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">Ubicaciones</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Dónde se guarda cada equipo y cada repuesto. Escaneá la etiqueta del equipo y después la del estante para guardarlo ahí.</p>
+                </div>
+                <div id="ubicaciones-root"></div>
             </div>
 
             <!-- PEDIDOS TAB (frontend/js/pedidos.js) -->

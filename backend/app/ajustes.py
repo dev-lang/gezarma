@@ -129,6 +129,9 @@ DEFS = {
                                      ayuda="Si el mismo equipo (N° de serie) vuelve dentro de este plazo desde que se "
                                            "cerró, el ticket se marca como reingreso en garantía, sube la prioridad y se "
                                            "avisa al técnico que lo reparó. 0 = desactivado."),
+    "ubicacion_dias_quieto": dict(grupo="taller", tipo="int", default=7, minimo=1, maximo=365,
+                                  label="Avisar equipos que no se mueven hace (días)",
+                                  ayuda="En Ubicaciones → Para ordenar se listan los equipos abiertos que siguen en el mismo lugar desde hace más días que esto."),
     "horas_dias_correccion": dict(grupo="taller", tipo="int", default=7, minimo=0, maximo=365,
                                   label="Días para corregir horas",
                                   ayuda="Hasta cuántos días atrás un técnico puede cargar, mover o corregir sus horas. "

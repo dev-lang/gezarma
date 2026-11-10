@@ -234,7 +234,7 @@ function renderRepuestoPicker() {
     const sel = $("presupuesto-repuesto-select");
     if (!sel) return;
     sel.innerHTML = '<option value="">Elegí un repuesto…</option>' + _repuestos.map(r =>
-        `<option value="${r.id}">${escHtml(r.nombre)} · ${escHtml(r.codigo)} · stock ${r.stock}</option>`).join("");
+        `<option value="${r.id}">${escHtml(r.nombre)} · ${escHtml(r.codigo)} · stock ${r.stock}${r.ubicacion_ruta ? ' · ' + escHtml(r.ubicacion_ruta) : ''}</option>`).join("");
     sel.onchange = () => {
         const r = _repuestos.find(x => String(x.id) === sel.value);
         sel.value = "";

@@ -9,7 +9,7 @@ T = models.Ticket
 # ticket): listar 30 tickets pasaba de ~180 consultas a ~10.
 RELACIONES_TICKET = (
     joinedload(T.tecnico), joinedload(T.cliente), joinedload(T.origen), joinedload(T.relacionado),
-    joinedload(T.reingreso_origen), joinedload(T.encuesta),
+    joinedload(T.reingreso_origen), joinedload(T.encuesta), joinedload(T.ubicacion),
     selectinload(T.favoritos), selectinload(T.tags), selectinload(T.firmas),
     selectinload(T.repuestos_usados_assoc).joinedload(models.TicketRepuesto.repuesto),
 )

@@ -79,6 +79,8 @@ class SparePart(BaseModel):
     precio:    float
     categoria: Optional[str] = "General"
     stock_minimo: int = 0
+    ubicacion_id:   Optional[int] = None
+    ubicacion_ruta: Optional[str] = None      # "Estante C › Cajón 4"
     model_config = ConfigDict(from_attributes=True)
 
 class SparePartCreate(BaseModel):
@@ -89,6 +91,7 @@ class SparePartCreate(BaseModel):
     precio:    float = 0.0
     categoria: Optional[str] = "General"
     stock_minimo: int = 0
+    ubicacion_id: Optional[int] = None        # si no viene, no se toca
 
 class SparePartUpdate(BaseModel):
     nombre:    Optional[str]   = None
@@ -301,10 +304,25 @@ class Ticket(TicketBase):
     checklist_ingreso:    Optional[ChecklistIngreso] = None
     firmas:               List[FirmaInfo]        = []
     encuesta:             Optional[EncuestaInfo] = None
+    # Dónde está guardado y, si está en el fabricante, el envío abierto (solo para el taller)
+    ubicacion_id:         Optional[int] = None
+    ubicacion_ruta:       Optional[str] = None
+    ubicacion_fecha:      Optional[UTCDateTime] = None
+    envio_abierto:        Optional[dict] = None
 
     @classmethod
     def from_orm_with_tecnico(cls, obj, current_user_id: int = None):
         data = cls.model_validate(obj)
+        if obj.ubicacion:
+            from .services.ubicaciones import ruta
+            data.ubicacion_ruta = ruta(obj.ubicacion)
+        if obj.estado == "En servicio técnico oficial":
+            e = next((x for x in obj.envios_externos if x.estado == "enviado"), None)
+            if e:
+                from .timeutils import iso_utc
+                data.envio_abierto = {"id": e.id, "destino": e.destino, "numero_caso": e.numero_caso,
+                                      "fecha_envio": iso_utc(e.fecha_envio),
+                                      "fecha_estimada": iso_utc(e.fecha_estimada) if e.fecha_estimada else None}
         if obj.tecnico:
             data.tecnico_nombre = obj.tecnico.nombre
         if obj.cliente:
@@ -332,6 +350,8 @@ class Ticket(TicketBase):
         if user.rol == "cliente":
             for r in data.repuestos_usados:
                 r.stock = r.proveedor = r.precio = r.stock_minimo = None
+                r.ubicacion_id = r.ubicacion_ruta = None
+            data.ubicacion_id = data.ubicacion_ruta = data.ubicacion_fecha = data.envio_abierto = None
         return data
 
     model_config = ConfigDict(from_attributes=True)

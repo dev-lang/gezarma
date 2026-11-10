@@ -86,7 +86,7 @@ const Alertas = (() => {
         return `
         <div class="lg:col-span-2">
             <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Para hoy</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">${items.map(i => `
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">${items.map(i => `
                 <button type="button" data-ir="${i.id}" ${i.n ? '' : 'disabled'}
                     class="text-left bg-white rounded-xl border ${i.n ? i.borde + ' hover:shadow-md' : 'border-gray-100 opacity-60'} shadow-sm px-4 py-3 transition">
                     <span class="block text-2xl font-black ${i.n ? i.color : 'text-gray-400'}">${i.n}</span>
@@ -99,11 +99,13 @@ const Alertas = (() => {
     async function cargar() {
         const panel = document.getElementById('alertas-panel');
         if (!panel) return;
-        const [sla, stock, retiro, presupuestos] = await Promise.all([
+        const taller = ['administrador', 'tecnico'].includes(auth.getUser()?.role || '');
+        const [sla, stock, retiro, presupuestos, externos] = await Promise.all([
             api.request('tickets/sla/alertas').catch(() => []),
             api.request('stock/alertas').catch(() => []),
             api.request('tickets/retiro/pendientes').catch(() => []),
             api.request('tickets/presupuestos/pendientes').catch(() => []),
+            taller ? api.request('envios?estado=enviado&atrasados=true').catch(() => null) : null,
         ]);
         const vencidos = sla.filter(t => t.horas_restantes < 0).length;
         const bloques = [paraHoy([
@@ -112,6 +114,7 @@ const Alertas = (() => {
             { id: 'retiro', n: retiro.length, texto: 'Listos para retirar', color: 'text-emerald-700', borde: 'border-emerald-200' },
             { id: 'presupuestos', n: presupuestos.length, texto: 'Presupuestos sin respuesta', color: 'text-blue-700', borde: 'border-blue-200' },
             { id: 'stock', n: stock.length, texto: 'Repuestos bajo el mínimo', color: 'text-amber-700', borde: 'border-amber-200' },
+            ...(externos ? [{ id: 'externos', n: externos.envios.length, texto: 'Atrasados en el fabricante', color: 'text-fuchsia-700', borde: 'border-fuchsia-200' }] : []),
         ])];
         if (retiro.length) bloques.push(tarjeta('Listos para retirar', 'green', retiro.map(filaRetiro), '', 'retiro'));
         if (sla.length) bloques.push(tarjeta('SLA vencidos o por vencer', 'red', sla.map(filaSla), '', 'sla'));
@@ -125,6 +128,7 @@ const Alertas = (() => {
         panel.innerHTML = bloques.join('');
         panel.classList.remove('hidden');
         panel.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => {
+            if (b.dataset.ir === 'externos') { window.Envios?.abrir(); return; }
             const destino = document.getElementById(`alerta-${b.dataset.ir}`);
             destino?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             destino?.classList.add('ring-2', 'ring-blue-400');

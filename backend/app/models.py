@@ -37,6 +37,7 @@ class TicketStatus(str, enum.Enum):
     DIAGNOSTICO    = "En diagnóstico"
     REPARACION     = "En reparación"
     ESPERA_REPUESTO= "Esperando repuestos"
+    SERVICIO_EXTERNO = "En servicio técnico oficial"   # enviado a la garantía del fabricante
     REPARADO       = "Reparado"
     ENVIADO        = "Enviado al cliente"
     CERRADO        = "Cerrado"
@@ -61,6 +62,8 @@ class EventoHistorial(str, enum.Enum):
     CHECKLIST_INGRESO= "checklist_ingreso"
     FIRMA_REGISTRADA = "firma_registrada"
     TIEMPO_EDITADO   = "tiempo_editado"     # horas cargadas, movidas o corregidas desde el calendario
+    UBICACION_CAMBIADA = "ubicacion_cambiada" # el equipo se guardó en otro lugar
+    ENVIO_EXTERNO    = "envio_externo"      # enviado al fabricante / servicio oficial, o de vuelta
 
 # ── Models ────────────────────────────────────────────────────────────────────
 class Usuario(Base):
@@ -110,6 +113,13 @@ class Repuesto(Base):
     precio    = Column(Float, default=0.0)
     categoria = Column(String, nullable=True, default="General")
     stock_minimo = Column(Integer, nullable=False, default=0, server_default="0")  # 0 = sin alerta
+    ubicacion_id = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True, index=True)
+    ubicacion    = relationship("Ubicacion", foreign_keys=[ubicacion_id])
+
+    @property
+    def ubicacion_ruta(self):
+        from .services.ubicaciones import ruta
+        return ruta(self.ubicacion) if self.ubicacion else None
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -196,6 +206,10 @@ class Ticket(Base):
     reingreso_de       = Column(Integer, ForeignKey("tickets.id"), nullable=True)
     reingreso_garantia = Column(Boolean, nullable=False, default=False, server_default="0")
 
+    # Dónde está guardado el equipo y desde cuándo (los cambios quedan en ubicacion_movimientos)
+    ubicacion_id    = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True, index=True)
+    ubicacion_fecha = Column(DateTime, nullable=True)
+
     cliente      = relationship("Usuario", back_populates="tickets_creados",  foreign_keys=[usuario_id])
     tecnico      = relationship("Usuario", back_populates="tickets_asignados", foreign_keys=[tecnico_asignado])
     producto_obj = relationship("Producto", back_populates="tickets")
@@ -215,6 +229,9 @@ class Ticket(Base):
     encuesta             = relationship("Encuesta", back_populates="ticket", uselist=False,
                                         cascade="all, delete-orphan")
     tiempos              = relationship("TiempoTrabajo", back_populates="ticket", cascade="all, delete-orphan")
+    ubicacion            = relationship("Ubicacion", foreign_keys=[ubicacion_id])
+    envios_externos      = relationship("EnvioExterno", back_populates="ticket", cascade="all, delete-orphan",
+                                        order_by="EnvioExterno.fecha_envio")
 
     def firma(self, momento: str):
         return next((f for f in self.firmas if f.momento == momento), None)
@@ -234,6 +251,8 @@ class Ticket(Base):
             obj.stock    = rep.stock
             obj.stock_minimo = rep.stock_minimo
             obj.categoria = rep.categoria
+            obj.ubicacion_id = rep.ubicacion_id
+            obj.ubicacion_ruta = rep.ubicacion_ruta
             obj.cantidad = assoc.cantidad
             result.append(obj)
         return result
@@ -362,6 +381,64 @@ class TiempoTrabajo(Base):
     editado    = Column(Boolean, nullable=False, default=False, server_default="0")
     ticket  = relationship("Ticket", back_populates="tiempos")
     usuario = relationship("Usuario")
+
+
+class Ubicacion(Base):
+    """Lugar donde se guardan equipos y repuestos, en árbol: Depósito → Estante B → B3.
+    tipo "externa" = fuera del taller (fabricante, servicio oficial): la usa el sistema."""
+    __tablename__ = "ubicaciones"
+    id       = Column(Integer, primary_key=True, index=True)
+    nombre   = Column(String(60), nullable=False)
+    padre_id = Column(Integer, ForeignKey("ubicaciones.id", ondelete="RESTRICT"), nullable=True, index=True)
+    codigo   = Column(String(20), unique=True, index=True)      # lo que lleva la etiqueta: U-0001
+    tipo     = Column(String(10), nullable=False, default="taller", server_default="taller")
+    nota     = Column(String(200), nullable=True)
+    activa   = Column(Boolean, nullable=False, default=True, server_default="1")
+    orden    = Column(Integer, nullable=False, default=0, server_default="0")
+    padre    = relationship("Ubicacion", remote_side="Ubicacion.id")
+
+
+class UbicacionMovimiento(Base):
+    """Cada vez que un equipo o un repuesto cambia de lugar (no se borran)."""
+    __tablename__ = "ubicacion_movimientos"
+    id          = Column(Integer, primary_key=True, index=True)
+    ticket_id   = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=True, index=True)
+    repuesto_id = Column(Integer, ForeignKey("repuestos.id", ondelete="CASCADE"), nullable=True, index=True)
+    desde_id    = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True)
+    hacia_id    = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True)
+    usuario_id  = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    motivo      = Column(String(30), nullable=True)   # manual, escaneo, mostrador, lote, envio, regreso, importacion
+    fecha       = Column(DateTime, default=utcnow, index=True)
+    desde   = relationship("Ubicacion", foreign_keys=[desde_id])
+    hacia   = relationship("Ubicacion", foreign_keys=[hacia_id])
+    usuario = relationship("Usuario")
+
+
+class EnvioExterno(Base):
+    """Un envío del equipo (o de una parte) al fabricante o a un servicio oficial, y su vuelta."""
+    __tablename__ = "envios_externos"
+    id              = Column(Integer, primary_key=True, index=True)
+    ticket_id       = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    destino         = Column(String(120), nullable=False)      # fabricante o servicio oficial
+    numero_caso     = Column(String(60), nullable=True)        # RMA / caso del fabricante
+    fecha_envio     = Column(DateTime, nullable=False, default=utcnow)
+    transportista   = Column(String(80), nullable=True)
+    guia            = Column(String(80), nullable=True)
+    contenido       = Column(String(120), nullable=True)       # equipo completo, solo la placa…
+    accesorios      = Column(String(300), nullable=True)
+    fecha_estimada  = Column(DateTime, nullable=True)
+    nota            = Column(Text, nullable=True)
+    estado          = Column(String(10), nullable=False, default="enviado", server_default="enviado", index=True)
+    fecha_recepcion = Column(DateTime, nullable=True)
+    resultado       = Column(String(15), nullable=True)        # reparado, reemplazado, rechazado, sin_falla
+    serie_nueva     = Column(String(80), nullable=True)
+    comprobante     = Column(String(80), nullable=True)
+    nota_recepcion  = Column(Text, nullable=True)
+    usuario_envio_id     = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    usuario_recepcion_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    ticket            = relationship("Ticket", back_populates="envios_externos")
+    usuario_envio     = relationship("Usuario", foreign_keys=[usuario_envio_id])
+    usuario_recepcion = relationship("Usuario", foreign_keys=[usuario_recepcion_id])
 
 
 class TiempoCambio(Base):

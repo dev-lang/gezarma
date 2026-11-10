@@ -46,6 +46,8 @@ const Gestion = (() => {
         ui.loadHistory(ticketId);
         if (typeof Recepcion !== 'undefined') Recepcion.cargarDetalle(t);
         if (typeof Encuesta !== 'undefined') Encuesta.cargarDetalle(t);
+        if (typeof Ubic !== 'undefined') Ubic.cargarDetalle(t);
+        if (typeof Envios !== 'undefined') Envios.cargarDetalle(t);
         return t;
     }
 
@@ -56,6 +58,12 @@ const Gestion = (() => {
         const anterior = c?.dataset.origEstado ?? '', nuevo = sel.value;
         const volver = () => { sel.value = anterior; ui.toggleShippingFields(null); };
         if (nuevo === anterior) { ui.toggleShippingFields(null); return; }
+        if (typeof Envios !== 'undefined' && (nuevo === Envios.ESTADO || anterior === Envios.ESTADO)) {
+            // Al fabricante se manda (y se recibe) con su formulario: guarda caso, guía y resultado
+            const saliendo = anterior === Envios.ESTADO;
+            if (!saliendo) { volver(); Envios.desdeSelector(ticketId); return; }
+            if (await Envios.desdeSelector(ticketId, { saliendo })) { volver(); return; }
+        }
         if (nuevo === ENVIADO) {
             // Primero transporte y tracking; se confirma con "Marcar como enviado"
             ui.toggleShippingFields(ENVIADO);

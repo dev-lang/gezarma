@@ -24,6 +24,7 @@ const Kanban = (() => {
             <p class="font-mono text-[10px] text-gray-400">${esc(t.numero_rma)}${t.reingreso_garantia ? ' <span class="font-sans font-bold text-amber-700" title="Reingreso en garantía de la reparación">↩ reingreso</span>' : ''}</p>
             <p class="text-sm font-semibold text-gray-800 mt-1 leading-tight">${esc(t.producto)}</p>
             <p class="text-xs text-gray-500 truncate">${esc(t.usuario_nombre || '')}</p>
+            ${t.ubicacion_ruta ? `<p class="text-[11px] text-gray-500 truncate mt-0.5" title="${esc(t.ubicacion_ruta)}">${icono('pin', 'w-3 h-3 mr-0.5 text-gray-400')}${esc(t.ubicacion_ruta)}</p>` : ''}
             <div class="flex items-center justify-between mt-2 gap-1">
                 <span class="text-[11px] ${t.tecnico_nombre ? 'text-gray-600' : 'text-gray-400 italic'} truncate">
                     ${t.tecnico_nombre ? icono('usuario', 'w-3 h-3 mr-0.5') + esc(t.tecnico_nombre) : 'Sin técnico'}</span>

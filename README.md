@@ -23,6 +23,8 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Garantía de la reparación**: si el mismo equipo vuelve dentro del plazo, el ticket se marca como reingreso, sube de prioridad y se avisa al técnico que lo reparó.
 - **Tiempo de trabajo** por técnico (iniciar / pausar o cargar a mano), con costo de mano de obra y horas por técnico.
 - **Horas** (atajo `G H`): calendario de horas de cada técnico por día, semana o mes; cargar a mano, mover entre días (arrastrando, o *Mover a…* en el celular), corregir y borrar con registro de cambios, tareas del taller sin ticket y exportación a Excel/CSV.
+- **Ubicaciones**: dónde está guardado cada equipo y cada repuesto (depósito › estante › cajón), con etiqueta para escanear; escanear el equipo y después el estante lo guarda ahí. Historial de por dónde pasó cada equipo y avisos de equipos sin ubicación o quietos.
+- **Envíos a la garantía del fabricante** o a un servicio oficial: N° de caso, guía, accesorios y fecha estimada; el ticket pasa solo a *En servicio técnico oficial* y, al volver, se registra el resultado (reparado, reemplazado con serie nueva, rechazado o sin falla). Pantalla *Fuera del taller* (atajo `G F`) con los días afuera, los atrasados y exportación a Excel/CSV.
 - **Pedidos a proveedor** en tres pasos: armar (con los repuestos bajo el mínimo o a mano), mandar (por mail con PDF y CSV, o marcarlo como pedido por otro medio) y recibir (todo o en partes, se suma al stock).
 - **Documentos**: orden de ingreso, remito de entrega y presupuesto en PDF, **etiqueta** con QR y código de barras para pegar en el equipo, y **comprobantes de ingreso y de entrega para ticketera**.
 - **Impresoras térmicas**: etiquetas de 62 × 29, 50 × 25, 40 × 30, 58 × 40 o 100 × 50 mm y ticketeras de 58 u 80 mm, a 203 o 300 dpi. El código de barras se arma a medida de la resolución de la impresora para que siempre se lea.
@@ -96,6 +98,8 @@ Lista de tickets: estados con su cantidad (filtran con un clic), días en el tal
 | Administrar usuarios, productos, repuestos, stock, etiquetas, estados y plantillas | — | — | ✅ |
 | Finanzas, seguridad del login, ajustes, exportar usuarios | — | — | ✅ |
 | Pedidos a proveedor y horas por técnico | — | — | ✅ |
+| Guardar equipos y repuestos en una ubicación, enviar al fabricante y registrar la vuelta | — | ✅ | ✅ |
+| Crear, editar y borrar ubicaciones | — | — | ✅ |
 
 El **seguimiento público** (`/seguimiento`) no requiere usuario: lo puede consultar cualquiera que tenga el N° de RMA **y** el N° de serie del equipo, y muestra solo el estado, la línea de tiempo y los datos de envío.
 
@@ -240,6 +244,10 @@ Los diccionarios están en `backend/app/traducciones/<idioma>.json`: `{"texto en
   - **Mover y corregir**: arrastrar un tramo a otro día (con *Deshacer*), o abrirlo para cambiar el día, el horario, el ticket o la nota. Cada cambio queda registrado (quién, cuándo, antes y después), el tramo se marca *editado* y el ticket lo anota en su historial interno.
   - **Exportar** el período a Excel o CSV.
 - **Pedidos a proveedor** (*Administración → Pedidos a proveedor*, o desde la alerta de stock bajo): el sistema sugiere qué pedir, agrupado por proveedor, para llevar cada repuesto al doble de su mínimo (descontando lo que ya está pedido). El borrador se edita, se baja en PDF o CSV y se marca enviado; si se carga el email del proveedor, se le manda con los dos archivos. Cuando llega la mercadería se registra lo recibido (todo o una parte) y se suma al stock.
+- **Ubicaciones** (*Administración → Ubicaciones*): un árbol de lugares (*Depósito › Estante C › Cajón 4*), cada uno con su código (`U-0001`) y su etiqueta para imprimir. Desde ahí se ve qué hay en cada lugar y *Para ordenar*: equipos sin ubicación, equipos que no se movieron en los últimos *N* días (Ajustes → Taller, 7 por defecto) y repuestos sin ubicación. Un lugar con cosas guardadas no se borra ni se desactiva; uno que ya se usó, se desactiva en lugar de borrarse.
+  - **Equipos**: el ticket muestra dónde está y desde cuándo, con *Mover a…* (y *Deshacer*) y el historial de por dónde pasó. Con un lector USB, escanear la etiqueta del equipo y después la del estante lo guarda ahí; escanear un estante solo muestra qué tiene, y un repuesto, dónde está. En el ingreso en mostrador se puede elegir dónde queda. La ubicación se ve también en la lista y en el tablero; el cliente no la ve.
+  - **Repuestos**: columna y filtro por ubicación (incluye los lugares de adentro), *Sin ubicación*, cambio en lote marcando varios y etiqueta por repuesto. Al importar repuestos, la columna *Ubicación* (`Depósito > Estante A`) crea los lugares que falten.
+- **Envíos al fabricante**: en el ticket, *Enviar al fabricante* (destino, N° de caso, transporte y guía, qué se mandó, accesorios, fecha estimada de vuelta y nota). El ticket pasa a *En servicio técnico oficial* y el equipo queda en *Fuera del taller*; mientras está afuera no se cambia el estado a mano ni se mueve. Al volver, *Registrar vuelta*: resultado (reparado, reemplazado — se actualiza el N° de serie y el anterior queda en el historial —, rechazado o sin falla), fecha, comprobante, nota y dónde se guarda; el ticket vuelve a *Equipo recibido*. Un ticket puede tener varios envíos. La pantalla *Fuera del taller* (botón del panel con el número de equipos afuera, o `G F`) lista lo que está afuera y lo que volvió, con días, atrasados (pasada la fecha estimada; también en *Para hoy*), filtro por destino y exportación a Excel/CSV. El cliente solo ve el estado.
 - **Plantillas por producto**: en *Plantillas Presupuesto*, cada plantilla puede asociarse a un modelo. Al presupuestar un equipo de ese modelo, sus ítems típicos aparecen primero y se pueden cargar todos juntos.
 
 ### Ingreso en mostrador
@@ -254,7 +262,7 @@ Desde el panel, **🧾 Ingreso en mostrador** (técnicos y administradores):
 
 Al registrar, se imprimen la etiqueta, el comprobante de ticketera o la orden de ingreso A4. El checklist y la firma salen en la orden de ingreso y en el comprobante; la **firma de entrega** (desde la tarjeta *Recepción* del ticket) sale en el remito y en el comprobante de entrega. Las firmas se guardan recortadas y en blanco y negro, listas para imprimir en una térmica. Los tickets cargados de la forma habitual también pueden completar su checklist, fotos y firmas desde esa tarjeta.
 
-**Lector de código de barras**: con un lector USB (funciona como un teclado), escanear la etiqueta en cualquier pantalla abre el ticket. En el buscador, un N° de RMA exacto + Enter también lo abre directo.
+**Lector de código de barras**: con un lector USB (funciona como un teclado), escanear la etiqueta en cualquier pantalla abre el ticket; si después se escanea la etiqueta de un estante, el equipo queda guardado ahí (ver *Ubicaciones*). Lo que tipea el lector nunca dispara un atajo de teclado. En el buscador, un N° de RMA exacto + Enter también lo abre directo.
 
 ### Impresoras térmicas
 
@@ -339,7 +347,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), ubicaciones y envíos al fabricante, retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 

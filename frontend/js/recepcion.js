@@ -211,6 +211,12 @@ const Recepcion = (() => {
             $('ing-producto').innerHTML = '<option value="">Elegí un producto…</option>'
                 + productos.map(p => `<option value="${p.id}">${esc(`${p.marca} ${p.modelo} (${p.categoria})`)}</option>`).join('');
         } catch (e) { toast.error('No se pudieron cargar los productos: ' + e.message); }
+        // Ubicaciones (si el taller las usa)
+        if (typeof Ubic !== 'undefined') {
+            Ubic.llenarSelect('ing-ubicacion', null).then(() => {
+                if ($('ing-ubicacion')?.options.length > 1) $('ing-ubicacion-wrap').classList.remove('hidden');
+            });
+        }
 
         // Cliente: buscar / elegir / nuevo
         const modo = m => {
@@ -506,6 +512,11 @@ const Recepcion = (() => {
                 const t = await api.request('mostrador/ingreso', { method: 'POST', body: JSON.stringify(cuerpo) });
                 _estado.ticket = t;
                 const fallidas = [];
+                const ubic = Number($('ing-ubicacion')?.value) || null;
+                if (ubic) {
+                    try { await api.request(`tickets/${t.id}/ubicacion`, { method: 'PUT', body: JSON.stringify({ ubicacion_id: ubic, motivo: 'mostrador' }) }); }
+                    catch (err) { toast.warning(I18N.t('No se pudo guardar la ubicación: {0}', err.message)); }
+                }
                 for (const f of _estado.fotos) {
                     try { await subirFoto(t.id, f.file); } catch (err) { fallidas.push(err.message); }
                 }
@@ -654,12 +665,13 @@ const Recepcion = (() => {
 
     // ── Lector de código de barras ───────────────────────────────────────────
     /** Abre el ticket si `texto` es un N° de RMA exacto. Devuelve true si lo abrió. */
-    async function abrirRma(texto) {
+    async function abrirRma(texto, { escaneado = false } = {}) {
         const q = (texto || '').trim();
         if (!RMA_RE.test(q)) return false;
         try {
             const t = await api.request(`tickets/rma/${encodeURIComponent(q.toUpperCase())}`);
             await ui.showTicketDetail(t);
+            if (escaneado && typeof Ubic !== 'undefined') Ubic.equipoEscaneado(t);
             return true;
         } catch { return false; }
     }
@@ -679,7 +691,11 @@ const Recepcion = (() => {
                 const leido = _buffer; _buffer = '';
                 if (RMA_RE.test(leido)) {
                     e.preventDefault();
-                    abrirRma(leido).then(ok => { if (!ok) toast.error(`No se encontró el ticket ${leido}.`); });
+                    abrirRma(leido, { escaneado: true }).then(ok => { if (!ok) toast.error(`No se encontró el ticket ${leido}.`); });
+                } else if (leido.length >= 4 && typeof Ubic !== 'undefined') {
+                    // Etiqueta de un estante (U-0001) o de un repuesto
+                    e.preventDefault();
+                    Ubic.escaneo(leido.trim()).then(ok => { if (!ok) toast.error(I18N.t('No se reconoce el código {0}.', leido)); });
                 }
             } else if (e.key.length === 1) {
                 _buffer += e.key;
