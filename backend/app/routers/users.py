@@ -183,3 +183,53 @@ def delete_user(
         raise HTTPException(status_code=400, detail="El usuario tiene actividad registrada (tickets, comentarios, "
                                                     "historial…). Deshabilitalo en lugar de eliminarlo.")
     return None
+
+
+# ── Panel de control: disposición de cada usuario (services/panel.py) ────────
+from pydantic import BaseModel as _BM
+from ..services import panel as panel_service
+
+
+class _Panel(_BM):
+    bloques: list
+
+
+@router.get("/me/panel")
+def mi_panel(db: Session = Depends(database.get_db), current_user: models.Usuario = Depends(auth.get_current_user)):
+    return panel_service.del_usuario(db, current_user)
+
+
+@router.put("/me/panel")
+def guardar_mi_panel(data: _Panel, db: Session = Depends(database.get_db),
+                     current_user: models.Usuario = Depends(auth.get_current_user)):
+    res = panel_service.guardar(db, current_user, data.bloques)
+    db.commit()
+    return res
+
+
+@router.delete("/me/panel")
+def restablecer_mi_panel(db: Session = Depends(database.get_db), current_user: models.Usuario = Depends(auth.get_current_user)):
+    res = panel_service.restablecer(db, current_user)
+    db.commit()
+    return res
+
+
+@router.put("/me/panel/equipo")
+def panel_del_equipo(data: _Panel, db: Session = Depends(database.get_db),
+                     current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    """Lo que ven los que no armaron su panel (técnicos nuevos, por ejemplo)."""
+    bloques = panel_service.guardar_equipo(db, data.bloques)
+    db.commit()
+    from .. import ajustes
+    ajustes.invalidar_cache()
+    return {"equipo": bloques}
+
+
+@router.delete("/me/panel/equipo")
+def borrar_panel_del_equipo(db: Session = Depends(database.get_db),
+                            current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):
+    panel_service.borrar_equipo(db)
+    db.commit()
+    from .. import ajustes
+    ajustes.invalidar_cache()
+    return {"equipo": None}

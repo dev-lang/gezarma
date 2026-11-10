@@ -9,6 +9,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Panel de control personalizable (js/panel.js) */
+        #panel-bloques:not(.panel-editando) > .panel-oculto, #panel-bloques > [data-sin-permiso] { display: none !important; }
+        .panel-editando > [data-bloque] { position: relative; padding-top: 3.25rem !important; outline: 2px dashed #bfdbfe; outline-offset: 4px; border-radius: .75rem; }
+        .panel-editando > [data-bloque].hidden:not([data-sin-permiso]) { display: block !important; min-height: 3.5rem; opacity: .7; }
+        .panel-editando > .panel-oculto { opacity: .4; }
+        .panel-editando > [data-bloque]:not(.hidden) [data-vacio] { display: none; }
+        .panel-barra { position: absolute; top: .5rem; left: .5rem; right: .5rem; z-index: 5; display: flex; align-items: center; gap: .375rem;
+                       background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .5rem; padding: .25rem .5rem; font-size: .8125rem; color: #1e3a8a; }
+        /* En un cuarto de ancho, la barrita va en dos renglones: título arriba y controles abajo */
+        .panel-editando > [data-ancho="cuarto"] { padding-top: 5.25rem !important; }
+        .panel-editando > [data-ancho="cuarto"] > .panel-barra { flex-wrap: wrap; row-gap: .25rem; }
+        .panel-editando > [data-ancho="cuarto"] > .panel-barra > .panel-titulo { flex-basis: calc(100% - 2rem); }
+        .panel-editando > [data-ancho="cuarto"] > .panel-barra > [data-ancho] { margin-right: auto; }
+        .panel-manija { cursor: grab; color: #60a5fa; padding: .125rem; }
+        .panel-btn { width: 1.75rem; height: 1.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: .375rem; color: #3b82f6; }
+        .panel-btn:hover { background: #dbeafe; }
+        .panel-arrastrando { opacity: .35; }
+        body.panel-con-pie { padding-bottom: 5rem; }
+        .dark .panel-barra { background: #1e3a5f; border-color: #1e40af; color: #bfdbfe; }
+        .dark .panel-editando > [data-bloque] { outline-color: #1e40af; }
+        .dark .panel-btn:hover { background: #1e40af; }
         /* Íconos SVG (js/ui/iconos.js): alineados con el texto y del color del texto */
         /* (más específico que el "svg { display: block }" de Tailwind, pero sin pisar a .hidden) */
         .ico:not(.hidden) { display: inline-block; }
@@ -338,6 +359,7 @@
     <script src="js/busqueda.js"></script>
     <script src="js/barra.js"></script>
     <script src="js/navegacion.js"></script>
+    <script src="js/panel.js"></script>
     <script src="js/atajos.js"></script>
     <script src="js/guia.js"></script>
     <script src="js/setup.js"></script>

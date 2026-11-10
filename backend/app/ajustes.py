@@ -162,6 +162,8 @@ DEFS = {
                             label="Se dejó la configuración inicial para después"),
     "setup_pasos": dict(grupo="interno", tipo="str", default="", oculto=True,
                         label="Pasos de la configuración inicial ya hechos"),
+    "panel_predeterminado": dict(grupo="interno", tipo="str", default="", oculto=True,
+                                 label="Disposición del panel de control para quien no armó la suya"),
     "setup_rubros": dict(grupo="interno", tipo="str", default="", oculto=True,
                          label="Rubros elegidos en la configuración inicial"),
     "sla_alertas": dict(grupo="sla", tipo="bool", default=True, label="Avisar SLA vencidos y por vencer"),

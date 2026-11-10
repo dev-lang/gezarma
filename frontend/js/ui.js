@@ -71,6 +71,7 @@ const ui = {
         if (!user) return;
 
         await this.showSection('dashboard');
+        if (typeof Panel !== 'undefined') await Panel.aplicar();   // orden, ancho y ocultos de cada usuario
 
         const ROLES = { cliente: 'Cliente', tecnico: 'Técnico', administrador: 'Administrador' };
         const quien = `${user.nombre || user.username || user.sub} (${I18N.t(ROLES[user.role] || user.role)})`;
@@ -96,7 +97,7 @@ const ui = {
             favBtn.classList.toggle('hidden', !isTechOrAdmin);
             favBtn.classList.toggle('flex', isTechOrAdmin);
         }
-        document.getElementById('advanced-stats')?.classList.toggle('hidden', !isAdmin);
+        document.querySelectorAll('[data-stat-admin]').forEach(el => el.classList.toggle('hidden', !isAdmin));
         const horasBtn = document.getElementById('horas-btn');
         if (horasBtn) {
             horasBtn.classList.toggle('hidden', !isTechOrAdmin);
@@ -127,7 +128,7 @@ const ui = {
         if (isTechOrAdmin && typeof Encuesta !== 'undefined') Encuesta.panel();
         if (user.role === 'cliente' && typeof Portal !== 'undefined') Portal.cargar();
         if (typeof Tiempo !== 'undefined') { Tiempo.chip(); if (isAdmin) Tiempo.panel(); }
-        else document.getElementById('alertas-panel')?.classList.add('hidden');
+        else { document.getElementById('alertas-panel')?.classList.add('hidden'); document.getElementById('parahoy-panel')?.classList.add('hidden'); }
         this.loadTickets();
         if (typeof Kanban !== 'undefined') Kanban.iniciar(isTechOrAdmin);
         if (typeof Documentos !== 'undefined') Documentos.abrirDesdeHash();

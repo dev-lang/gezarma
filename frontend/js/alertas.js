@@ -80,11 +80,11 @@ const Alertas = (() => {
     function paraHoy(items) {
         const conAlgo = items.filter(i => i.n > 0);
         if (!conAlgo.length) {
-            return `<div class="lg:col-span-2 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+            return `<div class="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
                 ${icono('check-circulo', 'w-4 h-4')}<span>Todo al día: nada vencido ni esperando.</span></div>`;
         }
         return `
-        <div class="lg:col-span-2">
+        <div>
             <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Para hoy</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">${items.map(i => `
                 <button type="button" data-ir="${i.id}" ${i.n ? '' : 'disabled'}
@@ -108,14 +108,15 @@ const Alertas = (() => {
             taller ? api.request('envios?estado=enviado&atrasados=true').catch(() => null) : null,
         ]);
         const vencidos = sla.filter(t => t.horas_restantes < 0).length;
-        const bloques = [paraHoy([
+        const hoy = paraHoy([
             { id: 'sla', n: vencidos, texto: 'SLA vencidos', color: 'text-red-600', borde: 'border-red-200' },
             { id: 'sla', n: sla.length - vencidos, texto: 'SLA por vencer', color: 'text-amber-600', borde: 'border-amber-200' },
             { id: 'retiro', n: retiro.length, texto: 'Listos para retirar', color: 'text-emerald-700', borde: 'border-emerald-200' },
             { id: 'presupuestos', n: presupuestos.length, texto: 'Presupuestos sin respuesta', color: 'text-blue-700', borde: 'border-blue-200' },
             { id: 'stock', n: stock.length, texto: 'Repuestos bajo el mínimo', color: 'text-amber-700', borde: 'border-amber-200' },
             ...(externos ? [{ id: 'externos', n: externos.envios.length, texto: 'Atrasados en el fabricante', color: 'text-fuchsia-700', borde: 'border-fuchsia-200' }] : []),
-        ])];
+        ]);
+        const bloques = [];
         if (retiro.length) bloques.push(tarjeta('Listos para retirar', 'green', retiro.map(filaRetiro), '', 'retiro'));
         if (sla.length) bloques.push(tarjeta('SLA vencidos o por vencer', 'red', sla.map(filaSla), '', 'sla'));
         if (presupuestos.length) bloques.push(tarjeta('Presupuestos sin respuesta', 'blue', presupuestos.map(filaPresupuesto), '', 'presupuestos'));
@@ -125,9 +126,12 @@ const Alertas = (() => {
                     class="text-xs font-bold text-amber-700 hover:text-amber-900">Armar pedidos a proveedor →</button></div>` : '';
             bloques.push(tarjeta('Repuestos bajo el mínimo', 'amber', stock.map(filaStock), pie, 'stock'));
         }
+        // "Para hoy" y las tarjetas son dos bloques del panel (se ordenan por separado, ver panel.js)
+        const cajaHoy = document.getElementById('parahoy-panel');
+        if (cajaHoy) { cajaHoy.innerHTML = hoy; cajaHoy.classList.remove('hidden'); }
         panel.innerHTML = bloques.join('');
-        panel.classList.remove('hidden');
-        panel.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => {
+        panel.classList.toggle('hidden', !bloques.length);
+        cajaHoy?.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => {
             if (b.dataset.ir === 'externos') { window.Envios?.abrir(); return; }
             const destino = document.getElementById(`alerta-${b.dataset.ir}`);
             destino?.scrollIntoView({ behavior: 'smooth', block: 'start' });

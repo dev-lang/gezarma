@@ -2,7 +2,11 @@
     <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Panel de Control</h2>
-            <p class="text-gray-500" id="role-badge"></p>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p class="text-gray-500" id="role-badge"></p>
+                <button type="button" id="panel-personalizar" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800" title="Ordenar, cambiar el ancho u ocultar los bloques del panel">
+                    <i data-icono="panel" class="w-4 h-4"></i>Personalizar</button>
+            </div>
         </div>
         <div id="action-buttons" class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <button type="button" id="favorites-nav-btn"
@@ -25,72 +29,79 @@
         </div>
     </div>
 
+    <!-- Bloques del panel: el orden, el ancho y los ocultos los arma cada usuario (frontend/js/panel.js) -->
+    <div id="panel-bloques" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
     <!-- Guía de primer uso (solo administrador; frontend/js/guia.js) -->
-    <div id="guia-panel" class="hidden mb-8"></div>
+    <div id="guia-panel" data-bloque="guia" class="hidden"></div>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8" id="stats-container"></div>
+    <!-- Resumen -->
+    <div data-bloque="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 content-start" id="stats-container"></div>
 
-    <!-- Advanced Stats (Admin) -->
-    <div id="advanced-stats" class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 hidden">
-        <div class="bg-white p-6 rounded-xl shadow border">
-            <h3 class="font-bold text-gray-700 mb-4">Estado Tickets</h3>
-            <div style="height:150px"><canvas id="chart-states"></canvas></div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow border">
-            <h3 class="font-bold text-gray-700 mb-4">Fallas por Producto</h3>
-            <div style="height:150px"><canvas id="chart-products"></canvas></div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow border">
-            <h3 class="font-bold text-gray-700 mb-4">Carga por Técnico</h3>
-            <div style="height:150px"><canvas id="chart-techs"></canvas></div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow border text-center flex flex-col justify-center">
-            <h3 class="font-bold text-gray-700 mb-2 italic">SLA / Eficiencia</h3>
-            <p class="text-5xl font-black text-blue-600" id="avg-repair-time">--</p>
-            <p class="text-xs text-gray-400 mt-1 uppercase tracking-wide">Tiempo prom. reparación</p>
-        </div>
+    <!-- Gráficos (administrador) -->
+    <div data-bloque="grafico_estados" data-stat-admin class="hidden bg-white p-6 rounded-xl shadow border">
+        <h3 class="font-bold text-gray-700 mb-4">Estado Tickets</h3>
+        <div style="height:150px"><canvas id="chart-states"></canvas></div>
+    </div>
+    <div data-bloque="grafico_productos" data-stat-admin class="hidden bg-white p-6 rounded-xl shadow border">
+        <h3 class="font-bold text-gray-700 mb-4">Fallas por Producto</h3>
+        <div style="height:150px"><canvas id="chart-products"></canvas></div>
+    </div>
+    <div data-bloque="grafico_tecnicos" data-stat-admin class="hidden bg-white p-6 rounded-xl shadow border">
+        <h3 class="font-bold text-gray-700 mb-4">Carga por Técnico</h3>
+        <div style="height:150px"><canvas id="chart-techs"></canvas></div>
+    </div>
+    <div data-bloque="tiempo_promedio" data-stat-admin class="hidden flex flex-col bg-white p-6 rounded-xl shadow border text-center justify-center">
+        <h3 class="font-bold text-gray-700 mb-2 italic">SLA / Eficiencia</h3>
+        <p class="text-5xl font-black text-blue-600" id="avg-repair-time">--</p>
+        <p class="text-xs text-gray-400 mt-1 uppercase tracking-wide">Tiempo prom. reparación</p>
     </div>
 
-    <!-- Alertas del taller: SLA y stock (frontend/js/alertas.js) -->
-    <div id="alertas-panel" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"></div>
+    <!-- Para hoy y alertas del taller: SLA, retiros, presupuestos y stock (frontend/js/alertas.js) -->
+    <div id="parahoy-panel" data-bloque="para_hoy" class="hidden"></div>
+    <div id="alertas-panel" data-bloque="alertas" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 content-start"></div>
 
     <!-- Portal del cliente: mis equipos y pendientes (frontend/js/portal.js) -->
-    <div id="portal-panel" class="hidden mb-8"></div>
+    <div id="portal-panel" data-bloque="portal" class="hidden"></div>
 
     <!-- Satisfacción de los clientes (solo taller; frontend/js/encuesta.js) -->
-    <div id="satisfaccion-panel" class="hidden mb-8"></div>
+    <div id="satisfaccion-panel" data-bloque="satisfaccion" class="hidden"></div>
 
     <!-- Horas de trabajo por técnico (solo administrador; frontend/js/tiempo.js) -->
-    <div id="tiempo-panel" class="hidden mb-8"></div>
+    <div id="tiempo-panel" data-bloque="horas" class="hidden"></div>
 
-    <!-- Lista / Tablero (solo taller; frontend/js/kanban.js) -->
-    <div id="vista-selector" class="hidden items-center gap-1 bg-gray-200 rounded-lg p-1 w-fit mb-4">
-        <button type="button" data-vista="lista" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="lista" class="w-4 h-4"></i> Lista</button>
-        <button type="button" data-vista="tablero" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="tablero" class="w-4 h-4"></i> Tablero</button>
+    <!-- Tickets: lista o tablero (no se puede ocultar) -->
+    <div id="panel-tickets" data-bloque="tickets" class="min-w-0">
+        <!-- Lista / Tablero (solo taller; frontend/js/kanban.js) -->
+        <div id="vista-selector" class="hidden items-center gap-1 bg-gray-200 rounded-lg p-1 w-fit mb-4">
+            <button type="button" data-vista="lista" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="lista" class="w-4 h-4"></i> Lista</button>
+            <button type="button" data-vista="tablero" class="px-4 py-1.5 rounded-md text-sm font-semibold transition inline-flex items-center gap-1.5"><i data-icono="tablero" class="w-4 h-4"></i> Tablero</button>
+        </div>
+
+        <!-- Kanban -->
+        <div id="kanban-wrap" class="hidden mb-6">
+            <p class="text-xs text-gray-400 mb-2">Arrastrá una tarjeta a otra columna para cambiarle el estado. Click para abrir el ticket.</p>
+            <div id="kanban-board" class="flex gap-3 overflow-x-auto pb-3"></div>
+        </div>
+
+        <!-- Lista de tickets: estados con contador (filtran al instante), orden por columna, páginas (js/ui.js → loadTickets) -->
+        <div id="ticket-filters" class="flex flex-wrap items-center gap-2 mb-3">
+            <div id="ticket-chips" class="flex flex-wrap items-center gap-1.5 min-w-0" role="group" aria-label="Filtrar por estado"></div>
+            <button type="button" id="ticket-densidad" aria-pressed="false" title="Ver más filas en pantalla"
+                class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-1.5 transition">
+                <i data-icono="lista" class="w-4 h-4"></i><span>Vista compacta</span>
+            </button>
+        </div>
+
+        <!-- Ticket Table -->
+        <div id="ticket-list-wrap" class="bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
+            <table class="w-full text-left min-w-[640px]" id="ticket-tabla">
+                <thead class="bg-gray-50 border-b" id="ticket-list-head"></thead>
+                <tbody id="ticket-list-body" class="divide-y"></tbody>
+            </table>
+            <div id="ticket-paginas" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t text-sm text-gray-500"></div>
+        </div>
     </div>
 
-    <!-- Kanban -->
-    <div id="kanban-wrap" class="hidden mb-6">
-        <p class="text-xs text-gray-400 mb-2">Arrastrá una tarjeta a otra columna para cambiarle el estado. Click para abrir el ticket.</p>
-        <div id="kanban-board" class="flex gap-3 overflow-x-auto pb-3"></div>
-    </div>
-
-    <!-- Lista de tickets: estados con contador (filtran al instante), orden por columna, páginas (js/ui.js → loadTickets) -->
-    <div id="ticket-filters" class="flex flex-wrap items-center gap-2 mb-3">
-        <div id="ticket-chips" class="flex flex-wrap items-center gap-1.5 min-w-0" role="group" aria-label="Filtrar por estado"></div>
-        <button type="button" id="ticket-densidad" aria-pressed="false" title="Ver más filas en pantalla"
-            class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-1.5 transition">
-            <i data-icono="lista" class="w-4 h-4"></i><span>Vista compacta</span>
-        </button>
-    </div>
-
-    <!-- Ticket Table -->
-    <div id="ticket-list-wrap" class="bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
-        <table class="w-full text-left min-w-[640px]" id="ticket-tabla">
-            <thead class="bg-gray-50 border-b" id="ticket-list-head"></thead>
-            <tbody id="ticket-list-body" class="divide-y"></tbody>
-        </table>
-        <div id="ticket-paginas" class="hidden flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t text-sm text-gray-500"></div>
     </div>
 </section>

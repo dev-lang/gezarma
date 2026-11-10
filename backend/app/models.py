@@ -86,6 +86,8 @@ class Usuario(Base):
     token_version   = Column(Integer, nullable=False, default=0, server_default="0")
     # es-AR / es-ES / en / pt-BR; vacío = el predeterminado del taller (ver idiomas.py)
     idioma          = Column(String, nullable=True)
+    # Orden, ancho y bloques ocultos del panel de control (JSON; vacío = el predeterminado). Ver services/panel.py
+    panel_config    = Column(Text, nullable=True)
     demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
 
     tickets_creados   = relationship("Ticket", back_populates="cliente",  foreign_keys="Ticket.usuario_id")
