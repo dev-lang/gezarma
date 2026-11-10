@@ -246,6 +246,13 @@
                         <div class="px-4 py-3 border-b">
                             <p id="user-info-menu" class="text-sm font-semibold"></p>
                         </div>
+                        <!-- Solo administradores (ui.initDashboard); resaltado suave para encontrarlo rápido -->
+                        <div id="menu-admin-wrap" class="hidden px-2 py-2 border-b">
+                            <button type="button" id="menu-admin" class="w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 aria-[current=page]:ring-1 aria-[current=page]:ring-blue-300 flex items-center gap-2.5 transition">
+                                <i data-icono="engranaje" class="w-4 h-4"></i><span>Administración</span>
+                                <kbd translate="no" class="hidden md:inline ml-auto text-[10px] font-mono font-semibold text-blue-400 tracking-wider">G A</kbd>
+                            </button>
+                        </div>
                         <div class="px-4 py-2.5 border-b flex items-center justify-between gap-3">
                             <span class="text-sm text-gray-600 flex items-center gap-2.5"><i data-icono="idioma" class="w-4 h-4 text-gray-400"></i>Idioma</span>
                             <span data-idioma-selector="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"></span>
@@ -254,7 +261,7 @@
                         <button type="button" id="menu-dark" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2.5">
                             <span id="icon-moon" class="text-gray-400"><i data-icono="luna" class="w-4 h-4"></i></span>
                             <span id="icon-sun" class="hidden text-gray-400"><i data-icono="sol" class="w-4 h-4"></i></span>
-                            Modo oscuro
+                            <span id="menu-dark-txt">Modo oscuro</span>
                         </button>
                         <button type="button" id="menu-atajos" class="hidden md:flex w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 items-center gap-2.5"><i data-icono="teclado" class="w-4 h-4 text-gray-400"></i>Atajos de teclado</button>
                         <div class="border-t my-1"></div>

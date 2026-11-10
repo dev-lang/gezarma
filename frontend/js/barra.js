@@ -13,7 +13,13 @@ const Barra = (() => {
         const abierto = abrir ?? m.classList.contains('hidden');
         m.classList.toggle('hidden', !abierto);
         b.setAttribute('aria-expanded', String(abierto));
-        if (abierto) m.querySelector('button:not(.hidden)')?.focus();
+        if (abierto) {
+            // Marca Administración si ya estás ahí
+            const adm = $('menu-admin');
+            if (adm) document.getElementById('admin-section') ? adm.setAttribute('aria-current', 'page') : adm.removeAttribute('aria-current');
+            ui._textoModo?.(document.documentElement.classList.contains('dark'));
+            [...m.querySelectorAll('button')].find(x => x.offsetParent !== null)?.focus();
+        }
     }
 
     function busqueda(abrir) {
@@ -32,6 +38,7 @@ const Barra = (() => {
         $('menu-dark')?.addEventListener('click', () => { ui.toggleDark(); menu(false); });
         $('menu-logout')?.addEventListener('click', () => auth.logout());
         $('menu-horas')?.addEventListener('click', () => { menu(false); window.Horas?.abrir(); });
+        $('menu-admin')?.addEventListener('click', () => { menu(false); ui.loadAdminPanel(); });
         $('menu-atajos')?.addEventListener('click', () => { menu(false); window.Atajos?.ayuda(); });
         $('search-toggle')?.addEventListener('click', () => busqueda());
         // El nombre lleva al panel de control (o al login si no hay sesión).

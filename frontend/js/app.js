@@ -184,7 +184,6 @@ const app = {
         });
 
         // ── Dashboard: admin navigation ───────────────────────────────────
-        on('admin-panel-btn',     'click', () => ui.loadAdminPanel());
         on('favorites-nav-btn',   'click', () => ui.initFavorites());
 
         // ── Admin panel ────────────────────────────────────────────────────

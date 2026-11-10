@@ -11,6 +11,12 @@ const ui = {
         document.documentElement.classList.toggle('dark', isDark);
         document.getElementById('icon-sun')?.classList.toggle('hidden', !isDark);
         document.getElementById('icon-moon')?.classList.toggle('hidden', isDark);
+        this._textoModo(isDark);
+    },
+    /** El ítem del menú dice lo que hace al tocarlo: con modo oscuro activo, "Modo claro". */
+    _textoModo(oscuro) {
+        const el = document.getElementById('menu-dark-txt');
+        if (el) el.textContent = window.I18N ? I18N.t(oscuro ? 'Modo claro' : 'Modo oscuro') : (oscuro ? 'Modo claro' : 'Modo oscuro');
     },
     toggleDark() {
         const html = document.documentElement;
@@ -18,6 +24,7 @@ const ui = {
         localStorage.setItem('gezarma-dark', nowDark ? '1' : '0');
         document.getElementById('icon-sun')?.classList.toggle('hidden', !nowDark);
         document.getElementById('icon-moon')?.classList.toggle('hidden', nowDark);
+        this._textoModo(nowDark);
     },
 
     currentTicketId: null,
@@ -81,11 +88,8 @@ const ui = {
 
         const isAdmin    = user.role === 'administrador';
         const isTechOrAdmin = isAdmin || user.role === 'tecnico';
-        const adminBtn = document.getElementById('admin-panel-btn');
-        if (adminBtn) {
-            adminBtn.classList.toggle('hidden', !isAdmin);
-            adminBtn.classList.toggle('flex', isAdmin);
-        }
+        // Administración está en el menú de usuario (barra.js)
+        document.getElementById('menu-admin-wrap')?.classList.toggle('hidden', !isAdmin);
         const favBtn = document.getElementById('favorites-nav-btn');
         if (favBtn) {
             favBtn.classList.toggle('hidden', !isTechOrAdmin);

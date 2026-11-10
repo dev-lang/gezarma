@@ -232,7 +232,7 @@ Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como con
 
 ### Interfaz
 
-- **Barra superior**: el nombre y el logo del taller, el buscador (`/`), las notificaciones y el menú del usuario (idioma, mis horas, modo oscuro, atajos de teclado y cerrar sesión).
+- **Barra superior**: el nombre y el logo del taller, el buscador (`/`), las notificaciones y el menú del usuario (*Administración* para los administradores, idioma, mis horas, modo oscuro o claro, atajos de teclado y cerrar sesión).
 - **Lista de tickets**: estados con su cantidad, que filtran con un clic; columnas de cliente, técnico, días en el taller y prioridad (el cliente ve sus equipos, estado y fecha); se ordena tocando el título de cada columna, se pagina (25, 50 o 100 por página) y tiene una *vista compacta* que se recuerda. Toda la fila abre el ticket (también con Enter). En el celular, cada ticket es una tarjeta.
 - **Íconos y etiquetas**: íconos SVG propios (sin emojis, que se ven distinto en cada sistema) y etiquetas de estado, prioridad, garantía, rol y SLA con la misma forma en todo el sistema. En las tablas de administración, *Editar* y *Eliminar* son íconos.
 
