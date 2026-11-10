@@ -18,6 +18,7 @@ const Barra = (() => {
             const adm = $('menu-admin');
             if (adm) document.getElementById('admin-section') ? adm.setAttribute('aria-current', 'page') : adm.removeAttribute('aria-current');
             ui._textoModo?.(document.documentElement.classList.contains('dark'));
+            window.Nav?.pintarRecientes();
             [...m.querySelectorAll('button')].find(x => x.offsetParent !== null)?.focus();
         }
     }
@@ -39,6 +40,8 @@ const Barra = (() => {
         $('menu-logout')?.addEventListener('click', () => auth.logout());
         $('menu-horas')?.addEventListener('click', () => { menu(false); window.Horas?.abrir(); });
         $('menu-admin')?.addEventListener('click', () => { menu(false); ui.loadAdminPanel(); });
+        $('menu-ir')?.addEventListener('click', () => { menu(false); window.Nav?.paleta(); });
+        $('ir-btn')?.addEventListener('click', () => window.Nav?.paleta());
         $('menu-atajos')?.addEventListener('click', () => { menu(false); window.Atajos?.ayuda(); });
         $('search-toggle')?.addEventListener('click', () => busqueda());
         // El nombre lleva al panel de control (o al login si no hay sesión).
@@ -99,6 +102,6 @@ const Barra = (() => {
     }
     marca();
 
-    return { iniciar, busqueda, marca, pintarMarca, datosMarca: () => _marca };
+    return { iniciar, busqueda, menu, marca, pintarMarca, datosMarca: () => _marca };
 })();
 window.Barra = Barra;

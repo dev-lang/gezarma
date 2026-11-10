@@ -212,8 +212,13 @@
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300 pointer-events-none"><i data-icono="buscar" class="w-4 h-4"></i></span>
                     <input type="text" id="global-search"
-                        class="w-full bg-blue-900 text-blue-100 pl-9 pr-4 py-2 rounded-lg border border-blue-700 outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                        placeholder="Buscar por serie, RMA o producto... (Enter para ver todos)" aria-label="Buscar">
+                        class="w-full bg-blue-900 text-blue-100 pl-9 pr-4 md:pr-24 py-2 rounded-lg border border-blue-700 outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        placeholder="Buscar por serie, RMA o producto…" title="Enter para ver todos los resultados" aria-label="Buscar">
+                    <!-- "Ir a…" (js/navegacion.js): también con Ctrl + K -->
+                    <button type="button" id="ir-btn" title="Ir a una pantalla o sección"
+                        class="hidden md:flex absolute right-1.5 top-1/2 -translate-y-1/2 items-center gap-1.5 text-[11px] font-semibold text-blue-200 hover:text-white bg-blue-800/70 hover:bg-blue-700 rounded-md px-2 py-1 transition">
+                        <span class="font-sans">Ir a…</span><kbd id="ir-btn-tecla" translate="no" class="font-mono font-normal opacity-80">Ctrl K</kbd>
+                    </button>
                     <div id="search-results"
                         class="absolute top-full left-0 right-0 bg-white shadow-2xl rounded-b-lg border mt-1 text-gray-800 z-50 hidden max-h-96 overflow-y-auto">
                     </div>
@@ -252,7 +257,10 @@
                                 <i data-icono="engranaje" class="w-4 h-4"></i><span>Administración</span>
                                 <kbd translate="no" class="hidden md:inline ml-auto text-[10px] font-mono font-semibold text-blue-400 tracking-wider">G A</kbd>
                             </button>
+                            <!-- Las 3 secciones más usadas (js/navegacion.js) -->
+                            <div id="menu-admin-recientes" class="hidden flex flex-wrap gap-1 px-1 pt-2"></div>
                         </div>
+                        <button type="button" id="menu-ir" class="md:hidden w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2.5 border-b"><i data-icono="buscar" class="w-4 h-4 text-gray-400"></i>Ir a una sección…</button>
                         <div class="px-4 py-2.5 border-b flex items-center justify-between gap-3">
                             <span class="text-sm text-gray-600 flex items-center gap-2.5"><i data-icono="idioma" class="w-4 h-4 text-gray-400"></i>Idioma</span>
                             <span data-idioma-selector="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"></span>
@@ -329,6 +337,7 @@
     <script src="js/adjuntos.js"></script>
     <script src="js/busqueda.js"></script>
     <script src="js/barra.js"></script>
+    <script src="js/navegacion.js"></script>
     <script src="js/atajos.js"></script>
     <script src="js/guia.js"></script>
     <script src="js/setup.js"></script>

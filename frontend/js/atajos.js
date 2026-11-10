@@ -6,6 +6,7 @@
  *   G M    ingreso en mostrador   G A  administración
  *   G H    horas
  *   ?      esta ayuda
+ *   Ctrl K ir a… (navegacion.js)   En Administración: una letra por sección (Nav.SECCIONES)
  */
 const Atajos = (() => {
     let _iniciados = false, _g = 0, _ultima = 0, _pend = null;
@@ -15,6 +16,7 @@ const Atajos = (() => {
     const despues = fn => { _pend = setTimeout(() => { _pend = null; fn(); }, ESPERA); };
 
     const ATAJOS = [
+        { teclas: [window.Nav?.teclaPaleta || 'Ctrl K'], texto: 'Ir a… (pantallas, secciones y ajustes)' },
         { teclas: ['/'], texto: 'Buscar' },
         { teclas: ['N'], texto: 'Nuevo ticket' },
         { teclas: ['G', 'D'], texto: 'Ir al panel de control' },
@@ -48,7 +50,7 @@ const Atajos = (() => {
         div.id = 'atajos-modal';
         div.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4';
         div.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm" role="dialog" aria-modal="true">
+        <div class="bg-white rounded-2xl shadow-2xl w-full ${rol() === 'administrador' ? 'max-w-2xl' : 'max-w-sm'} max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true">
             <div class="flex items-center justify-between px-5 py-4 border-b">
                 <h3 class="font-bold text-gray-800">Atajos de teclado</h3>
                 <button type="button" data-cerrar class="text-gray-400 hover:text-gray-600 text-2xl leading-none" aria-label="Cerrar">×</button>
@@ -56,9 +58,17 @@ const Atajos = (() => {
             <ul class="p-5 space-y-2 text-sm">${ATAJOS.map(a => `
                 <li class="flex items-center justify-between gap-4">
                     <span class="text-gray-700">${a.texto}</span>
-                    <span class="flex gap-1">${a.teclas.map(k => `<kbd translate="no" class="min-w-[1.75rem] text-center px-1.5 py-0.5 rounded border border-gray-300 bg-gray-50 text-xs font-mono font-semibold text-gray-700">${k}</kbd>`).join('<span class="text-gray-400 text-xs self-center">→</span>')}</span>
+                    <span class="flex gap-1">${a.teclas.map(k => `<kbd translate="no" class="min-w-[1.75rem] text-center px-1.5 py-0.5 rounded border border-gray-300 bg-gray-50 text-xs font-mono font-semibold text-gray-700 whitespace-nowrap">${k}</kbd>`).join('<span class="text-gray-400 text-xs self-center">→</span>')}</span>
                 </li>`).join('')}
             </ul>
+            ${rol() === 'administrador' && window.Nav ? `
+            <div class="px-5 pb-5">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">${esc(I18N.t('Dentro de Administración'))}</h4>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">${Nav.SECCIONES.map(s => `
+                    <li class="flex items-center justify-between gap-4"><span class="text-gray-700">${esc(I18N.t(s.titulo))}</span>
+                        <kbd translate="no" class="min-w-[1.75rem] text-center px-1.5 py-0.5 rounded border border-gray-300 bg-gray-50 text-xs font-mono font-semibold text-gray-700">${s.letra}</kbd></li>`).join('')}
+                </ul>
+            </div>` : ''}
         </div>`;
         div.querySelector('[data-cerrar]').addEventListener('click', () => div.remove());
         div.addEventListener('click', e => { if (e.target === div) div.remove(); });
@@ -92,6 +102,7 @@ const Atajos = (() => {
         if (_iniciados) return;
         _iniciados = true;
         document.addEventListener('keydown', e => {
+            if (['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock'].includes(e.key)) return;   // solo modificadores: no cuentan
             const ahora = Date.now(), rafaga = ahora - _ultima < RAFAGA;
             _ultima = ahora;
             if (_pend) { clearTimeout(_pend); _pend = null; }
@@ -107,6 +118,9 @@ const Atajos = (() => {
                 return;
             }
             if (k === 'g') { _g = ahora; return; }
+            // En Administración, una letra por sección
+            const seccion = e.key.length === 1 && document.getElementById('admin-section') ? window.Nav?.seccionDeLetra(k) : null;
+            if (seccion) { e.preventDefault(); despues(() => ui.adminSwitchTab(seccion.id)); return; }
             if (e.key === '/') { e.preventDefault(); despues(() => ejecutar('buscar')); }
             else if (k === 'n') { e.preventDefault(); despues(() => ejecutar('nuevo')); }
             else if (e.key === '?') { e.preventDefault(); despues(ayuda); }

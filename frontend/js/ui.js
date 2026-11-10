@@ -40,7 +40,8 @@ const ui = {
     },
 
     async showSection(name) {
-        if (name !== 'detail') this.currentTicketId = null;   // las cargas pendientes del detalle se descartan
+        if (name !== 'detail') this.currentTicketId = null;
+        window.Nav?.saliendo(name);   // las cargas pendientes del detalle se descartan
         const root = document.getElementById('app-root');
         const navbar = document.getElementById('navbar');
 
@@ -130,6 +131,7 @@ const ui = {
         this.loadTickets();
         if (typeof Kanban !== 'undefined') Kanban.iniciar(isTechOrAdmin);
         if (typeof Documentos !== 'undefined') Documentos.abrirDesdeHash();
+        if (isAdmin && typeof Nav !== 'undefined') Nav.abrirDesdeHash();
     },
 
     // ── Ticket list ────────────────────────────────────────────────────────
@@ -1042,8 +1044,10 @@ const ui = {
         this.loadAdminSeguridad();
     },
 
-    adminSwitchTab(tab) {
+    adminSwitchTab(tab, { historial = true } = {}) {
         this._adminActiveTab = tab;
+        if (historial && typeof Nav !== 'undefined') Nav.seccionAbierta(tab);
+        if (typeof Nav !== 'undefined') Nav.marcarLetras();
         document.querySelectorAll('.admin-tab-btn').forEach(btn => {
             const isActive = btn.dataset.tab === tab;
             btn.classList.toggle('active-tab', isActive);

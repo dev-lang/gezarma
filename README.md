@@ -37,7 +37,8 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
 - **Panel "Para hoy"**: SLA vencidos y por vencer, equipos listos para retirar, presupuestos sin respuesta y repuestos bajo el mínimo, cada uno con su lista.
 - **Guía de primer uso** para el administrador (datos del taller, email, productos, un técnico y una etiqueta de prueba) e **impresión de prueba** de etiqueta y comprobante desde *Ajustes → Impresoras*.
-- **Atajos de teclado** (`?` para verlos: `/` buscar, `N` nuevo ticket, `G` `T` tablero…), barra compacta en el celular, **Deshacer** al quitar etiquetas, repuestos o favoritos, y botones que muestran que están guardando.
+- **Ir a…** (`Ctrl + K`, o `⌘ K` en Mac, o el botón del buscador): pantallas, secciones de Administración y ajustes puntuales ("smtp", "etiqueta"), o un ticket por su N° de RMA. Cada sección de Administración tiene su link (`/#admin=ubicaciones`) para guardarlo en favoritos, el botón Atrás del navegador vuelve a la anterior, y el menú de usuario muestra las 3 más usadas.
+- **Atajos de teclado** (`?` para verlos: `/` buscar, `N` nuevo ticket, `G` `T` tablero…; dentro de Administración, una letra por sección: `U` usuarios, `R` repuestos, `L` ubicaciones, `J` ajustes…), barra compacta en el celular, **Deshacer** al quitar etiquetas, repuestos o favoritos, y botones que muestran que están guardando.
 - **Idiomas**: español (Argentina), español (España), inglés y portugués (Brasil). Cada usuario elige el suyo desde la barra superior (o el login); los mails, PDF y comprobantes le llegan al cliente en su idioma.
 
 ## Capturas
@@ -281,7 +282,7 @@ Desde el panel, **🧾 Ingreso en mostrador** (técnicos y administradores):
 
 Al registrar, se imprimen la etiqueta, el comprobante de ticketera o la orden de ingreso A4. El checklist y la firma salen en la orden de ingreso y en el comprobante; la **firma de entrega** (desde la tarjeta *Recepción* del ticket) sale en el remito y en el comprobante de entrega. Las firmas se guardan recortadas y en blanco y negro, listas para imprimir en una térmica. Los tickets cargados de la forma habitual también pueden completar su checklist, fotos y firmas desde esa tarjeta.
 
-**Lector de código de barras**: con un lector USB (funciona como un teclado), escanear la etiqueta en cualquier pantalla abre el ticket; si después se escanea la etiqueta de un estante, el equipo queda guardado ahí (ver *Ubicaciones*). Lo que tipea el lector nunca dispara un atajo de teclado. En el buscador, un N° de RMA exacto + Enter también lo abre directo.
+**Lector de código de barras**: con un lector USB (funciona como un teclado), escanear la etiqueta en cualquier pantalla abre el ticket; si después se escanea la etiqueta de un estante, el equipo queda guardado ahí (ver *Ubicaciones*). Lo que tipea el lector nunca dispara un atajo de teclado (tampoco las letras de Administración). En el buscador, un N° de RMA exacto + Enter también lo abre directo.
 
 ### Impresoras térmicas
 
