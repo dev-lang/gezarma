@@ -236,6 +236,17 @@ def guardar_ajustes(
             ajustes_mod.set(db, clave, valor)
         except ValueError as e:
             errores[clave] = str(e)
+    # El aviso de SLA tiene que llegar antes que el plazo más corto (si no, todo ticket nace "por vencer")
+    claves_sla = {"sla_aviso_horas", "sla_horas_nuevo", "sla_horas_diagnostico"}
+    if not errores and claves_sla & set(body):
+        def actual(c):
+            try:
+                return int(body[c]) if c in body else int(ajustes_mod.get(db, c))
+            except (TypeError, ValueError):
+                return None
+        aviso, minimo = actual("sla_aviso_horas"), min(x for x in (actual("sla_horas_nuevo"), actual("sla_horas_diagnostico")) if x)
+        if aviso is not None and aviso >= minimo:
+            errores["sla_aviso_horas"] = f"Tiene que ser menor que {minimo} h (el plazo más corto)."
     if errores:
         db.rollback()
         ajustes_mod.invalidar_cache()

@@ -201,3 +201,13 @@ def test_tecnico_con_clave_temporal(client, admin):
     p = f"cli_{uuid.uuid4().hex[:6]}"
     client.post("/register", json={"username": p, "nombre": "C", "email": f"{p}@t.com", "password": "Clave-123", "cambiar_clave": True})
     assert client.post("/login", data={"username": p, "password": "Clave-123"}).json()["must_change_password"] is False
+
+
+def test_aviso_de_sla_menor_que_el_plazo(client, admin):
+    r = client.put("/config/ajustes", headers=admin, json={"sla_aviso_horas": 500})
+    assert r.status_code == 400 and "sla_aviso_horas" in r.json()["detail"]["errores"]
+    # Bajar el plazo por debajo del aviso actual también se rechaza
+    r = client.put("/config/ajustes", headers=admin, json={"sla_horas_nuevo": 3, "sla_aviso_horas": 4})
+    assert r.status_code == 400
+    assert client.put("/config/ajustes", headers=admin, json={"sla_horas_nuevo": 30, "sla_aviso_horas": 6}).status_code == 200
+    client.put("/config/ajustes", headers=admin, json={"sla_horas_nuevo": 24, "sla_aviso_horas": 4})

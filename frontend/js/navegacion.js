@@ -158,8 +158,9 @@ const Nav = (() => {
     async function irAAjustes(grupo) {
         await ui.loadAdminPanel('ajustes');
         for (let i = 0; i < 30; i++) {                         // Ajustes se arma después de pedir los datos
-            const sec = document.querySelector(`[data-grupo="${grupo}"]`);
+            const sec = document.querySelector(`#ajustes-form [data-grupo="${grupo}"]`);
             if (sec) {
+                window.Ajustes?.abrir(grupo);                   // la sección se despliega
                 sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 sec.classList.add('ring-2', 'ring-blue-400');
                 setTimeout(() => sec.classList.remove('ring-2', 'ring-blue-400'), 1600);

@@ -220,7 +220,7 @@ Al arrancar, la app avisa en el log si generó la `SECRET_KEY`, si ignoró la cl
 
 ### Ajustes desde el panel
 
-En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor:
+En *Administración → Ajustes* se configura lo que no hace falta tocar en el servidor. Cada sección se despliega por separado: cerrada muestra un resumen (por ejemplo *Email: activado · smtp.gmail.com*), marca *Sin guardar* si cambiaste algo y *Revisar* si un valor no es válido. Arriba hay un buscador ("smtp", "etiqueta", "garantía") y *Expandir / Contraer todo*; un solo botón guarda y dice cuántos cambios hay. Las secciones que dejás abiertas quedan así la próxima vez.
 
 - **General**: nombre del taller (barra superior, pantalla de ingreso, pestaña del navegador, documentos y mails) y logo (barra superior, pantalla de ingreso y pestaña del navegador), datos de contacto, URL pública, idioma predeterminado, si los clientes pueden crearse una cuenta solos y si el seguimiento público está habilitado.
 - **Documentos**: generarlos como PDF en el servidor o abrirlos para imprimir desde el navegador. Los PDF adjuntos a los mails siempre los genera el servidor.

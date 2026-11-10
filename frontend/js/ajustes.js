@@ -19,6 +19,10 @@ const Ajustes = (() => {
 
     let _items = [];
     let _destinoPrueba = '';   // se conserva al volver a dibujar el formulario
+    let _busqueda = '';
+    // Qué grupos están abiertos (por navegador). La primera vez, todos cerrados: el panorama
+    const _abiertos = new Set((() => { try { return JSON.parse(localStorage.getItem('gezarma-ajustes-abiertos') || '[]'); } catch { return []; } })());
+    const recordar = () => { try { localStorage.setItem('gezarma-ajustes-abiertos', JSON.stringify([..._abiertos])); } catch { /* sin almacenamiento */ } };
 
     const inputCls = 'w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white';
 
@@ -119,15 +123,32 @@ const Ajustes = (() => {
                     <p class="w-full text-xs text-gray-400">La prueba usa la configuración guardada: guardá los cambios antes de probar.</p>
                     <p id="aj-email-estado" class="w-full text-xs"></p>
                 </div>` : '';
+            const abierto = _abiertos.has(g.id);
             return `
             <section class="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden" data-grupo="${g.id}">
-                <div class="p-5 border-b bg-gray-50">
-                    <h3 class="font-bold text-gray-800">${g.titulo}</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">${g.desc}</p>
-                </div>
-                <div class="px-5 py-3">${g.id === 'general' ? bloqueLogo() : ''}${items.map(campo).join('')}${extra}</div>
+                <h3>
+                    <button type="button" data-plegar="${g.id}" aria-expanded="${abierto}" aria-controls="aj-cuerpo-${g.id}"
+                        class="w-full flex items-start gap-3 px-4 py-3.5 sm:px-5 text-left bg-gray-50 hover:bg-gray-100 transition">
+                        <span class="aj-flecha mt-0.5 text-gray-400 transition-transform ${abierto ? '' : '-rotate-90'}">${icono('abajo', 'w-5 h-5')}</span>
+                        <span class="flex-1 min-w-0">
+                            <span class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-gray-800">${g.titulo}</span>
+                                <span data-marca-cambios class="hidden text-[11px] font-semibold bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">Sin guardar</span>
+                                <span data-marca-error class="hidden text-[11px] font-semibold bg-red-100 text-red-700 rounded-full px-2 py-0.5">Revisar</span>
+                            </span>
+                            <span class="block text-xs text-gray-400 mt-0.5">${g.desc}</span>
+                            <span data-resumen class="${abierto ? 'hidden' : 'block'} text-sm text-gray-600 mt-1 truncate"></span>
+                        </span>
+                    </button>
+                </h3>
+                <div id="aj-cuerpo-${g.id}" class="${abierto ? '' : 'hidden'} px-5 py-3 border-t">${g.id === 'general' ? bloqueLogo() : ''}${items.map(campo).join('')}${extra}</div>
             </section>`;
         }).join('');
+        cont.onclick = e => { const b = e.target.closest('[data-plegar]'); if (b) plegar(b.dataset.plegar); };
+        cont.oninput = cont.onchange = () => { pintarResumenes(); pintarCambios(); };
+        pintarResumenes();
+        pintarCambios();
+        if (_busqueda) filtrar(_busqueda);
         toggleSmtp();
         estadoEmail();
         document.getElementById('aj-smtp_origen')?.addEventListener('change', toggleSmtp);
@@ -144,6 +165,113 @@ const Ajustes = (() => {
         document.getElementById('aj-test-dest')?.addEventListener('input', e => { _destinoPrueba = e.target.value; });
         document.getElementById('aj-logo-input')?.addEventListener('change', e => subirLogo(e.target.files[0]));
         document.getElementById('aj-logo-quitar')?.addEventListener('click', quitarLogo);
+    }
+
+    // ── Desplegar / plegar ───────────────────────────────────────────────────
+    function plegar(id, abrir, { guardarEstado = true } = {}) {
+        const sec = document.querySelector(`#ajustes-form [data-grupo="${id}"]`);
+        if (!sec) return;
+        const cuerpo = sec.querySelector(`#aj-cuerpo-${id}`), boton = sec.querySelector('[data-plegar]');
+        const va = abrir ?? cuerpo.classList.contains('hidden');
+        cuerpo.classList.toggle('hidden', !va);
+        boton.setAttribute('aria-expanded', String(va));
+        sec.querySelector('.aj-flecha').classList.toggle('-rotate-90', !va);
+        sec.querySelector('[data-resumen]').classList.toggle('hidden', va);
+        sec.querySelector('[data-resumen]').classList.toggle('block', !va);
+        if (guardarEstado && !_busqueda) { va ? _abiertos.add(id) : _abiertos.delete(id); recordar(); }
+    }
+
+    function todos(abrir) {
+        GRUPOS.forEach(g => plegar(g.id, abrir));
+    }
+
+    /** Lo usa "Ir a…" (navegacion.js): abre un grupo y lo muestra. */
+    function abrir(id) {
+        if (_busqueda) { _busqueda = ''; const b = document.getElementById('ajustes-buscar'); if (b) b.value = ''; filtrar(''); }
+        plegar(id, true);
+    }
+
+    // ── Resumen de cada grupo (lo que se ve cerrado) ─────────────────────────
+    function valorActual(clave) {
+        const a = _items.find(x => x.clave === clave), el = document.getElementById(`aj-${clave}`);
+        if (!a) return undefined;
+        if (!el) return a.valor;
+        return a.tipo === 'bool' ? el.checked : el.value;
+    }
+    const opcion = clave => { const a = _items.find(x => x.clave === clave); const v = valorActual(clave); return a?.opciones?.[v] ?? v; };
+    const siNo = v => I18N.t(v ? 'sí' : 'no');
+
+    function resumen(id) {
+        const v = valorActual, T = (s, ...a) => I18N.t(s, ...a);
+        switch (id) {
+            case 'general': return [v('empresa_nombre') || T('Sin nombre'), opcion('idioma_predeterminado'),
+                T('Registro de clientes: {0}', siNo(v('registro_publico'))), T('Seguimiento público: {0}', siNo(v('seguimiento_publico')))];
+            case 'documentos': return [opcion('pdf_modo')];
+            case 'impresion': return [T('Etiqueta {0}', opcion('etiqueta_tamano')), `${v('etiqueta_dpi')} dpi`, T('Ticketera {0}', opcion('ticketera_ancho'))];
+            case 'email':
+                if (!v('email_activo')) return [T('Desactivado')];
+                return [T('Activado'), v('smtp_origen') === 'panel' ? (v('smtp_host') || T('falta el servidor SMTP')) : T('configuración del servidor (.env)')];
+            case 'email_eventos': {
+                const claves = _items.filter(a => a.grupo === 'email_eventos' && a.tipo === 'bool');
+                return [T('{0} de {1} avisos activos', claves.filter(a => v(a.clave)).length, claves.length)];
+            }
+            case 'retiro': return [T('Avisa en «{0}»', I18N.t(v('retiro_estado'))), T('guarda {0} días', v('retiro_dias_guarda')), T('Encuesta: {0}', siNo(v('encuesta_activa')))];
+            case 'taller': {
+                const acc = (v('checklist_accesorios') || '').split('\n').filter(x => x.trim()).length;
+                const out = [T('Garantía {0} días', v('garantia_reparacion_dias')), T('{0} accesorios en el checklist', acc)];
+                if (Number(v('tarifa_hora')) > 0) out.push(T('hora ${0}', Number(v('tarifa_hora')).toLocaleString(I18N.locale)));
+                return out;
+            }
+            case 'sla':
+                if (!v('sla_alertas')) return [T('Alertas desactivadas')];
+                return [`${v('sla_horas_nuevo')} h / ${v('sla_horas_diagnostico')} h / ${T('{0} días', v('sla_dias_reparacion'))}`, T('aviso {0} h antes', v('sla_aviso_horas'))];
+        }
+        return [];
+    }
+
+    function pintarResumenes() {
+        GRUPOS.forEach(g => {
+            const el = document.querySelector(`#ajustes-form [data-grupo="${g.id}"] [data-resumen]`);
+            if (el) el.textContent = resumen(g.id).filter(Boolean).join(' · ');
+        });
+    }
+
+    // ── Cambios sin guardar ──────────────────────────────────────────────────
+    function pintarCambios() {
+        const cambios = Object.keys(valores());
+        GRUPOS.forEach(g => {
+            const hay = cambios.some(c => _items.find(a => a.clave === c)?.grupo === g.id);
+            document.querySelector(`#ajustes-form [data-grupo="${g.id}"] [data-marca-cambios]`)?.classList.toggle('hidden', !hay);
+        });
+        const n = cambios.length, b = document.getElementById('ajustes-guardar'), txt = document.getElementById('ajustes-pendientes');
+        if (b) {
+            b.textContent = n ? I18N.t(n === 1 ? 'Guardar 1 cambio' : 'Guardar {0} cambios', n) : I18N.t('Guardar cambios');
+            b.classList.toggle('opacity-60', !n);
+        }
+        if (txt) { txt.textContent = n ? I18N.t('Tenés cambios sin guardar.') : ''; }
+    }
+
+    // ── Buscar un ajuste ─────────────────────────────────────────────────────
+    const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    function filtrar(q) {
+        _busqueda = q.trim();
+        const query = norm(_busqueda), palabras = query.split(/\s+/).filter(Boolean);
+        let hay = 0;
+        document.querySelectorAll('#ajustes-form [data-clave]').forEach(el => el.classList.remove('aj-coincide'));
+        GRUPOS.forEach(g => {
+            const sec = document.querySelector(`#ajustes-form [data-grupo="${g.id}"]`);
+            if (!sec) return;
+            if (!query) { sec.classList.remove('hidden'); plegar(g.id, _abiertos.has(g.id), { guardarEstado: false }); return; }
+            const cab = norm(sec.querySelector('[data-plegar]').textContent);
+            const campos = [...sec.querySelectorAll('[data-clave]')].filter(el => !el.classList.contains('hidden'));
+            const coinciden = campos.filter(el => palabras.every(p => norm(el.textContent + ' ' + el.dataset.clave).includes(p)));
+            const coincideGrupo = palabras.every(p => cab.includes(p));
+            const ve = coincideGrupo || coinciden.length > 0;
+            sec.classList.toggle('hidden', !ve);
+            if (ve) { hay++; plegar(g.id, true, { guardarEstado: false }); coinciden.forEach(el => el.classList.add('aj-coincide')); }
+        });
+        document.getElementById('ajustes-sin-resultados')?.classList.toggle('hidden', !query || hay > 0);
     }
 
     function toggleSmtp() {
@@ -164,6 +292,7 @@ const Ajustes = (() => {
 
     async function guardar() {
         document.querySelectorAll('#ajustes-form .aj-error').forEach(e => { e.textContent = ''; e.classList.add('hidden'); });
+        document.querySelectorAll('#ajustes-form [data-marca-error]').forEach(e => e.classList.add('hidden'));
         const cambios = valores();
         if (!Object.keys(cambios).length) { toast.info('No hay cambios para guardar.'); return; }
         const token = localStorage.getItem('token');
@@ -174,10 +303,19 @@ const Ajustes = (() => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             const errores = data.detail?.errores || {};
+            let primero = null;
             Object.entries(errores).forEach(([clave, msg]) => {
                 const e = document.querySelector(`[data-clave="${clave}"] .aj-error`);
                 if (e) { e.textContent = msg; e.classList.remove('hidden'); }
+                const grupo = _items.find(a => a.clave === clave)?.grupo;
+                if (grupo) {
+                    plegar(grupo, true);
+                    document.querySelector(`#ajustes-form [data-grupo="${grupo}"] [data-marca-error]`)?.classList.remove('hidden');
+                }
+                primero = primero || document.querySelector(`[data-clave="${clave}"]`);
             });
+            primero?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            primero?.querySelector('input, select, textarea')?.focus({ preventScroll: true });
             toast.error(data.detail?.mensaje || (typeof data.detail === 'string' ? data.detail : 'No se pudieron guardar los ajustes.'));
             return;
         }
@@ -224,6 +362,6 @@ const Ajustes = (() => {
         } catch (e) { toast.error(e.message); }
     }
 
-    return { cargar, guardar };
+    return { cargar, guardar, abrir, todos, filtrar };
 })();
 window.Ajustes = Ajustes;
