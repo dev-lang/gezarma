@@ -32,6 +32,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     idioma:   Optional[str] = None
+    # Solo lo usa un administrador: la clave es temporal y se cambia en el primer ingreso
+    cambiar_clave: bool = False
     @field_validator("password")
     @classmethod
     def pw_min_length(cls, v):
@@ -144,6 +146,8 @@ class ChecklistIngreso(BaseModel):
     estado_fisico:    str = ""
     enciende:         Optional[bool] = None   # None = no se probó
     tiene_bloqueo:    Optional[bool] = None   # None = no se sabe
+    # Preguntas extra del taller (Ajustes → checklist_controles): {"¿Lee discos?": true}
+    controles:        Dict[str, Optional[bool]] = {}
 
     @field_validator("accesorios")
     @classmethod
@@ -164,6 +168,18 @@ class ChecklistIngreso(BaseModel):
         if len(v) > 500:
             raise ValueError("Máximo 500 caracteres")
         return v
+
+    @field_validator("controles")
+    @classmethod
+    def _controles(cls, v):
+        limpios = {}
+        for k, val in (v or {}).items():
+            k = (k or "").strip()[:80]
+            if k:
+                limpios[k] = val
+        if len(limpios) > 20:
+            raise ValueError("Demasiadas preguntas (máximo 20)")
+        return limpios
 
 
 class FirmaInfo(BaseModel):

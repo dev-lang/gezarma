@@ -117,6 +117,7 @@ const ui = {
         } catch { /* se usa el valor por defecto */ }
         if (isAdmin) this.loadAdvancedStats();
         if (isAdmin && typeof Guia !== 'undefined') Guia.cargar();
+        if (isAdmin && typeof Setup !== 'undefined') Setup.revisar();
         if (isTechOrAdmin && typeof Alertas !== 'undefined') Alertas.cargar();
         if (isTechOrAdmin && typeof Encuesta !== 'undefined') Encuesta.panel();
         if (user.role === 'cliente' && typeof Portal !== 'undefined') Portal.cargar();
@@ -1086,6 +1087,12 @@ const ui = {
     adminBuildProductCats() {
         const cats = {};
         this._adminProductsCache.forEach(p => { cats[p.categoria] = (cats[p.categoria]||0)+1; });
+        // Sugerencias del formulario: las del rubro (Ajustes → Taller) y las que ya se usan
+        api.request('config/ajustes/publicos').then(pub => {
+            const dl = document.getElementById('categoria-list');
+            const todas = [...new Set([...(pub.producto_categorias || []), ...Object.keys(cats)])];
+            if (dl && todas.length) dl.innerHTML = todas.map(c => `<option value="${esc(c)}">`).join('');
+        }).catch(() => {});
         const sel = document.getElementById('admin-product-filter-cat');
         if (sel) {
             sel.innerHTML = '<option value="">Todas las categorías</option>'

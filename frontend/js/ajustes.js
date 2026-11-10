@@ -103,7 +103,8 @@ const Ajustes = (() => {
             const items = _items.filter(a => a.grupo === g.id);
             if (!items.length) return '';
             const extra = g.id === 'general' ? `
-                <div class="pt-3 mt-2 border-t border-gray-100">
+                <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <button type="button" id="aj-setup-btn" class="text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">${icono('engranaje', 'w-4 h-4 mr-1.5')}Abrir la configuración inicial</button>
                     <button type="button" id="aj-guia-btn" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Mostrar la guía de primer uso en el panel</button>
                 </div>` : g.id === 'impresion' ? `
                 <div class="pt-3 mt-2 border-t border-gray-100 flex flex-wrap gap-2">
@@ -133,6 +134,7 @@ const Ajustes = (() => {
         document.getElementById('aj-test-btn')?.addEventListener('click', probarEmail);
         document.getElementById('aj-prueba-etiqueta')?.addEventListener('click', () => Documentos.abrirUrl('/tickets/impresion-prueba/etiqueta'));
         document.getElementById('aj-prueba-ticket')?.addEventListener('click', () => Documentos.abrirUrl('/tickets/impresion-prueba/ticket_ingreso'));
+        document.getElementById('aj-setup-btn')?.addEventListener('click', () => Setup.abrir(null, 0));
         document.getElementById('aj-guia-btn')?.addEventListener('click', async () => {
             try {
                 await api.request('config/guia', { method: 'PUT', body: JSON.stringify({ oculta: false }) });

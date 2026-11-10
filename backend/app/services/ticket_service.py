@@ -75,14 +75,18 @@ def sumar_meses(fecha: datetime, meses: int) -> datetime:
 
 
 # ── SLA helpers ──────────────────────────────────────────────────────────────
-def calculate_sla_deadline(status: str):
+def calculate_sla_deadline(status: str, db: Session = None):
+    """Vencimiento del SLA según el estado. Los plazos salen de Ajustes → SLA
+    (sin base, los valores por defecto: 24 h, 48 h y 5 días)."""
+    from .. import ajustes
+    plazo = (lambda clave: ajustes.get(db, clave)) if db is not None else (lambda clave: ajustes.DEFS[clave]["default"])
     now = utcnow()
     if status == models.TicketStatus.NUEVO:
-        return now + timedelta(hours=24)
+        return now + timedelta(hours=plazo("sla_horas_nuevo"))
     elif status in (models.TicketStatus.REVISION, models.TicketStatus.DIAGNOSTICO):
-        return now + timedelta(hours=48)
+        return now + timedelta(hours=plazo("sla_horas_diagnostico"))
     elif status == models.TicketStatus.REPARACION:
-        return now + timedelta(days=5)
+        return now + timedelta(days=plazo("sla_dias_reparacion"))
     return None
 
 # ── Historial helper ─────────────────────────────────────────────────────────
@@ -140,7 +144,7 @@ def process_ticket_creation(db: Session, ticket: schemas.TicketCreate,
     if current_user.rol != models.UserRole.CLIENTE and ticket.prioridad and ticket.prioridad != "Normal":
         priority = ticket.prioridad
 
-    deadline = calculate_sla_deadline(models.TicketStatus.NUEVO)
+    deadline = calculate_sla_deadline(models.TicketStatus.NUEVO, db)
 
     new_data = ticket.model_dump()
     new_data["fecha_compra"] = fecha_compra_naive

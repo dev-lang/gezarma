@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 from .database import SessionLocal, run_migrations
-from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos, importacion as importacion_router, ubicaciones as ubicaciones_router, envios as envios_router
+from .routers import auth as auth_router, tickets, comments, users, products, parts, stock, export as export_router, tags as tags_router, config as config_router, budget as budget_router, notifications as notif_router, favorites as fav_router, public as public_router, documentos as documentos_router, recepcion as recepcion_router, encuestas as encuestas_router, portal as portal_router, tiempos as tiempos_router, pedidos as pedidos_router, ticket_tags, ticket_repuestos, ticket_adjuntos, importacion as importacion_router, ubicaciones as ubicaciones_router, envios as envios_router, setup as setup_router
 from . import models, auth, config, idiomas
 from . import ajustes as ajustes_mod
 from .services import sla as sla_service
@@ -77,6 +77,7 @@ app.include_router(pedidos_router.router)
 app.include_router(importacion_router.router)
 app.include_router(ubicaciones_router.router)
 app.include_router(envios_router.router)
+app.include_router(setup_router.router)
 
 # ── Idiomas ──────────────────────────────────────────────────────────────────
 @app.exception_handler(StarletteHTTPException)
@@ -165,16 +166,12 @@ def seed_data():
             db.add(models.Tag(nombre=nombre, color=color))
 
     # Seed diagnosis templates
-    DEFAULT_PLANTILLAS = [
-        ("No enciende",  "No enciende. Se verificó fuente de alimentación y placa base. Sin tensión en conector de batería.", 0),
-        ("Batería",      "Falla de batería confirmada. Capacidad de ciclos agotada. Se procede a reemplazo bajo garantía.", 1),
-        ("Pantalla",     "Pantalla con daño físico (rotura de cristal / retroiluminación fallida). Requiere reemplazo de módulo LCD completo.", 2),
-        ("Teclado",      "Teclado con teclas sin respuesta / daño por líquido. Se realizó limpieza con IPA 99%. Requiere reemplazo de membrana.", 3),
-        ("Disco",        "Unidad de almacenamiento con sectores defectuosos detectados. Se realizó respaldo de datos y reemplazo de unidad.", 4),
-        ("Líquido",      "Equipo ingresó con daño por líquido. Corrosión en placa base. Se realizó limpieza ultrasónica.", 5),
-        ("Sin falla",    "Equipo revisado. No se detectaron fallas de hardware. Se realizó reinstalación de sistema operativo y actualización de drivers.", 6),
-    ]
-    for nombre, texto, orden in DEFAULT_PLANTILLAS:
+    # Seed diagnosis templates (las de Computación; el setup las cambia por las del rubro elegido).
+    # Solo en una base nueva: si el taller las borró, no vuelven.
+    from .services.rubros import SEMILLA_PLANTILLAS
+    nueva = not db.query(models.Ticket.id).first() and not db.query(models.DiagnosticaPlantilla.id).first() \
+        and not ajustes_mod.get(db, "setup_rubros")
+    for orden, (nombre, texto) in enumerate(SEMILLA_PLANTILLAS if nueva else []):
         if not db.query(models.DiagnosticaPlantilla).filter_by(nombre=nombre).first():
             db.add(models.DiagnosticaPlantilla(nombre=nombre, texto=texto, orden=orden))
 

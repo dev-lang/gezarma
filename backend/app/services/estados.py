@@ -44,7 +44,7 @@ def cambiar(db: Session, ticket: models.Ticket, estado: str, usuario: models.Usu
     final = cfg.es_final if cfg else estado in (models.TicketStatus.CERRADO, models.TicketStatus.CANCELADO)
     # reabierto: deja de contar como cerrado (promedios, garantía)
     ticket.fecha_cierre = utcnow() if final else None
-    ticket.deadline_sla = calculate_sla_deadline(estado)
+    ticket.deadline_sla = calculate_sla_deadline(estado, db)
     if retiro_service.al_cambiar_estado(db, ticket) and ticket.cliente:
         avisos.notificar(db, [ticket.cliente], models.TipoNotificacion.CAMBIO_ESTADO,
                          f"Listo para retirar: {ticket.numero_rma}",

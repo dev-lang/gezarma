@@ -318,7 +318,7 @@ const Envios = (() => {
                     <th class="px-4 py-3">${esc(I18N.t('Ticket'))}</th><th class="px-4 py-3 hidden md:table-cell">${esc(I18N.t('Cliente'))}</th>
                     <th class="px-4 py-3">${esc(I18N.t('Destino'))}</th><th class="px-4 py-3">${esc(I18N.t('Enviado'))}</th>
                     <th class="px-4 py-3 text-center">${esc(I18N.t('Días'))}</th>
-                    <th class="px-4 py-3">${esc(I18N.t(st.estado === 'enviado' ? 'Vuelve aprox.' : 'Resultado'))}</th>
+                    <th class="px-4 py-3">${esc(I18N.t({ enviado: 'Vuelve aprox.', recibido: 'Resultado', todos: 'Vuelta o resultado' }[st.estado]))}</th>
                     <th class="px-4 py-3 hidden lg:table-cell">${esc(I18N.t('Transporte'))}</th></tr></thead>
                 <tbody class="divide-y divide-gray-50">${r.envios.map(fila).join('')}</tbody>
             </table></div></div>`;

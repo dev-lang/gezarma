@@ -24,7 +24,7 @@ def test_base_nueva_queda_igual_a_los_modelos(tmp_path):
     db = tmp_path / "nueva.db"
     eng = create_engine(f"sqlite:///{db}")
     assert run_migrations(eng) == []          # sin diferencias con models.py
-    assert _version(db) == "0017"
+    assert _version(db) == "0018"
 
 
 def test_base_previa_a_alembic_se_marca_y_migra_sin_perder_datos(tmp_path):
@@ -40,7 +40,7 @@ def test_base_previa_a_alembic_se_marca_y_migra_sin_perder_datos(tmp_path):
 
     eng = create_engine(url)
     assert run_migrations(eng) == []
-    assert _version(db) == "0017"
+    assert _version(db) == "0018"
     cols = {c["name"] for c in inspect(eng).get_columns("usuarios")}
     assert "temp_password_plain" not in cols   # la clave en texto plano desaparece
     assert sqlite3.connect(db).execute("select username from usuarios").fetchall() == [("viejo",)]
@@ -53,7 +53,7 @@ def test_base_intermedia_sin_la_columna_se_marca_en_0002(tmp_path):
     command.upgrade(_cfg(url), "0002")
     sqlite3.connect(db).execute("drop table alembic_version").connection.commit()
     assert run_migrations(create_engine(url)) == []
-    assert _version(db) == "0017"
+    assert _version(db) == "0018"
 
 
 def test_downgrade_y_upgrade(tmp_path):
@@ -63,3 +63,20 @@ def test_downgrade_y_upgrade(tmp_path):
     command.downgrade(cfg, "base")
     command.upgrade(cfg, "head")
     assert run_migrations(create_engine(url)) == []
+
+
+def test_0018_un_taller_con_tickets_no_ve_el_asistente(tmp_path):
+    con_tickets, vacia = tmp_path / "con.db", tmp_path / "vacia.db"
+    for db, hay in ((con_tickets, True), (vacia, False)):
+        url = f"sqlite:///{db}"
+        command.upgrade(_cfg(url), "0017")
+        if hay:
+            c = sqlite3.connect(db)
+            c.execute("insert into usuarios (username, nombre, rol, activo, token_version) values ('u', 'U', 'cliente', 1, 0)")
+            c.execute("insert into tickets (numero_rma, numero_serie, usuario_id, estado) values ('RMA-1', 'S1', 1, 'Nuevo')")
+            c.commit(); c.close()
+        command.upgrade(_cfg(url), "0018")
+    q = "select valor from config_sistema where clave = 'setup_terminado'"
+    assert sqlite3.connect(con_tickets).execute(q).fetchone() == ("1",)
+    assert sqlite3.connect(vacia).execute(q).fetchone() is None
+    assert sqlite3.connect(con_tickets).execute("select demo from tickets").fetchone() == (0,)

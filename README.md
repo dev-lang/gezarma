@@ -32,6 +32,7 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 - **Alertas de SLA**: tickets vencidos o por vencer en el dashboard y aviso automático, una sola vez por ticket.
 - **Tablero Kanban** por estado: arrastrar una tarjeta a otra columna le cambia el estado.
 - **Notificaciones** in-app, **favoritos**, búsqueda global y **historial/auditoría** de cada cambio.
+- **Configuración inicial**: un asistente para el primer ingreso (datos y logo del taller, tipo de taller con su checklist, estados, plantillas y plazos, técnicos, depósito y estantes, impresora y mail) y **datos de ejemplo** que se cargan y se borran con un botón.
 - **Panel de administración**: usuarios, productos, repuestos, stock, pedidos a proveedor, etiquetas, estados, plantillas, finanzas, seguridad del login, **ajustes** (documentos, impresoras, email, retiro y encuesta, taller, SLA, seguimiento) y **exportación** a CSV/Excel.
 - Bloqueo por intentos fallidos de login y cambio de contraseña obligatorio tras un reset.
 - **Panel "Para hoy"**: SLA vencidos y por vencer, equipos listos para retirar, presupuestos sin respuesta y repuestos bajo el mínimo, cada uno con su lista.
@@ -69,6 +70,11 @@ Lista de tickets: estados con su cantidad (filtran con un clic), días en el tal
 |---|---|
 | ![Horas de un técnico en la semana](docs/capturas/11-horas.png) | ![Login](docs/capturas/01-login.png) |
 | Las horas de cada técnico día por día: arrastrar un tramo lo mueve de día, con clic se corrige. | Con el nombre y el logo del taller. |
+
+| Configuración inicial | Fuera del taller |
+|---|---|
+| ![Asistente de configuración inicial](docs/capturas/13-configuracion.png) | ![Equipos en el servicio oficial](docs/capturas/14-fuera-del-taller.png) |
+| El primer ingreso: el tipo de taller suma estados, checklist, categorías, plantillas y plazos. | Equipos en la garantía del fabricante, con días afuera y atrasados. |
 
 *(Datos de demostración ficticios.)*
 
@@ -174,6 +180,19 @@ Problemas comunes:
 
 Usuario **`admin`** con la contraseña de `ADMIN_PASSWORD`. Si no la definiste, la contraseña es `admin123` y el sistema pide cambiarla en el primer login. Ese usuario solo se crea si la base está vacía; cambiar `ADMIN_PASSWORD` después no modifica la clave de un admin existente.
 
+En un sistema nuevo se abre la **configuración inicial**, un asistente de 8 pasos. Cada paso guarda al avanzar y se puede saltear:
+
+1. **Tu taller**: nombre, logo, datos de contacto e idioma, con la vista previa de la orden de ingreso.
+2. **Tu cuenta**: nombre, mail y cambio de clave.
+3. **Qué reparás**: uno o varios tipos de taller (celulares y tablets, computación, consolas, electrodomésticos, audio y TV, herramientas eléctricas o general). Se suman los estados extra (*Respaldo de datos*, *En prueba*), los accesorios y las preguntas del checklist de ingreso, las categorías de productos, las plantillas de diagnóstico y los plazos de SLA de ese rubro. Se puede aplicar de nuevo sin duplicar nada ni pisar lo que el taller cambió.
+4. **Tu equipo**: técnicos con clave temporal, que cambian al entrar.
+5. **Catálogo y lugares**: importar productos y repuestos desde Excel, armar un depósito con sus estantes y, opcionalmente, **cargar datos de ejemplo** (clientes, equipos y tickets ficticios en distintos estados, incluso uno en el servicio oficial). Los datos de ejemplo solo se ofrecen mientras no haya tickets reales y se borran todos juntos; lo de ejemplo que ya se usó en algo real se conserva.
+6. **Impresión**: etiqueta, resolución, ticketera, con etiqueta y comprobante de prueba.
+7. **Avisos y clientes**: mail (SMTP, con mail de prueba), seguimiento público y registro de clientes.
+8. **Listo**: lo hecho y lo salteado.
+
+*Terminar más tarde* lo cierra; se retoma desde la guía del panel o desde *Ajustes → General → Abrir la configuración inicial*. Una instalación que ya tenía tickets se actualiza con la configuración inicial marcada como hecha.
+
 ## Configuración
 
 Todo se configura con variables de entorno o con un archivo `.env` en la raíz (ver [`.env.example`](.env.example)). Nada es obligatorio: sin configuración, la app usa los valores por defecto.
@@ -207,7 +226,7 @@ En *Administración → Ajustes* se configura lo que no hace falta tocar en el s
 - **Impresoras térmicas**: tamaño de etiqueta y resolución de la etiquetadora; ancho de rollo y resolución de la ticketera (ver *Impresoras térmicas*, más abajo).
 - **Retiro y encuesta**: en qué estado el equipo queda listo para retirar (por defecto *Reparado*), plazo de guarda (90 días), cada cuántos días recordarle al cliente (7; 0 = nunca), el texto del plazo que sale en los documentos, y si se manda la encuesta al cerrar.
 - **Gestión del taller**: plazo de la garantía de la reparación (90 días; 0 = desactivada) y costo de la hora de trabajo para calcular la mano de obra.
-- **SLA**: con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el SLA más corto, 24 h) y cada cuántos minutos revisar.
+- **SLA**: los plazos (ticket nuevo 24 h, revisión y diagnóstico 48 h, reparación 5 días por defecto; el rubro elegido en la configuración inicial los ajusta), con cuántas horas de anticipación avisar (por defecto 4; tiene que ser menor que el plazo más corto) y cada cuántos minutos revisar.
 
 Ejemplo con Gmail: servidor `smtp.gmail.com`, puerto `587`, STARTTLS, y como contraseña una *contraseña de aplicación* de la cuenta (Gmail no acepta la contraseña normal por SMTP).
 
@@ -256,7 +275,7 @@ Desde el panel, **🧾 Ingreso en mostrador** (técnicos y administradores):
 
 1. **Cliente**: se busca por nombre, teléfono o email. Si no existe, se carga en el momento con nombre y teléfono o email. Queda **sin clave**: sigue la reparación con el QR del comprobante (y, si dejó email, recibe los avisos). Si después quiere entrar al sistema, un administrador le genera una clave temporal desde *Administración → Usuarios*. El ticket queda a nombre del cliente y el historial registra quién lo cargó.
 2. **Equipo**: producto, N° de serie, fecha de compra, prioridad y falla.
-3. **Cómo llega**: accesorios que deja, estado físico, si enciende y si tiene contraseña o patrón. **La clave de desbloqueo no se guarda**: si el técnico la necesita, se la pide al cliente.
+3. **Cómo llega**: accesorios que deja, estado físico, si enciende, si tiene contraseña o patrón y las preguntas extra del rubro (por ejemplo *¿Lee discos?* o *¿Se desvinculó la cuenta Google / iCloud?*). Los accesorios y las preguntas se configuran en *Ajustes → Taller* y salen en la orden de ingreso y el comprobante. **La clave de desbloqueo no se guarda**: si el técnico la necesita, se la pide al cliente.
 4. **Fotos** (opcional): desde el celular abre la cámara. Se achican en el navegador antes de subir, así no se come el espacio de adjuntos del ticket, y quedan marcadas como *Ingreso*.
 5. **Firma** (opcional): el cliente firma con el dedo, un lápiz o el mouse.
 
@@ -347,7 +366,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), ubicaciones y envíos al fabricante, retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
+Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), ubicaciones y envíos al fabricante, configuración inicial (rubros, datos de ejemplo), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
 ### Estructura
 

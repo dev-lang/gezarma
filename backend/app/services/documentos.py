@@ -88,12 +88,17 @@ def checklist_lineas(t: models.Ticket) -> list:
     if c.get("accesorios_otros"):
         accesorios.append(c["accesorios_otros"])
     bloqueo = c.get("tiene_bloqueo")
-    return [
+    lineas = [
         ("Accesorios", ", ".join(accesorios) or "Ninguno"),
         ("Estado físico", c.get("estado_fisico") or "Sin observaciones"),
         ("Enciende", si_no(c.get("enciende"), "No se probó")),
         ("Bloqueo", "Sí (la clave se pide si hace falta)" if bloqueo is True else si_no(bloqueo, "No informado")),
     ]
+    # Las preguntas extra del taller: solo las que se respondieron
+    for pregunta, valor in (c.get("controles") or {}).items():
+        if valor is not None:
+            lineas.append((pregunta.strip("¿?") or pregunta, si_no(valor, "")))
+    return lineas
 
 
 def _firma(t: models.Ticket, momento: str, max_ancho_mm: float, max_alto_mm: float):

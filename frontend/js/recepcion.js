@@ -11,6 +11,15 @@ const Recepcion = (() => {
     const ACCESORIOS = ['Cargador', 'Cable', 'Caja', 'Funda', 'Batería', 'Control remoto', 'Tarjeta de memoria', 'Chip / SIM'];
     const RMA_RE = /^RMA-\d{4}-[A-Z]{4}\d{3}$/i;
     const esTaller = () => ['administrador', 'tecnico'].includes(auth.getUser()?.role || '');
+    // Accesorios y preguntas extra del checklist: los configura el taller (Ajustes → Taller, o el rubro del setup)
+    const _cfg = { accesorios: ACCESORIOS, controles: [] };
+    async function cargarConfig() {
+        try {
+            const p = await api.request('config/ajustes/publicos');
+            if (p.checklist_accesorios?.length) _cfg.accesorios = p.checklist_accesorios;
+            _cfg.controles = p.checklist_controles || [];
+        } catch { /* queda lo de siempre */ }
+    }
 
     // ── Checklist ────────────────────────────────────────────────────────────
     function triEstado(nombre, titulo, valor, opciones) {
@@ -31,15 +40,19 @@ const Recepcion = (() => {
     function checklistForm(cont, c = {}) {
         const id = 'chk' + Math.random().toString(36).slice(2, 7);
         const elegidos = new Set(c.accesorios || []);
-        const extras = [...elegidos].filter(a => !ACCESORIOS.includes(a));
+        const lista = _cfg.accesorios;
+        const extras = [...elegidos].filter(a => !lista.includes(a));
+        // Las preguntas configuradas, más las que ya tenía respondidas este ticket
+        const respondidas = c.controles || {};
+        const preguntas = [...new Set([..._cfg.controles, ...Object.keys(respondidas)])];
         cont.innerHTML = `
         <div class="space-y-4">
             <fieldset>
                 <legend class="block text-sm font-semibold mb-1">Accesorios que deja</legend>
                 <div class="flex flex-wrap gap-2">
-                    ${ACCESORIOS.map(a => `
+                    ${lista.map(a => `
                     <label class="flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
-                        <input type="checkbox" data-acc value="${esc(a)}" ${elegidos.has(a) ? 'checked' : ''}> ${esc(a)}
+                        <input type="checkbox" data-acc value="${esc(a)}" ${elegidos.has(a) ? 'checked' : ''}> ${esc(I18N.t(a))}
                     </label>`).join('')}
                 </div>
                 <input type="text" data-campo="accesorios_otros" maxlength="500" placeholder="Otros (ej. mouse, lápiz, correa)"
@@ -54,6 +67,7 @@ const Recepcion = (() => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${triEstado(id + '-enciende', '¿Enciende?', c.enciende, [['si', 'Sí'], ['no', 'No'], ['', 'No se probó']])}
                 ${triEstado(id + '-bloqueo', '¿Tiene contraseña o patrón?', c.tiene_bloqueo, [['si', 'Sí'], ['no', 'No'], ['', 'No sabe']])}
+                ${preguntas.map((q, i) => triEstado(`${id}-c${i}`, esc(I18N.t(q)), respondidas[q], [['si', 'Sí'], ['no', 'No'], ['', 'No se sabe']])).join('')}
             </div>
             <p class="text-xs text-gray-400">La clave de desbloqueo no se guarda: si el técnico la necesita, se la pide al cliente.</p>
         </div>`;
@@ -67,6 +81,7 @@ const Recepcion = (() => {
             estado_fisico: cont.querySelector('[data-campo="estado_fisico"]').value.trim(),
             enciende: radio('enciende'),
             tiene_bloqueo: radio('bloqueo'),
+            controles: Object.fromEntries(preguntas.map((q, i) => [q, radio('c' + i)])),
         });
     }
 
@@ -79,6 +94,8 @@ const Recepcion = (() => {
             ['Estado físico', c.estado_fisico || 'Sin observaciones'],
             ['Enciende', siNo(c.enciende, 'No se probó')],
             ['Bloqueo', c.tiene_bloqueo === true ? 'Sí (se pide la clave si hace falta)' : siNo(c.tiene_bloqueo, 'No informado')],
+            ...Object.entries(c.controles || {}).filter(([, v]) => v !== null && v !== undefined)
+                .map(([q, v]) => [I18N.t(q).replace(/^¿|\?$/g, ''), siNo(v, '')]),
         ];
     }
 
@@ -202,6 +219,7 @@ const Recepcion = (() => {
         const caja = overlay.firstElementChild;
         const $ = id => document.getElementById(id);
         _estado = { cliente: null, fotos: [], ticket: null };
+        await cargarConfig();
         const leerChecklist = checklistForm($('ing-checklist'));
         const pad = firmaPad($('ing-firma'));
 
@@ -624,7 +642,8 @@ const Recepcion = (() => {
             await cargarDetalle(t);
             ui.loadHistory(t.id);
         };
-        card.querySelector('[data-editar]').addEventListener('click', () => {
+        card.querySelector('[data-editar]').addEventListener('click', async () => {
+            await cargarConfig();
             const m = modal('Checklist de ingreso', '');
             const leer = checklistForm(m.cuerpo, ticket.checklist_ingreso || {});
             m.boton.addEventListener('click', async () => {

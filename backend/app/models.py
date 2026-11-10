@@ -86,6 +86,7 @@ class Usuario(Base):
     token_version   = Column(Integer, nullable=False, default=0, server_default="0")
     # es-AR / es-ES / en / pt-BR; vacío = el predeterminado del taller (ver idiomas.py)
     idioma          = Column(String, nullable=True)
+    demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
 
     tickets_creados   = relationship("Ticket", back_populates="cliente",  foreign_keys="Ticket.usuario_id")
     tickets_asignados = relationship("Ticket", back_populates="tecnico",  foreign_keys="Ticket.tecnico_asignado")
@@ -101,6 +102,7 @@ class Producto(Base):
     categoria               = Column(String)
     periodo_garantia_meses  = Column(Integer, default=12)
     numero_parte            = Column(String, unique=True, nullable=True)
+    demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
     tickets = relationship("Ticket", back_populates="producto_obj")
 
 class Repuesto(Base):
@@ -113,6 +115,7 @@ class Repuesto(Base):
     precio    = Column(Float, default=0.0)
     categoria = Column(String, nullable=True, default="General")
     stock_minimo = Column(Integer, nullable=False, default=0, server_default="0")  # 0 = sin alerta
+    demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
     ubicacion_id = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True, index=True)
     ubicacion    = relationship("Ubicacion", foreign_keys=[ubicacion_id])
 
@@ -209,6 +212,7 @@ class Ticket(Base):
     # Dónde está guardado el equipo y desde cuándo (los cambios quedan en ubicacion_movimientos)
     ubicacion_id    = Column(Integer, ForeignKey("ubicaciones.id", ondelete="SET NULL"), nullable=True, index=True)
     ubicacion_fecha = Column(DateTime, nullable=True)
+    demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
 
     cliente      = relationship("Usuario", back_populates="tickets_creados",  foreign_keys=[usuario_id])
     tecnico      = relationship("Usuario", back_populates="tickets_asignados", foreign_keys=[tecnico_asignado])
@@ -395,6 +399,7 @@ class Ubicacion(Base):
     nota     = Column(String(200), nullable=True)
     activa   = Column(Boolean, nullable=False, default=True, server_default="1")
     orden    = Column(Integer, nullable=False, default=0, server_default="0")
+    demo = Column(Boolean, nullable=False, default=False, server_default="0")   # datos de ejemplo del setup (se borran juntos)
     padre    = relationship("Ubicacion", remote_side="Ubicacion.id")
 
 

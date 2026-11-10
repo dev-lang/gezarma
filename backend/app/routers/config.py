@@ -253,7 +253,20 @@ def ajustes_publicos(db: Session = Depends(database.get_db),
             "seguimiento_publico": ajustes_mod.get(db, "seguimiento_publico"),
             "sla_aviso_horas": ajustes_mod.get(db, "sla_aviso_horas"),
             "etiqueta_tamano": ajustes_mod.get(db, "etiqueta_tamano"),
-            "encuesta_activa": ajustes_mod.get(db, "encuesta_activa")}
+            "encuesta_activa": ajustes_mod.get(db, "encuesta_activa"),
+            # Checklist de ingreso y categorías (cambian con el rubro elegido en el setup)
+            "checklist_accesorios": _lineas(ajustes_mod.get(db, "checklist_accesorios")),
+            "checklist_controles": _lineas(ajustes_mod.get(db, "checklist_controles")),
+            "producto_categorias": _lineas(ajustes_mod.get(db, "producto_categorias"))}
+
+
+def _lineas(texto: str) -> list:
+    vistos = []
+    for l in (texto or "").splitlines():
+        l = l.strip()
+        if l and l not in vistos:
+            vistos.append(l)
+    return vistos
 
 
 # ── Marca del taller: nombre y logo (barra, ingreso, favicon) ────────────────
@@ -330,10 +343,13 @@ def guia(db: Session = Depends(database.get_db),
     """Los pasos para dejar el sistema listo, con cuáles ya están hechos."""
     from .. import config as cfg
     smtp = (ajustes_mod.get(db, "smtp_host") if ajustes_mod.get(db, "smtp_origen") == "panel" else cfg.SMTP_HOST)
-    productos_propios = any((p.marca, p.modelo) not in PRODUCTOS_DE_EJEMPLO
-                            for p in db.query(models.Producto.marca, models.Producto.modelo).all())
+    productos_propios = any((p.marca, p.modelo) not in PRODUCTOS_DE_EJEMPLO and not p.demo
+                            for p in db.query(models.Producto.marca, models.Producto.modelo, models.Producto.demo).all())
     tecnico = db.query(models.Usuario.id).filter_by(rol=models.UserRole.TECNICO.value, activo=True).first()
     pasos = [
+        {"id": "setup", "titulo": "Terminá la configuración inicial",
+         "detalle": "El asistente: tipo de taller, checklist de ingreso, técnicos, impresora y mail.",
+         "hecho": bool(ajustes_mod.get(db, "setup_terminado"))},
         {"id": "taller", "titulo": "Cargá los datos del taller",
          "detalle": "Nombre y contacto para los documentos y los mails.",
          "hecho": (ajustes_mod.get(db, "empresa_nombre") or "GEZARMA") != "GEZARMA" or bool(ajustes_mod.get(db, "empresa_datos"))},

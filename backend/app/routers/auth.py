@@ -179,6 +179,7 @@ def register(
         rol=rol,
         tipo_cliente=user_data.tipo_cliente,
         idioma=idiomas.normalizar(user_data.idioma),
+        must_change_password=bool(es_admin and user_data.cambiar_clave),
     )
     db.add(new_user)
     db.commit()

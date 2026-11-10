@@ -20,7 +20,7 @@ def test_presupuestos_sin_respuesta(client, admin, make_user, make_ticket):
 def test_guia_de_primer_uso(client, admin, make_user):
     g = client.get("/config/guia", headers=admin).json()
     pasos = {p["id"]: p for p in g["pasos"]}
-    assert set(pasos) == {"taller", "email", "productos", "tecnico", "impresora"}
+    assert set(pasos) == {"setup", "taller", "email", "productos", "tecnico", "impresora"}
     make_user(rol="tecnico")
     client.post("/products/", headers=admin, json={"marca": "Lenovo", "modelo": f"T14-{uuid.uuid4().hex[:4]}",
                                                    "categoria": "Notebooks", "periodo_garantia_meses": 12})

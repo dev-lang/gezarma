@@ -5,6 +5,7 @@
  */
 const Guia = (() => {
     const ACCIONES = {
+        setup:     { texto: 'Seguir con la configuración', hacer: () => Setup.abrir() },
         taller:    { texto: 'Ir a Ajustes', hacer: () => irAAjustes('general') },
         email:     { texto: 'Configurar', hacer: () => irAAjustes('email') },
         productos: { texto: 'Cargar productos', hacer: () => ui.loadAdminPanel('products') },
