@@ -95,6 +95,49 @@
             button.py-0\.5, button.py-1 { padding-top: .35rem; padding-bottom: .35rem; }
             button[id^="close"], button[aria-label="Cerrar"], button[data-cerrar] { min-width: 2.25rem; min-height: 2.25rem; }
         }
+        /* ── Celular (< 640 px): nada de esto se aplica en escritorio ni en tablets ── */
+        @media (max-width: 639px) {
+            /* Con letra de menos de 16 px el iPhone hace zoom al tocar el campo */
+            input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea { font-size: 16px !important; }
+            /* Zonas de toque de 44 px (las recomendadas para el dedo) */
+            button:not(.sr-only), select, summary, [role=button], [role=tab], #logo-home,
+            input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.sr-only),
+            label:has(> input[type=checkbox]), label:has(> input[type=radio]) { min-height: 44px; }
+            button:is(.w-6, .w-7, .w-8, .w-9, .panel-btn), button:has(> svg:only-child), button:has(> i:only-child),
+            button[id^="close"], button[aria-label="Cerrar"], button[data-cerrar], #toggle-password, #fav-btn, #user-menu-btn { min-width: 44px; }
+            input[type=checkbox], input[type=radio] { width: 1.25rem; height: 1.25rem; }
+            .tabla-tarjetas input[type=checkbox] { width: 1.5rem; height: 1.5rem; min-width: 1.5rem; }
+            /* Avisos: arriba, compactos y como mucho 2 (no tapan los botones de abajo) */
+            #toast-container { top: .5rem; bottom: auto; gap: .5rem; }
+            #toast-container > div { padding-top: .25rem; padding-bottom: .25rem; align-items: center; }
+            #toast-container > div > span { margin-top: 0; }
+
+            /* Tablas de Administración como tarjetas: cada fila es una tarjeta con "Rótulo  valor" */
+            table.tabla-tarjetas { min-width: 0 !important; }
+            .tabla-tarjetas thead tr { display: flex; }
+            .tabla-tarjetas thead th { display: none; }
+            .tabla-tarjetas thead th.celda-check { display: flex; align-items: center; gap: .5rem; width: auto; white-space: nowrap; padding: .5rem 1rem !important; }
+            .tabla-tarjetas tbody, .tabla-tarjetas tbody tr { display: block; }
+            .tabla-tarjetas tbody tr { position: relative; margin: .75rem; padding: .75rem .9rem; border: 1px solid #e5e7eb; border-radius: .75rem; }
+            .tabla-tarjetas tbody tr.con-check { padding-left: 3.4rem; }
+            .tabla-tarjetas tbody td { display: flex; justify-content: flex-end; flex-wrap: wrap; align-items: baseline; column-gap: .5rem; row-gap: .15rem;
+                padding: .3rem 0 !important; text-align: right; border: 0;
+                position: static !important; background: transparent !important; box-shadow: none !important; }
+            .tabla-tarjetas tbody td::before { content: attr(data-label); flex: none; max-width: 45%; margin-right: auto; padding-right: .5rem; text-align: left;
+                font-size: .75rem; font-weight: 600; color: #6b7280; }
+            .tabla-tarjetas tbody td.celda-titulo { display: block; text-align: left; font-size: 1rem; padding-bottom: .4rem !important; }
+            .tabla-tarjetas tbody td.celda-titulo::before, .tabla-tarjetas tbody td.celda-vacia::before,
+            .tabla-tarjetas tbody td.celda-acciones::before, .tabla-tarjetas tbody td.celda-check::before { content: none; }
+            .tabla-tarjetas tbody td.celda-check { position: absolute !important; left: .9rem; top: .8rem; padding: 0 !important; }
+            .tabla-tarjetas tbody td.celda-vacia { display: block; text-align: center; }
+            .tabla-tarjetas tbody td.celda-acciones { justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: .4rem;
+                padding-top: .5rem !important; border-top: 1px solid #f3f4f6;
+                position: static !important; background: transparent !important; box-shadow: none !important; }
+            .tabla-tarjetas tbody td:empty { display: none; }
+            .dark .tabla-tarjetas tbody tr { border-color: #334155; }
+            .dark .tabla-tarjetas tbody td::before { color: #a8b4c4; }
+            .dark .tabla-tarjetas tbody td.celda-acciones { border-top-color: #334155; }
+        }
         /* Las tablas del panel nunca ensanchan la página: se desplazan dentro de su tarjeta */
         .admin-tab-content table { min-width: 36rem; }
         .admin-tab-content :has(> table) { overflow-x: auto; }
@@ -248,6 +291,7 @@
         document.addEventListener('submit', e => e.preventDefault(), true);
     </script>
     <script src="js/ui/escape.js"></script>
+    <script src="js/ui/tablas.js"></script>
     <script src="js/ui/iconos.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>

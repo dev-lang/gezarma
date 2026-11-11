@@ -84,7 +84,7 @@ const Envios = (() => {
             ${puedeEnviar ? `<div class="flex flex-wrap items-center gap-3">
                 <span class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center shrink-0">${icono('camion', 'w-5 h-5')}</span>
                 <p class="flex-1 min-w-0 text-sm text-gray-600">${esc(I18N.t('¿Lo tiene que ver el fabricante? Registrá el envío y seguilo hasta que vuelva.'))}</p>
-                <button type="button" data-env-enviar class="text-sm font-semibold text-fuchsia-700 border border-fuchsia-200 hover:bg-fuchsia-50 px-3 py-1.5 rounded-lg">${esc(I18N.t('Enviar al fabricante'))}</button>
+                <button type="button" data-env-enviar class="text-sm font-semibold text-fuchsia-700 border border-fuchsia-200 hover:bg-fuchsia-50 px-3 py-1.5 rounded-lg max-sm:w-full">${esc(I18N.t('Enviar al fabricante'))}</button>
             </div>` : ''}
             ${anteriores.length ? `<div class="${abierto || puedeEnviar ? 'mt-4 pt-3 border-t' : ''}">
                 <p class="text-xs font-semibold text-gray-500">${esc(I18N.t('Envíos anteriores'))}</p>

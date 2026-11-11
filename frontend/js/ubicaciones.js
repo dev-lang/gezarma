@@ -97,11 +97,11 @@ const Ubic = (() => {
             <span class="w-9 h-9 rounded-full ${t.ubicacion_ruta ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'} flex items-center justify-center shrink-0">${icono('pin', 'w-5 h-5')}</span>
             <div class="min-w-0 flex-1">
                 <p class="text-xs font-semibold text-gray-500">${esc(I18N.t('Ubicación'))}</p>
-                <p class="font-semibold text-gray-800 truncate">${t.ubicacion_ruta ? esc(t.ubicacion_ruta) : `<span class="text-amber-700">${esc(I18N.t('Sin ubicación'))}</span>`}</p>
+                <p class="font-semibold text-gray-800 truncate max-sm:whitespace-normal max-sm:break-words">${t.ubicacion_ruta ? esc(t.ubicacion_ruta) : `<span class="text-amber-700">${esc(I18N.t('Sin ubicación'))}</span>`}</p>
                 ${t.ubicacion_fecha ? `<p class="text-xs text-gray-400">${esc(I18N.t('Desde {0}', hace(t.ubicacion_fecha)))}</p>` : ''}
             </div>
-            <div class="flex items-center gap-2">
-                ${afuera ? '' : `<button type="button" data-ubic-mover class="text-sm font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg">${icono('pin', 'w-4 h-4 mr-1')}${esc(I18N.t('Mover a…'))}</button>`}
+            <div class="flex items-center gap-2 max-sm:w-full">
+                ${afuera ? '' : `<button type="button" data-ubic-mover class="text-sm font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg max-sm:flex-1 max-sm:inline-flex max-sm:items-center max-sm:justify-center">${icono('pin', 'w-4 h-4 mr-1')}${esc(I18N.t('Mover a…'))}</button>`}
                 <button type="button" data-ubic-historial class="text-sm text-gray-500 hover:text-gray-800 px-2 py-1.5" title="${esc(I18N.t('Por dónde pasó'))}">${icono('historial', 'w-4 h-4')}</button>
             </div>`;
         card.querySelector('[data-ubic-mover]')?.addEventListener('click', () => moverTicket(t.id, t.ubicacion_id));

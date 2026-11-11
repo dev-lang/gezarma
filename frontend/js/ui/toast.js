@@ -50,6 +50,10 @@ const toast = (() => {
         }
 
         container.appendChild(el);
+        // En el celular quedan a la vista los 2 últimos (los demás ya se leyeron o se pisan)
+        if (window.matchMedia('(max-width: 639px)').matches) {
+            while (container.children.length > 2) container.firstElementChild.remove();
+        }
 
         setTimeout(() => {
             if (!el.isConnected) return;

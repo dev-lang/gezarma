@@ -49,13 +49,15 @@
                         <div><p class="text-gray-500 font-medium">Prioridad</p><p id="detail-priority" class="font-semibold"></p></div>
                         <div><p class="text-gray-500 font-medium">Técnico</p><p id="detail-tecnico" class="font-semibold"></p></div>
                     </div>
-                    <div class="mt-8">
-                        <h3 class="font-bold text-gray-800 mb-2">Descripción del Problema</h3>
-                        <div id="detail-description-wrap" class="group relative">
-                            <div class="bg-gray-50 p-4 rounded-lg text-gray-700 leading-relaxed" id="detail-description"></div>
+                    <div class="mt-8 group">
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <h3 class="font-bold text-gray-800">Descripción del Problema</h3>
                             <button type="button" id="edit-description-btn"
-                                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition text-xs text-blue-500 hover:text-blue-700 font-semibold hidden"
+                                class="inline-flex items-center px-2 py-1 -my-1 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 font-semibold hidden"
                                 title="Editar descripción"><i data-icono="lapiz" class="w-3.5 h-3.5 mr-1"></i>Editar</button>
+                        </div>
+                        <div id="detail-description-wrap">
+                            <div class="bg-gray-50 p-4 rounded-lg text-gray-700 leading-relaxed" id="detail-description"></div>
                             <div id="edit-description-form" class="hidden mt-2">
                                 <textarea id="edit-description-input"
                                     class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" rows="4"></textarea>
