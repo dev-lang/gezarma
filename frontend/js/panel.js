@@ -262,6 +262,28 @@ const Panel = (() => {
         }
     });
 
-    return { BLOQUES, aplicar, editar, invalidar: () => { _cfg = null; } };
+    // ── Accesos rápidos: el dato de cada uno ─────────────────────────────────
+    const horasTxt = min => { const h = Math.floor(min / 60), m = min % 60; return h ? `${h} h${m ? ' ' + String(m).padStart(2, '0') : ''}` : `${m} min`; };
+    async function accesos() {
+        if (!$('accesos')) return;
+        let r;
+        try { r = await api.request('users/me/accesos'); } catch { return; }
+        const pon = (id, texto, clases) => {
+            const el = $(id);
+            if (!el) return;
+            el.textContent = texto || '';
+            el.classList.toggle('hidden', !texto);
+            if (clases) el.className = `${texto ? '' : 'hidden'} ${clases}`;
+        };
+        pon('acc-favoritos', r.favoritos ? String(r.favoritos) : '');
+        pon('acc-horas', r.horas_hoy_min ? t('hoy {0}', horasTxt(r.horas_hoy_min)) : '');
+        const atr = r.atrasados, af = r.afuera;
+        pon('externos-btn-n', atr ? t(atr === 1 ? '1 atrasado' : '{0} atrasados', atr) : af ? t('{0} afuera', af) : '',
+            `text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${atr ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`);
+        const b = $('externos-btn');
+        if (b) b.title = af ? t('{0} afuera, {1} atrasados', af, atr) : '';
+    }
+
+    return { BLOQUES, aplicar, editar, accesos, invalidar: () => { _cfg = null; } };
 })();
 window.Panel = Panel;

@@ -92,30 +92,26 @@ const ui = {
         const isTechOrAdmin = isAdmin || user.role === 'tecnico';
         // Administración está en el menú de usuario (barra.js)
         document.getElementById('menu-admin-wrap')?.classList.toggle('hidden', !isAdmin);
-        const favBtn = document.getElementById('favorites-nav-btn');
-        if (favBtn) {
-            favBtn.classList.toggle('hidden', !isTechOrAdmin);
-            favBtn.classList.toggle('flex', isTechOrAdmin);
-        }
-        document.querySelectorAll('[data-stat-admin]').forEach(el => el.classList.toggle('hidden', !isAdmin));
-        const horasBtn = document.getElementById('horas-btn');
-        if (horasBtn) {
-            horasBtn.classList.toggle('hidden', !isTechOrAdmin);
-            horasBtn.classList.toggle('flex', isTechOrAdmin);
-        }
+        // Accesos rápidos (Favoritos · Horas · Fuera del taller) y los dos botones de crear: solo el taller.
+        // El cliente ve un solo botón, "Nuevo Ticket", lleno; en el taller el principal es el ingreso
+        // en mostrador y "Nuevo ticket" queda al lado, con borde.
+        document.getElementById('accesos')?.classList.toggle('hidden', !isTechOrAdmin);
         document.getElementById('menu-horas')?.classList.toggle('hidden', !isTechOrAdmin);
-        const extBtn = document.getElementById('externos-btn');
-        if (extBtn) {
-            extBtn.classList.toggle('hidden', !isTechOrAdmin);
-            extBtn.classList.toggle('flex', isTechOrAdmin);
-            if (isTechOrAdmin && typeof Envios !== 'undefined') Envios.contador();
-        }
         document.getElementById('menu-horas')?.classList.toggle('flex', isTechOrAdmin);
         const mostradorBtn = document.getElementById('mostrador-btn');
         if (mostradorBtn) {
             mostradorBtn.classList.toggle('hidden', !isTechOrAdmin);
             mostradorBtn.classList.toggle('flex', isTechOrAdmin);
         }
+        const nuevoBtn = document.getElementById('create-ticket-btn');
+        if (nuevoBtn) {
+            const LLENO = ['bg-blue-600', 'hover:bg-blue-700', 'text-white', 'shadow'];
+            const BORDE = ['bg-white', 'hover:bg-blue-50', 'text-blue-700', 'border', 'border-blue-500'];
+            nuevoBtn.classList.remove(...(isTechOrAdmin ? LLENO : BORDE));
+            nuevoBtn.classList.add(...(isTechOrAdmin ? BORDE : LLENO));
+            nuevoBtn.querySelector('span').textContent = I18N.t(isTechOrAdmin ? 'Nuevo ticket' : 'Nuevo Ticket');
+        }
+        if (isTechOrAdmin && typeof Panel !== 'undefined') Panel.accesos();
 
         try {
             const pub = await api.request('config/ajustes/publicos');

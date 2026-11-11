@@ -335,17 +335,9 @@ const Envios = (() => {
         } catch (err) { toast.error(err.message); }
     }
 
-    /** Número en el botón del panel ("Fuera del taller · 3"). */
+    /** El dato de "Fuera del taller" en los accesos del panel (lo pinta Panel.accesos). */
     async function contador() {
-        const b = $('externos-btn');
-        if (!b || !esTaller()) return;
-        try {
-            const r = await api.request('envios?estado=enviado');
-            const n = $('externos-btn-n');
-            n.textContent = r.resumen.afuera;
-            n.className = `${r.resumen.afuera ? '' : 'hidden'} text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums ${r.resumen.atrasados ? 'bg-red-100 text-red-700' : 'bg-fuchsia-100 text-fuchsia-700'}`;
-            b.title = r.resumen.atrasados ? I18N.t('{0} afuera, {1} atrasados', r.resumen.afuera, r.resumen.atrasados) : '';
-        } catch { /* sin datos */ }
+        if (typeof Panel !== 'undefined' && esTaller()) Panel.accesos();
     }
 
     return { ESTADO, cargarDetalle, formEnvio, formVuelta, desdeSelector, abrir, cargar, contador };

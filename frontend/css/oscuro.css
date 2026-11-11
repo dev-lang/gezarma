@@ -13,7 +13,7 @@ html.dark { color-scheme: dark; }
 /* Etiquetas con el color que eligió el taller: el texto se aclara para que se lea sobre fondo oscuro */
 .dark .color-propio { color: color-mix(in srgb, var(--c) 55%, #fff) !important; }
 
-/* ── 218 clases de color usadas en el frontend ── */
+/* ── 217 clases de color usadas en el frontend ── */
 .dark .aria-\[current\=page\]\:ring-blue-300[aria-current=page] { --tw-ring-color: #1d4ed8 !important; }
 .dark .bg-amber-100 { background-color: #78350f66 !important; }
 .dark .bg-amber-50 { background-color: #2d1f07 !important; }
@@ -231,7 +231,5 @@ html.dark { color-scheme: dark; }
 .dark .text-violet-900 { color: #c4b5fd !important; }
 .dark .text-yellow-600 { color: #facc15 !important; }
 .dark .text-yellow-800 { color: #fde047 !important; }
-.dark .text-yellow-900 { color: #fde047 !important; }
 /* Fondo de color fuerte con texto oscuro: el texto no se aclara */
 .dark .bg-amber-500.text-amber-950 { color: #451a03 !important; }
-.dark .bg-yellow-400.text-yellow-900 { color: #713f12 !important; }

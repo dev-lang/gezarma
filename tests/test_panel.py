@@ -60,3 +60,18 @@ def test_no_se_expone_en_usuarios(client, admin, make_user):
     h, u = make_user()
     client.put("/users/me/panel", headers=h, json={"bloques": BASE})
     assert all("panel_config" not in x for x in client.get("/users/", headers=admin).json())
+
+
+def test_accesos_del_panel(client, admin, make_user, make_ticket):
+    tec, _ = make_user(rol="tecnico")
+    cli, _ = make_user()
+    t = make_ticket(cli)
+    antes = client.get("/users/me/accesos", headers=tec).json()
+    assert set(antes) == {"favoritos", "horas_hoy_min", "afuera", "atrasados"}
+    client.post(f"/favorites/{t['id']}", headers=tec)
+    from backend.app.services import horas
+    r = client.post("/tiempo", headers=tec, json={"ticket_id": t["id"], "fecha": horas.hoy().isoformat(), "minutos": 45})
+    assert r.status_code == 201, r.text
+    r = client.get("/users/me/accesos", headers=tec).json()
+    assert r["favoritos"] == antes["favoritos"] + 1 and r["horas_hoy_min"] >= antes["horas_hoy_min"] + 45
+    assert client.get("/users/me/accesos", headers=cli).status_code == 403

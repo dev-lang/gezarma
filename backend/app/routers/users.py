@@ -214,6 +214,13 @@ def restablecer_mi_panel(db: Session = Depends(database.get_db), current_user: m
     return res
 
 
+@router.get("/me/accesos")
+def mis_accesos(db: Session = Depends(database.get_db),
+                current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR, models.UserRole.TECNICO]))):
+    """Datos de la barra de accesos del panel (Favoritos · Horas · Fuera del taller)."""
+    return panel_service.accesos(db, current_user)
+
+
 @router.put("/me/panel/equipo")
 def panel_del_equipo(data: _Panel, db: Session = Depends(database.get_db),
                      current_user: models.Usuario = Depends(auth.check_role([models.UserRole.ADMINISTRADOR]))):

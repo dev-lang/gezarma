@@ -90,3 +90,21 @@ def guardar_equipo(db, bloques) -> list:
 
 def borrar_equipo(db):
     ajustes.set(db, "panel_predeterminado", "")
+
+
+def accesos(db, u: models.Usuario) -> dict:
+    """Los datos de la barra de accesos del panel: favoritos, horas de hoy y equipos afuera."""
+    from ..timeutils import utcnow
+    from . import horas
+    T = models.TiempoTrabajo
+    ini, fin = horas.limites_dia(horas.hoy())
+    ahora = utcnow()
+    minutos = sum(horas.minutos(r, ahora) for r in db.query(T).filter(
+        T.usuario_id == u.id, T.inicio >= ini, T.inicio < fin))
+    afuera = db.query(models.EnvioExterno).filter_by(estado="enviado").all()
+    return {
+        "favoritos": db.query(models.TicketFavorito).filter_by(usuario_id=u.id).count(),
+        "horas_hoy_min": round(minutos),
+        "afuera": len(afuera),
+        "atrasados": sum(1 for e in afuera if e.fecha_estimada and e.fecha_estimada < ahora),
+    }
