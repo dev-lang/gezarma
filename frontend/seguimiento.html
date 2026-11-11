@@ -23,8 +23,11 @@
         body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
         /* Celular: campos de 16 px (el iPhone no hace zoom) y zonas de toque de 44 px */
         @media (max-width: 639px) {
-            input, select, textarea { font-size: 16px !important; }
-            input, select, button { min-height: 44px; }
+            main input, main select, main textarea { font-size: 16px !important; }
+            main input, main select, main button { min-height: 44px; }
+            /* Barra de arriba: el nombre del taller no se parte y el idioma queda compacto */
+            header #marca { font-size: 1rem; line-height: 1.2; }
+            header select { min-height: 36px; font-size: 13px; }
         }
     </style>
 </head>

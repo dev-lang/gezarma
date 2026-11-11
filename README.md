@@ -44,6 +44,10 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 
 ## Capturas
 
+![Panel de control](docs/capturas/02-dashboard.png)
+
+Panel de control: ingreso en mostrador y ticket nuevo, accesos con su dato (favoritos, horas de hoy, equipos atrasados en el fabricante), resumen y lo pendiente del día. Cada bloque se ordena, se achica o se oculta desde "Personalizar".
+
 ![Lista de tickets](docs/capturas/12-lista.png)
 
 Lista de tickets: estados con su cantidad (filtran con un clic), días en el taller, alertas de SLA y orden por cualquier columna.
@@ -66,7 +70,7 @@ Lista de tickets: estados con su cantidad (filtran con un clic), días en el tal
 | Administración | Ajustes |
 |---|---|
 | ![Panel de administración](docs/capturas/05-admin.png) | ![Ajustes del sistema](docs/capturas/10-ajustes.png) |
-| Menú agrupado por tema; editar y eliminar desde los íconos de cada fila. | Nombre y logo del taller, mails, documentos, impresoras, SLA y más. |
+| Menú agrupado por tema; editar y eliminar desde los íconos de cada fila. | Agrupados en secciones desplegables con su resumen y un buscador: taller, mails, documentos, impresoras, SLA y más. |
 
 | Horas | Login |
 |---|---|
