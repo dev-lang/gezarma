@@ -39,7 +39,7 @@ const Portal = (() => {
             <h3 class="font-bold text-amber-800 text-sm mb-2">Tenés ${d.pendientes.length === 1 ? 'algo pendiente' : `${d.pendientes.length} cosas pendientes`}</h3>
             <ul class="space-y-1">${d.pendientes.map(p => `
                 <li><button type="button" data-ticket="${p.ticket_id}" class="text-sm text-amber-900 hover:underline text-left">
-                    ${ICONO[p.tipo] || '•'} <b>${esc(p.texto)}</b> · ${esc(p.producto)} <span class="font-mono text-xs">${esc(p.numero_rma)}</span>${p.vence ? ` · hasta el ${fecha(p.vence)}` : ''}
+                    ${icono(ICONO[p.tipo] || 'info', 'w-4 h-4 mr-1')}<b>${esc(p.texto)}</b> · ${esc(p.producto)} <span class="font-mono text-xs">${esc(p.numero_rma)}</span>${p.vence ? ` · hasta el ${fecha(p.vence)}` : ''}
                 </button></li>`).join('')}</ul>
         </div>` : ''}
         <div class="flex items-end justify-between mb-3">

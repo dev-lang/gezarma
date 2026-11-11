@@ -4,7 +4,7 @@ Sistema de gestión de **RMA** (devoluciones, garantías y reparaciones) para un
 
 Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS sin build, servido por la misma app.
 
-![Panel de control](docs/capturas/02-dashboard.png)
+![Panel de control](docs/capturas/01-panel.png)
 
 ## Funcionalidades
 
@@ -44,43 +44,75 @@ Backend en **FastAPI** + SQLAlchemy (SQLite por defecto) y frontend en HTML/JS s
 
 ## Capturas
 
-![Panel de control](docs/capturas/02-dashboard.png)
+El recorrido de un equipo, desde que llega al mostrador hasta que el cliente lo retira.
 
-Panel de control: ingreso en mostrador y ticket nuevo, accesos con su dato (favoritos, horas de hoy, equipos atrasados en el fabricante), resumen y lo pendiente del día. Cada bloque se ordena, se achica o se oculta desde "Personalizar".
+### Recepción
 
-![Lista de tickets](docs/capturas/12-lista.png)
+| Ingreso en mostrador | Comprobante de ticketera (80 mm) |
+|---|---|
+| ![Ingreso en mostrador](docs/capturas/02-mostrador.png) | ![Comprobante de ingreso](docs/capturas/03-comprobante.png) |
+| Cliente, equipo, accesorios, cómo llega y firma, en una sola pantalla. | Con el QR al seguimiento y el código de barras del N° de RMA. |
+
+![Etiqueta 62 × 29 mm](docs/capturas/04-etiqueta.png)
+
+Etiqueta para pegar en el equipo: el QR abre el ticket en el sistema y el código de barras se lee con cualquier lector.
+
+### En el taller
+
+![Lista de tickets](docs/capturas/05-lista.png)
 
 Lista de tickets: estados con su cantidad (filtran con un clic), días en el taller, alertas de SLA y orden por cualquier columna.
 
-| Detalle del ticket (taller) | Detalle del ticket (cliente) |
-|---|---|
-| ![Detalle visto por el taller](docs/capturas/03-detalle-taller.png) | ![Detalle visto por el cliente](docs/capturas/04-detalle-cliente.png) |
-| Estado, técnico, diagnóstico, repuestos, nota interna y presupuesto con costo y ganancia. | El mismo ticket para el cliente: sin nota interna y el presupuesto solo con el precio. |
+![Tablero por estado](docs/capturas/06-tablero.png)
 
-| Tablero Kanban | Seguimiento público (celular) |
-|---|---|
-| ![Tablero por estado](docs/capturas/06-tablero.png) | ![Seguimiento de una reparación](docs/capturas/07-seguimiento.png) |
-| Arrastrar una tarjeta a otra columna le cambia el estado. | Con el N° de RMA y el N° de serie, o escaneando el QR de la orden de ingreso. |
+Tablero: arrastrar una tarjeta a otra columna le cambia el estado.
 
-| Presupuesto en PDF | Etiqueta 62 × 29 mm |
+| Detalle del ticket | Ubicaciones |
 |---|---|
-| ![Presupuesto en PDF](docs/capturas/08-presupuesto.png) | ![Etiqueta para el equipo](docs/capturas/09-etiqueta.png) |
-| Precios para el cliente (nunca costos) y QR al seguimiento. | QR que abre el ticket en el sistema y código de barras del N° de RMA. |
+| ![Detalle visto por el taller](docs/capturas/07-detalle-taller.png) | ![Ubicaciones del taller](docs/capturas/08-ubicaciones.png) |
+| Estado, técnico, ubicación, envío al fabricante, tiempo de trabajo, repuestos, nota interna y presupuesto con costo y ganancia. | Depósito › estante, con su etiqueta para escanear; equipos y repuestos sin ubicación o quietos. |
 
-| Administración | Ajustes |
-|---|---|
-| ![Panel de administración](docs/capturas/05-admin.png) | ![Ajustes del sistema](docs/capturas/10-ajustes.png) |
-| Menú agrupado por tema; editar y eliminar desde los íconos de cada fila. | Agrupados en secciones desplegables con su resumen y un buscador: taller, mails, documentos, impresoras, SLA y más. |
+### Afuera, compras y horas
 
-| Horas | Login |
+| Fuera del taller | Pedidos a proveedor |
 |---|---|
-| ![Horas de un técnico en la semana](docs/capturas/11-horas.png) | ![Login](docs/capturas/01-login.png) |
-| Las horas de cada técnico día por día: arrastrar un tramo lo mueve de día, con clic se corrige. | Con el nombre y el logo del taller. |
+| ![Equipos en el servicio oficial](docs/capturas/09-fuera-del-taller.png) | ![Pedidos a proveedor](docs/capturas/10-pedidos.png) |
+| Equipos en la garantía del fabricante, con días afuera y atrasados. | Armar, mandar y recibir: lo bajo el mínimo se agrupa por proveedor. |
 
-| Configuración inicial | Fuera del taller |
+| Horas | Presupuesto en PDF |
 |---|---|
-| ![Asistente de configuración inicial](docs/capturas/13-configuracion.png) | ![Equipos en el servicio oficial](docs/capturas/14-fuera-del-taller.png) |
-| El primer ingreso: el tipo de taller suma estados, checklist, categorías, plantillas y plazos. | Equipos en la garantía del fabricante, con días afuera y atrasados. |
+| ![Horas de un técnico en la semana](docs/capturas/11-horas.png) | ![Presupuesto en PDF](docs/capturas/12-presupuesto.png) |
+| Las horas de cada técnico día por día: arrastrar un tramo lo mueve de día, con clic se corrige. | Precios para el cliente (nunca costos) y QR al seguimiento. |
+
+### El cliente
+
+| Mis equipos | Detalle del ticket (cliente) | Seguimiento público |
+|---|---|---|
+| ![Portal del cliente](docs/capturas/13-portal-cliente.png) | ![Detalle visto por el cliente](docs/capturas/14-detalle-cliente.png) | ![Seguimiento de una reparación](docs/capturas/15-seguimiento.png) |
+| Sus equipos, lo que tiene pendiente y los documentos para bajar. | Sin nota interna y el presupuesto solo con el precio. | Con el N° de RMA y el N° de serie, o escaneando el QR. |
+
+### En el celular y en modo oscuro
+
+| Panel | Ticket | Modo oscuro |
+|---|---|---|
+| ![Panel en el celular](docs/capturas/16-celular-panel.png) | ![Ticket en el celular](docs/capturas/17-celular-ticket.png) | ![Ticket en modo oscuro](docs/capturas/18-modo-oscuro.png) |
+| El "+" de la barra carga un equipo desde cualquier pantalla. | Todo el ticket a una columna. | Cada color con su versión oscura y buen contraste. |
+
+### Configuración
+
+| Configuración inicial | Ajustes |
+|---|---|
+| ![Asistente de configuración inicial](docs/capturas/19-configuracion.png) | ![Ajustes del sistema](docs/capturas/20-ajustes.png) |
+| El primer ingreso: el tipo de taller suma estados, checklist, categorías, plantillas y plazos. | Secciones desplegables con su resumen y un buscador. |
+
+| Administración | Ir a… (Ctrl + K) |
+|---|---|
+| ![Panel de administración](docs/capturas/21-admin.png) | ![Ir a](docs/capturas/22-ir-a.png) |
+| Menú agrupado por tema, con una letra por sección. | Pantallas, secciones y ajustes puntuales, o un ticket por su N° de RMA. |
+
+![Personalizar el panel](docs/capturas/23-personalizar.png)
+
+Personalizar el panel: cada bloque se arrastra, cambia de ancho o se oculta; se guarda por usuario.
 
 *(Datos de demostración ficticios.)*
 

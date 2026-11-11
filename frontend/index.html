@@ -107,6 +107,8 @@
             label:has(> input[type=checkbox]), label:has(> input[type=radio]) { min-height: 44px; }
             button:is(.w-6, .w-7, .w-8, .w-9, .panel-btn), button:has(> svg:only-child), button:has(> i:only-child),
             button[id^="close"], button[aria-label="Cerrar"], button[data-cerrar], #toggle-password, #fav-btn, #user-menu-btn { min-width: 44px; }
+            /* La × de una etiqueta va dentro de la píldora: no la agranda (la píldora entera es el área de toque) */
+            .tag-remove-btn, .ef-tag-remove { min-height: 0 !important; min-width: 1.5rem !important; padding: 0 .25rem !important; }
             input[type=checkbox], input[type=radio] { width: 1.25rem; height: 1.25rem; }
             .tabla-tarjetas input[type=checkbox] { width: 1.5rem; height: 1.5rem; min-width: 1.5rem; }
             /* Panel: cargar un equipo se hace con el "+" de la barra de arriba (siempre a mano) */
