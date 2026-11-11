@@ -30,13 +30,17 @@
     </div>
 
     <!-- Bloques del panel: el orden, el ancho y los ocultos los arma cada usuario (frontend/js/panel.js) -->
-    <div id="panel-bloques" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div id="panel-bloques" class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
 
     <!-- Guía de primer uso (solo administrador; frontend/js/guia.js) -->
     <div id="guia-panel" data-bloque="guia" class="hidden"></div>
 
     <!-- Resumen -->
-    <div data-bloque="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 content-start" id="stats-container"></div>
+    <!-- Resumen: una tarjeta por bloque (se mueven por separado) -->
+    <div data-bloque="resumen_total" data-stat="total" class="min-w-0"></div>
+    <div data-bloque="resumen_nuevos" data-stat="nuevos" class="min-w-0"></div>
+    <div data-bloque="resumen_proceso" data-stat="proceso" class="min-w-0"></div>
+    <div data-bloque="resumen_cerrados" data-stat="cerrados" class="min-w-0"></div>
 
     <!-- Gráficos (administrador) -->
     <div data-bloque="grafico_estados" data-stat-admin class="hidden bg-white p-6 rounded-xl shadow border">

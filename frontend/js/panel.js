@@ -18,7 +18,11 @@ const Panel = (() => {
     // El orden de fábrica
     const BLOQUES = [
         { id: 'guia',              titulo: 'Guía para dejar el sistema listo', roles: ADMIN,  ancho: 'completo' },
-        { id: 'resumen',           titulo: 'Resumen',                          roles: TODOS,  ancho: 'completo' },
+        // Las 4 tarjetas del resumen, cada una un bloque (en el celular van de a 2 por fila)
+        { id: 'resumen_total',     titulo: 'Total Tickets',                    roles: TODOS,  ancho: 'cuarto', compacto: true },
+        { id: 'resumen_nuevos',    titulo: 'Nuevos',                           roles: TODOS,  ancho: 'cuarto', compacto: true },
+        { id: 'resumen_proceso',   titulo: 'En Proceso',                       roles: TODOS,  ancho: 'cuarto', compacto: true },
+        { id: 'resumen_cerrados',  titulo: 'Cerrados',                         roles: TODOS,  ancho: 'cuarto', compacto: true },
         { id: 'grafico_estados',   titulo: 'Tickets por estado',               roles: ADMIN,  ancho: 'cuarto' },
         { id: 'grafico_productos', titulo: 'Fallas por producto',              roles: ADMIN,  ancho: 'cuarto' },
         { id: 'grafico_tecnicos',  titulo: 'Carga por técnico',                roles: ADMIN,  ancho: 'cuarto' },
@@ -31,8 +35,10 @@ const Panel = (() => {
         { id: 'tickets',           titulo: 'Tickets',                          roles: TODOS,  ancho: 'completo', fijo: true },
     ];
     const ANCHOS = { completo: 'Completo', mitad: 'Mitad', cuarto: 'Cuarto' };
-    const SPAN = { completo: 'md:col-span-2 lg:col-span-4', mitad: 'md:col-span-1 lg:col-span-2', cuarto: 'md:col-span-1 lg:col-span-1' };
-    const TODAS_SPAN = [...new Set(Object.values(SPAN).join(' ').split(' '))];
+    // La grilla tiene 2 columnas en el celular, 2 en tablet y 4 en escritorio
+    const SPAN = { completo: 'col-span-2 md:col-span-2 lg:col-span-4', mitad: 'col-span-2 md:col-span-1 lg:col-span-2', cuarto: 'col-span-2 md:col-span-1 lg:col-span-1' };
+    const span = (id, ancho) => (def(id)?.compacto && ancho !== 'completo' ? SPAN[ancho].replace(/^col-span-2/, 'col-span-1') : SPAN[ancho]).split(' ');
+    const TODAS_SPAN = ['col-span-1', ...new Set(Object.values(SPAN).join(' ').split(' '))];
     let _cfg = null, _cfgDe = null;   // respuesta de GET users/me/panel y de qué usuario
     let _antes = null;        // disposición al entrar a Personalizar (para Cancelar)
 
@@ -73,7 +79,7 @@ const Panel = (() => {
             if (!el) return;
             cont.appendChild(el);                                   // el orden
             el.classList.remove(...TODAS_SPAN);
-            el.classList.add(...SPAN[x.ancho].split(' '));
+            el.classList.add(...span(x.id, x.ancho));
             el.dataset.ancho = x.ancho;
             el.classList.toggle('panel-oculto', !x.visible && !def(x.id).fijo);
             if (permitido(def(x.id))) delete el.dataset.sinPermiso; else el.dataset.sinPermiso = '1';
@@ -174,7 +180,7 @@ const Panel = (() => {
         if (!sel) return;
         const el = sel.closest('[data-bloque]');
         el.classList.remove(...TODAS_SPAN);
-        el.classList.add(...SPAN[sel.value].split(' '));
+        el.classList.add(...span(el.dataset.bloque, sel.value));
         el.dataset.ancho = sel.value;
     }
 

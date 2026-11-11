@@ -14,17 +14,32 @@ from fastapi import HTTPException
 
 from .. import ajustes, models
 
-BLOQUES = ("guia", "resumen", "grafico_estados", "grafico_productos", "grafico_tecnicos", "tiempo_promedio",
+RESUMEN = ("resumen_total", "resumen_nuevos", "resumen_proceso", "resumen_cerrados")
+BLOQUES = ("guia", *RESUMEN, "grafico_estados", "grafico_productos", "grafico_tecnicos", "tiempo_promedio",
            "para_hoy", "alertas", "portal", "satisfaccion", "horas", "tickets")
 ANCHOS = ("completo", "mitad", "cuarto")
 NO_OCULTABLES = {"tickets"}
+# Bloques que se partieron en varios: "resumen" (las 4 tarjetas juntas) → una tarjeta por bloque
+PARTIDOS = {"resumen": RESUMEN}
+
+
+def _expandir(bloques):
+    for b in bloques:
+        if isinstance(b, dict) and b.get("id") in PARTIDOS:
+            ancho = b.get("ancho", "completo")
+            if ancho not in ANCHOS:
+                raise HTTPException(400, f"Ancho inválido: {ancho}")
+            for nuevo in PARTIDOS[b["id"]]:
+                yield {**b, "id": nuevo, "ancho": "cuarto"}
+        else:
+            yield b
 
 
 def validar(bloques) -> list:
     if not isinstance(bloques, list) or not bloques:
         raise HTTPException(400, "La disposición del panel está vacía.")
     vistos, limpio = set(), []
-    for b in bloques:
+    for b in _expandir(bloques):
         if not isinstance(b, dict):
             raise HTTPException(400, "Formato inválido.")
         bid = b.get("id")

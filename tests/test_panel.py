@@ -1,6 +1,6 @@
 """Panel de control personalizable: disposición por usuario y predeterminado del equipo."""
 
-BASE = [{"id": "tickets", "visible": True, "ancho": "completo"}, {"id": "resumen", "visible": False, "ancho": "mitad"}]
+BASE = [{"id": "tickets", "visible": True, "ancho": "completo"}, {"id": "resumen_nuevos", "visible": False, "ancho": "mitad"}]
 
 
 def test_cada_usuario_guarda_el_suyo(client, admin, make_user):
@@ -43,6 +43,17 @@ def test_predeterminado_del_equipo(client, admin, make_user):
     assert client.delete("/users/me/panel", headers=tec).json()["bloques"] == equipo
     assert client.delete("/users/me/panel/equipo", headers=admin).json() == {"equipo": None}
     assert client.get("/users/me/panel", headers=nuevo).json()["bloques"] is None   # → el de fábrica (lo arma el frontend)
+
+
+def test_resumen_viejo_se_parte_en_cuatro_tarjetas(client, make_user):
+    """Quien guardó el panel cuando el resumen era un solo bloque lo sigue teniendo, ahora como 4 tarjetas."""
+    h, _ = make_user()
+    r = client.put("/users/me/panel", headers=h, json={"bloques": [
+        {"id": "guia"}, {"id": "resumen", "visible": False, "ancho": "completo"}, {"id": "tickets"}]}).json()
+    assert [b["id"] for b in r["bloques"]] == ["guia", "resumen_total", "resumen_nuevos", "resumen_proceso",
+                                              "resumen_cerrados", "tickets"]
+    assert all(b["ancho"] == "cuarto" and b["visible"] is False for b in r["bloques"][1:5])
+    assert "resumen" not in r["bloques_conocidos"]
 
 
 def test_no_se_expone_en_usuarios(client, admin, make_user):

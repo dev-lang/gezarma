@@ -155,7 +155,7 @@ const ui = {
         const tbody = document.getElementById('ticket-list-body');
         if (tbody?.querySelector('tr[data-ticket-id]')) tbody.classList.add('opacity-60');      // ordenar o paginar: sin parpadeo
         else skeleton.tableRows('ticket-list-body', 6, cols.length);
-        if (document.getElementById('stats-container') && !document.getElementById('stats-container').children.length) skeleton.cards('stats-container', 4);
+        document.querySelectorAll('[data-stat]:empty').forEach(el => { el.innerHTML = skeleton.tarjeta(); });
         try {
             const params = { skip: L.pagina * L.porPagina, limit: L.porPagina, orden: L.orden };
             if (L.status) params.status = L.status;
@@ -268,15 +268,17 @@ const ui = {
     },
 
     renderStats(r) {
-        const container = document.getElementById('stats-container');
-        if (!container) return;
-        const stats = { total: r.total, nuevos: r.nuevos, proceso: r.en_proceso, cerrados: r.cerrados };
-        container.innerHTML = [
-            { label: 'Total Tickets',  value: stats.total,   color: 'blue',   icon: 'ticket' },
-            { label: 'Nuevos',         value: stats.nuevos,  color: 'amber',  icon: 'new'    },
-            { label: 'En Proceso',     value: stats.proceso, color: 'indigo', icon: 'wrench' },
-            { label: 'Cerrados',       value: stats.cerrados,color: 'green',  icon: 'check'  },
-        ].map(components.statCard).join('');
+        // Cada tarjeta es un bloque del panel (se ordenan y ocultan por separado)
+        const tarjetas = {
+            total:    { label: 'Total Tickets', value: r.total,      color: 'blue',   icon: 'ticket' },
+            nuevos:   { label: 'Nuevos',        value: r.nuevos,     color: 'amber',  icon: 'new'    },
+            proceso:  { label: 'En Proceso',    value: r.en_proceso, color: 'indigo', icon: 'wrench' },
+            cerrados: { label: 'Cerrados',      value: r.cerrados,   color: 'green',  icon: 'check'  },
+        };
+        document.querySelectorAll('[data-stat]').forEach(el => {
+            const d = tarjetas[el.dataset.stat];
+            if (d) el.innerHTML = components.statCard(d);
+        });
     },
 
     _renderTicketTags(tags, removable = false) {

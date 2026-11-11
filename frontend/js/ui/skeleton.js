@@ -19,6 +19,13 @@ const skeleton = (() => {
         `).join('');
     }
 
+    function tarjeta() {
+        return `<div class="bg-white p-6 rounded-xl shadow border-l-4 border-gray-200 h-full">
+                <div class="skeleton h-3 w-20 rounded mb-3"></div>
+                <div class="skeleton h-8 w-16 rounded"></div>
+            </div>`;
+    }
+
     function cards(containerId, count = 4) {
         const el = document.getElementById(containerId);
         if (!el) return;
@@ -45,5 +52,5 @@ const skeleton = (() => {
         `).join('');
     }
 
-    return { tableRows, cards, list };
+    return { tableRows, cards, tarjeta, list };
 })();
