@@ -96,6 +96,7 @@ const ui = {
         // El cliente ve un solo botón, "Nuevo Ticket", lleno; en el taller el principal es el ingreso
         // en mostrador y "Nuevo ticket" queda al lado, con borde.
         document.getElementById('accesos')?.classList.toggle('hidden', !isTechOrAdmin);
+        document.getElementById('crear-wrap')?.classList.add('listo');   // "+" del celular (barra.js; solo < 640 px)
         document.getElementById('menu-horas')?.classList.toggle('hidden', !isTechOrAdmin);
         document.getElementById('menu-horas')?.classList.toggle('flex', isTechOrAdmin);
         const mostradorBtn = document.getElementById('mostrador-btn');

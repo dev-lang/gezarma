@@ -23,6 +23,22 @@ const Barra = (() => {
         }
     }
 
+    // ── "+" del celular: Ingreso en mostrador o Nuevo ticket (el cliente va directo al ticket) ──
+    function crear(abrir) {
+        const m = $('crear-menu'), b = $('crear-btn');
+        if (!m || !b) return;
+        const abierto = abrir ?? m.classList.contains('hidden');
+        m.classList.toggle('hidden', !abierto);
+        b.setAttribute('aria-expanded', String(abierto));
+        if (abierto) m.querySelector('button')?.focus();
+    }
+    async function cargar(que) {
+        crear(false);
+        if (que === 'mostrador') return window.Recepcion?.abrirMostrador();
+        if (!$('dashboard-section')) await ui.initDashboard();
+        $('create-ticket-btn')?.click();
+    }
+
     function busqueda(abrir) {
         const c = $('search-container'), b = $('search-toggle');
         if (!c) return;
@@ -35,7 +51,7 @@ const Barra = (() => {
     function iniciar() {
         if (_iniciada || !$('navbar')) return;
         _iniciada = true;
-        $('user-menu-btn')?.addEventListener('click', e => { e.stopPropagation(); menu(); });
+        $('user-menu-btn')?.addEventListener('click', e => { e.stopPropagation(); crear(false); menu(); });
         $('menu-dark')?.addEventListener('click', () => { ui.toggleDark(); menu(false); });
         $('menu-logout')?.addEventListener('click', () => auth.logout());
         $('menu-horas')?.addEventListener('click', () => { menu(false); window.Horas?.abrir(); });
@@ -44,6 +60,12 @@ const Barra = (() => {
         $('ir-btn')?.addEventListener('click', () => window.Nav?.paleta());
         $('menu-atajos')?.addEventListener('click', () => { menu(false); window.Atajos?.ayuda(); });
         $('search-toggle')?.addEventListener('click', () => busqueda());
+        $('crear-btn')?.addEventListener('click', e => {
+            e.stopPropagation();
+            if (auth.getUser()?.role === 'cliente') return cargar('ticket');
+            menu(false); crear();
+        });
+        $('crear-menu')?.addEventListener('click', e => { const b = e.target.closest('[data-crear]'); if (b) cargar(b.dataset.crear); });
         // El nombre lleva al panel de control (o al login si no hay sesión).
         // Ctrl/Cmd+click sigue abriendo otra pestaña, como cualquier link.
         $('logo-home')?.addEventListener('click', e => {
@@ -57,10 +79,12 @@ const Barra = (() => {
         });
         document.addEventListener('click', e => {
             if (!$('user-menu')?.contains(e.target)) menu(false);
+            if (!$('crear-wrap')?.contains(e.target)) crear(false);
         });
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             if (!$('user-menu')?.classList.contains('hidden')) { menu(false); $('user-menu-btn')?.focus(); }
+            if (!$('crear-menu')?.classList.contains('hidden')) { crear(false); $('crear-btn')?.focus(); }
             const input = $('global-search');
             if (document.activeElement === input && !input.value && $('search-container')?.classList.contains('abierto')) busqueda(false);
         });
