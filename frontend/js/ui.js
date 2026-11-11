@@ -197,7 +197,7 @@ const ui = {
             return `<button type="button" data-estado="${esc(valor)}" aria-pressed="${on}"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition
                 ${on ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}">
-                <span>${esc(texto)}</span><span class="text-xs tabular-nums ${on ? 'text-blue-100' : 'text-gray-400'}">${n || 0}</span></button>`;
+                <span>${esc(texto)}</span><span class="text-xs tabular-nums ${on ? 'text-white' : 'text-gray-400'}">${n || 0}</span></button>`;
         };
         cont.innerHTML = chip('', 'Todos', r.total) + estados.map(e => chip(e, e, por[e])).join('');
     },

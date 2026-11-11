@@ -424,7 +424,7 @@ function _renderCatFilterPills(items) {
         const label  = c === "" ? "Todas" : c;
         return `<button type="button" data-cat="${escHtml(c)}"
             class="pp-cat-pill px-3 py-1 rounded-full text-xs font-semibold border transition
-                ${active ? "bg-emerald-600 text-white border-emerald-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}">
+                ${active ? "bg-emerald-700 text-white border-emerald-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}">
             ${escHtml(label)}
         </button>`;
     }).join("");

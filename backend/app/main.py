@@ -115,6 +115,7 @@ def read_seguimiento():
     """Página pública de seguimiento de reparaciones (sin login)."""
     return FileResponse(os.path.join(FRONTEND_DIR, "seguimiento.html"))
 
+app.mount("/css",      StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")),      name="css")
 app.mount("/js",       StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")),       name="js")
 app.mount("/partials", StaticFiles(directory=os.path.join(FRONTEND_DIR, "partials")), name="partials")
 # Attachments are NOT served statically: they go through

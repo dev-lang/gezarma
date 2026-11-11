@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de reparación - GEZARMA</title>
+    <link rel="stylesheet" href="/css/oscuro.css">
+    <script>
+        // Modo oscuro: el que eligió la persona en el sistema del taller (mismo navegador) o, si no, el del dispositivo
+        (function () {
+            let pref = null;
+            try { pref = localStorage.getItem('gezarma-dark'); } catch (e) { /* sin almacenamiento */ }
+            const m = window.matchMedia('(prefers-color-scheme: dark)');
+            const aplicar = () => document.documentElement.classList.toggle('dark', pref === null ? m.matches : pref === '1');
+            aplicar();
+            if (pref === null) m.addEventListener?.('change', aplicar);
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/ui/escape.js"></script>
     <script src="/js/i18n.js"></script>
     <style>
         body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -57,7 +70,7 @@
                 return `
                 <li class="relative pl-7 pb-4">
                     ${ultimo ? '' : '<span class="absolute left-[7px] top-4 bottom-0 w-0.5 bg-gray-200"></span>'}
-                    <span class="absolute left-0 top-1 w-4 h-4 rounded-full border-2 border-white shadow" style="background:${esc(h.estado.color)}"></span>
+                    <span class="absolute left-0 top-1 w-4 h-4 rounded-full border-2 border-white shadow" style="background:${colorSeguro(h.estado.color)}"></span>
                     <p class="text-sm ${ultimo ? 'font-bold' : 'text-gray-600'}">${esc(h.estado.etiqueta)}</p>
                     <p class="text-xs text-gray-400">${fecha(h.fecha)}</p>
                 </li>`;
@@ -101,7 +114,7 @@
                     <p class="font-mono text-sm text-gray-500">${esc(d.numero_rma)}</p>
                     <p class="text-lg font-bold">${esc(d.producto || 'Equipo')}</p>
                     <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <span class="px-3 py-1 rounded-full text-sm font-bold text-white" style="background:${esc(d.estado.color)}">${esc(d.estado.etiqueta)}</span>
+                        <span class="px-3 py-1 rounded-full text-sm font-bold" style="${estiloEstado(d.estado.color)}">${esc(d.estado.etiqueta)}</span>
                         <span class="px-2 py-0.5 rounded text-xs font-semibold ${d.en_garantia ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${d.en_garantia ? 'En garantía' : 'Fuera de garantía'}</span>
                     </div>
                     <p class="text-xs text-gray-400 mt-2">Ingresó el ${fecha(d.fecha_ingreso)} · última novedad ${fecha(d.ultima_actualizacion)}</p>

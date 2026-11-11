@@ -39,8 +39,8 @@ const Tiempo = (() => {
                 <div class="flex items-center gap-2">
                     ${corriendo
                         ? `<span class="font-mono text-lg font-bold text-emerald-700" data-vivo>0:00:00</span>
-                           <button type="button" data-accion="pausar" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold">${icono('pausa', 'w-4 h-4 mr-1.5', { relleno: true })}Pausar</button>`
-                        : `<button type="button" data-accion="iniciar" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold">${icono('play', 'w-4 h-4 mr-1.5', { relleno: true })}Iniciar trabajo</button>`}
+                           <button type="button" data-accion="pausar" class="bg-amber-500 hover:bg-amber-600 text-amber-950 px-4 py-2 rounded-lg text-sm font-bold">${icono('pausa', 'w-4 h-4 mr-1.5', { relleno: true })}Pausar</button>`
+                        : `<button type="button" data-accion="iniciar" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg text-sm font-bold">${icono('play', 'w-4 h-4 mr-1.5', { relleno: true })}Iniciar trabajo</button>`}
                     <button type="button" data-accion="manual" class="text-sm font-semibold text-blue-600 hover:text-blue-800 px-2">+ Cargar a mano</button>
                 </div>
             </div>
@@ -105,7 +105,7 @@ const Tiempo = (() => {
         if (!info) return;
         info.insertAdjacentHTML('beforebegin', `
             <button type="button" id="tiempo-chip" title="Trabajo en curso: ${esc(r.numero_rma)}"
-                class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                class="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-full">
                 ${icono('reloj', 'w-3.5 h-3.5')} <span class="font-mono">${esc(r.numero_rma)}</span> <span class="font-mono" data-vivo></span>
             </button>`);
         const el = document.getElementById('tiempo-chip');

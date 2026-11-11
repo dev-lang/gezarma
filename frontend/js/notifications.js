@@ -57,7 +57,7 @@ function _injectBell() {
     _bellBtn.innerHTML = `
         ${icono("campana", "w-5 h-5")}
         <span id="notif-badge"
-            class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center hidden">
+            class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center hidden">
             0
         </span>`;
     ancla.parentElement.insertBefore(_bellBtn, ancla);

@@ -370,6 +370,16 @@ pytest
 
 Usan una base y una carpeta de adjuntos temporales: no tocan los datos locales. Cubren permisos por rol, adjuntos, presupuestos, stock, pedidos a proveedor, ingreso en mostrador (clientes sin clave, checklist, firmas), ubicaciones y envíos al fabricante, configuración inicial (rubros, datos de ejemplo), retiro, encuestas, portal del cliente, garantía de la reparación, tiempos de trabajo, documentos, seguimiento público, email (contra un servidor SMTP de prueba), SLA, fechas, contraseñas y migraciones, más regresiones de la revisión de seguridad (XSS, sesiones, permisos) e integridad (N° de RMA con altas simultáneas, stock, estados, garantía). Las etiquetas y los comprobantes se pasan a imagen a la resolución de cada impresora, en blanco y negro puro como una térmica, y se comprueba con un lector real que el QR y el código de barras se lean.
 
+### Modo oscuro
+
+Los colores del modo oscuro están en `frontend/css/oscuro.css`, que se genera solo: el script recorre el frontend, junta cada clase de color de Tailwind que se usa (con sus variantes `hover:`, `has-[:checked]:`, `peer-checked:` y su opacidad `/50`) y escribe la versión oscura de cada una. Después de usar un color nuevo:
+
+```bash
+python herramientas/modo_oscuro.py
+```
+
+Si te olvidás, `tests/test_modo_oscuro.py` falla y lo avisa. El mismo test revisa que los textos de la paleta oscura den buen contraste (≥ 4,5:1) y que no haya texto blanco sobre botones de color claro. La página pública de seguimiento sigue el modo que eligió la persona en el sistema o, si no, el de su dispositivo.
+
 ### Estructura
 
 ```
@@ -391,12 +401,14 @@ backend/
   migrations/          migraciones de Alembic
 frontend/
   index.html, seguimiento.html (página pública), partials/ (pantallas en HTML)
+  css/oscuro.css       colores del modo oscuro (generado por herramientas/modo_oscuro.py)
   js/                  un módulo por área (kanban, recepción, pedidos, adjuntos, búsqueda, …)
   js/i18n.js           idioma de la interfaz (traduce la pantalla con el diccionario del servidor)
   js/ui/               piezas comunes: escape.js (esc() para todo texto que va a HTML),
                        confirm.js (confirmDialog/promptDialog), modales.js (Escape, foco
                        y role="dialog" para todos los modales), components.js, toast.js
 tests/                 tests de pytest
+herramientas/          modo_oscuro.py (genera css/oscuro.css)
 docs/capturas/         capturas de este README
 ```
 

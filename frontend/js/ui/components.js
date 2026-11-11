@@ -216,8 +216,8 @@ const components = (() => {
 
         let wrapCls, headerCls, etiq = '';
         if (isInternal) {
-            wrapCls   = 'bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-700';
-            headerCls = 'text-violet-800 dark:text-violet-300';
+            wrapCls   = 'bg-violet-50 border-violet-200';
+            headerCls = 'text-violet-800';
             etiq      = badge('Nota interna', 'bg-violet-100 text-violet-700', { extra: 'ml-2' });
         } else if (isDiag) {
             wrapCls   = 'bg-amber-50 border-amber-200';
@@ -236,7 +236,7 @@ const components = (() => {
                 </span>
                 <span class="text-xs text-gray-400 shrink-0 ml-3">${new Date(c.fecha).toLocaleString(I18N.locale, { hour12: false })}</span>
             </div>
-            <p class="text-sm leading-relaxed ${isInternal ? 'text-violet-900 dark:text-violet-200 italic' : 'text-gray-700'}">${esc(c.comentario)}</p>
+            <p class="text-sm leading-relaxed ${isInternal ? 'text-violet-900 italic' : 'text-gray-700'}">${esc(c.comentario)}</p>
         </div>`;
     }
 
@@ -567,8 +567,8 @@ const components = (() => {
             ? `<button type="button" class="tag-remove-btn ml-1 font-bold leading-none hover:opacity-70"
                 data-nombre="${esc(tag.nombre)}" title="Quitar etiqueta">×</button>`
             : '';
-        return `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold"
-            style="background:${bg};color:${color};border:1px solid ${border}">
+        return `<span class="color-propio inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold"
+            style="--c:${color};background:${bg};color:${color};border:1px solid ${border}">
             ${esc(tag.nombre)}${rm}
         </span>`;
     }
@@ -595,8 +595,8 @@ const components = (() => {
     }
 
     function estadoRow(s) {
-        const badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style="background:${colorSeguro(s.color)}">${esc(s.etiqueta)}</span>`;
+        const badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style="${estiloEstado(s.color)}">${esc(s.etiqueta)}</span>`;
         const activoBadge = s.activo
             ? '<span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Activo</span>'
             : '<span class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Inactivo</span>';

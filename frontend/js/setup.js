@@ -338,7 +338,7 @@ const Setup = (() => {
                             ? t('Hay {0} tickets de ejemplo cargados. Cuando quieras empezar en serio, borralos: se van solo los de ejemplo.', d.tickets)
                             : t('Carga clientes, equipos y tickets ficticios en distintos estados para ver cómo funciona todo. Se borran todos juntos con un botón.')}</p></div>
                     ${d.puede_borrar ? `<button type="button" id="su-demo-borrar" class="px-4 py-2 border border-red-200 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-50">${icono('papelera', 'w-4 h-4 mr-1')}${t('Borrar datos de ejemplo')}</button>`
-                                     : `<button type="button" id="su-demo-crear" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold">${t('Cargar datos de ejemplo')}</button>`}
+                                     : `<button type="button" id="su-demo-crear" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-amber-950 rounded-lg text-sm font-semibold">${t('Cargar datos de ejemplo')}</button>`}
                 </div>`) : ''}`;
             $('setup-cuerpo').querySelectorAll('[data-importar]').forEach(b => b.addEventListener('click', () => Importar.abrir(b.dataset.importar, () => {})));
             $('su-ub-crear').addEventListener('click', crearUbicaciones);

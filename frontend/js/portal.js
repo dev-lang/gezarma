@@ -14,7 +14,7 @@ const Portal = (() => {
         <li class="py-3 first:pt-0 last:pb-0">
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button" data-ticket="${r.id}" class="font-mono text-sm font-bold text-blue-700 hover:underline">${esc(r.numero_rma)}</button>
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold text-white" style="background:${esc(r.color)}">${esc(r.estado_etiqueta)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold" style="${estiloEstado(r.color)}">${esc(r.estado_etiqueta)}</span>
                 ${r.encuesta ? `<span class="text-amber-400 text-xs" title="Tu calificación">${'★'.repeat(r.encuesta)}</span>` : ''}
             </div>
             <p class="text-xs text-gray-500 mt-0.5">Ingresó el ${fecha(r.fecha_ingreso)}${r.fecha_cierre ? ` · cerrado el ${fecha(r.fecha_cierre)}` : ''} · ${r.en_garantia ? 'en garantía' : 'fuera de garantía'}</p>

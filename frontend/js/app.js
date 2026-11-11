@@ -911,8 +911,8 @@ const app = {
         const cont = document.getElementById('ef-tags-container');
         if (!cont) return;
         cont.innerHTML = tags.map(t =>
-            `<span class="ef-tag-pill flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-default"
-                style="background:${colorSeguro(t.color, '#6366f1')}20;color:${colorSeguro(t.color, '#6366f1')};border:1px solid ${colorSeguro(t.color, '#6366f1')}50"
+            `<span class="ef-tag-pill color-propio flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-default"
+                style="--c:${colorSeguro(t.color, '#6366f1')};background:${colorSeguro(t.color, '#6366f1')}20;color:${colorSeguro(t.color, '#6366f1')};border:1px solid ${colorSeguro(t.color, '#6366f1')}50"
                 data-nombre="${esc(t.nombre)}">
                 ${esc(t.nombre)}
                 <button type="button" class="ef-tag-remove font-bold leading-none hover:opacity-70" data-nombre="${esc(t.nombre)}">×</button>

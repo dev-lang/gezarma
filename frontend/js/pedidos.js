@@ -73,7 +73,7 @@ const Pedidos = (() => {
             <div class="border border-amber-200 bg-amber-50/50 rounded-xl p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <p class="font-bold text-gray-800" translate="no">${esc(g.proveedor)}</p>
-                    <button type="button" data-crear="${esc(g.proveedor)}" class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg">Armar pedido</button>
+                    <button type="button" data-crear="${esc(g.proveedor)}" class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-amber-950 px-3 py-1.5 rounded-lg">Armar pedido</button>
                 </div>
                 <div class="overflow-x-auto"><table class="w-full text-xs min-w-[20rem]"><thead><tr class="text-gray-400 text-left">
                     <th class="py-1">Repuesto</th><th class="text-right">Stock / mín.</th><th class="text-right">Ya pedido</th><th class="text-right">A pedir</th></tr></thead>
@@ -206,7 +206,7 @@ const Pedidos = (() => {
                 <td class="py-1.5"><span translate="no">${esc(i.nombre)}</span> <span class="font-mono text-xs text-gray-400" translate="no">${esc(i.codigo)}</span></td>
                 <td class="text-right">${i.cantidad}</td><td class="text-right text-gray-500">${i.recibido}</td>
                 <td class="text-right">${i.pendiente ? `<input type="number" min="0" max="${i.pendiente}" value="${i.pendiente}" data-recibir="${i.id}" class="w-20 px-2 py-1 border rounded text-right">` : '<span class="text-emerald-600 text-xs font-bold">completo</span>'}</td></tr>`).join('')}</tbody></table></div>
-            <button type="button" data-confirmar class="mt-3 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg">Confirmar recepción (suma al stock)</button>`;
+            <button type="button" data-confirmar class="mt-3 text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg">Confirmar recepción (suma al stock)</button>`;
     }
 
     function itemsLectura(p) {
@@ -306,7 +306,7 @@ const Pedidos = (() => {
             <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <h3 class="font-bold text-gray-700">Para pedir</h3>
                 <div class="flex flex-wrap gap-2">
-                    ${sug.length > 1 ? `<button type="button" data-crear-todos class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg">Armar todos (${sug.length})</button>` : ''}
+                    ${sug.length > 1 ? `<button type="button" data-crear-todos class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-amber-950 px-3 py-1.5 rounded-lg">Armar todos (${sug.length})</button>` : ''}
                     ${_nuevoAbierto ? '' : `<button type="button" data-nuevo-abrir class="text-xs font-bold border border-blue-300 text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg">+ Nuevo pedido</button>`}
                 </div>
             </div>
