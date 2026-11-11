@@ -1,6 +1,6 @@
 <table style="margin-top: 14px;" class="box">
   <tr>
-    <td style="width: 32mm;"><img src="{{ qr_seguimiento }}" width="28mm" height="28mm"></td>
+    <td style="width: {{ qr_seguimiento.lado_mm + 1 }}mm;">{% if imprimir %}{{ qr_seguimiento.svg|safe }}{% else %}{{ qr_seguimiento.tabla|safe }}{% endif %}</td>
     <td style="vertical-align: middle;">
       <b>Seguí el estado de tu equipo</b><br>
       <span class="small">Escaneá el código o entrá a la página de seguimiento con tu N° de RMA

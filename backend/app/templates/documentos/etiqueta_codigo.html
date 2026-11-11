@@ -19,7 +19,7 @@
 <body>
 <table class="lay">
   <tr>
-    <td style="width: {{ e.qr_mm + 1.5 }}mm;"><img src="{{ qr }}" width="{{ e.qr_mm }}mm" height="{{ e.qr_mm }}mm"></td>
+    <td style="width: {{ e.qr_mm + 1.5 }}mm;">{% if imprimir %}{{ e.qr.svg|safe }}{% else %}{{ e.qr.tabla|safe }}{% endif %}</td>
     <td>
       {% if not e.rma_abajo %}<div class="rma">{{ codigo }}</div>{% endif %}
       {% for linea in e.lineas %}<div>{% if loop.first %}<b>{{ linea }}</b>{% else %}{{ linea }}{% endif %}</div>{% endfor %}

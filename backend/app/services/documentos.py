@@ -7,13 +7,11 @@ Cada documento es una plantilla HTML (backend/app/templates/documentos/).
 Así hay una sola versión de cada documento. Los PDF adjuntos a los mails
 siempre se generan en el servidor.
 """
-import base64
 import io
 import logging
 from pathlib import Path
 from urllib.parse import urlencode
 
-import qrcode
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy.orm import Session
 
@@ -56,17 +54,6 @@ def _fecha(dt, con_hora=True):
     if not dt:
         return ""
     return utc_to_local(dt).strftime("%d/%m/%Y %H:%M" if con_hora else "%d/%m/%Y")
-
-
-def _png_data_uri(img_bytes: bytes) -> str:
-    return "data:image/png;base64," + base64.b64encode(img_bytes).decode()
-
-
-def qr_png(texto: str) -> str:
-    img = qrcode.make(texto, box_size=8, border=1)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return _png_data_uri(buf.getvalue())
 
 
 def url_seguimiento(base_url: str, t: models.Ticket) -> str:
@@ -142,9 +129,10 @@ def contexto(db: Session, t: models.Ticket, base_url: str) -> dict:
             "items": items, "total": sum(i["subtotal"] for i in items),
             "fecha": _fecha(pres.fecha_actualizacion),
         } if pres else None),
-        "qr_seguimiento": qr_png(url_seguimiento(base_url, t)),
         "url_seguimiento": url_seguimiento(base_url, t),
-        "qr_taller": qr_png(url_taller(base_url, t)),
+        # Orden de ingreso en hoja: 32 mm con el margen blanco (el QR, unos 26 mm)
+        "qr_seguimiento": impresion.codigo_qr(url_seguimiento(base_url, t), impresion.QR_DPI_HOJA, 32),
+        "url_taller": url_taller(base_url, t),
         "checklist": checklist_lineas(t),
         "firma_ingreso": _firma(t, "ingreso", 60, 18),
         "firma_entrega": _firma(t, "entrega", 60, 18),
@@ -158,7 +146,8 @@ def _ctx_etiqueta(db: Session, ctx: dict, idioma=None) -> dict:
     dpi = int(ajustes.get(db, "etiqueta_dpi"))
     lineas = [t.producto, f"SN {t.numero_serie or ''}", ctx["cliente"]["nombre"],
               idiomas.tr(f"Ingreso {ctx['fecha_ingreso'][:10]}", idioma)]
-    return {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, t.numero_rma, lineas),
+    return {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, t.numero_rma, lineas,
+                                            qr_texto=ctx["url_taller"]),
             "dpi": dpi}
 
 
@@ -213,7 +202,7 @@ def _bloques_ticket(ctx: dict, entrega: bool) -> list:
 
 def _ctx_ticket(db: Session, ctx: dict, entrega: bool, idioma=None) -> dict:
     d = impresion.disenio_ticket(ajustes.get(db, "ticketera_ancho"), int(ajustes.get(db, "ticketera_dpi")),
-                                 ctx["t"].numero_rma)
+                                 ctx["t"].numero_rma, ctx["url_seguimiento"])
     # La firma, al ancho del rollo (hasta 70 % y 20 mm de alto)
     for clave, momento in (("firma_ingreso", "ingreso"), ("firma_entrega", "entrega")):
         ctx[clave] = _firma(ctx["t"], momento, d["imprimible_mm"] * 0.7, 20)

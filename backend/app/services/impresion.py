@@ -18,10 +18,17 @@ misma cantidad de puntos. Por eso:
     (Chrome redondea las celdas de tabla a píxeles CSS).
 Verificado con dos rasterizadores (pdfium y poppler) sin suavizado, a 203 y 300
 dpi y con 8 alineaciones distintas respecto de la grilla: siempre legible.
+
+El QR sigue la misma regla: cada cuadradito (módulo) mide un número entero de
+puntos y se dibuja como vector (tabla para el PDF del servidor, SVG para el
+navegador), con su margen blanco alrededor. Antes iba como imagen con
+width="30mm": el navegador lo tomaba como 30 px (≈ 8 mm) y el PDF del servidor
+lo dejaba al 72 %.
 """
 import math
 
 import barcode
+import qrcode
 
 MM_POR_PULGADA = 25.4
 MODULO_IDEAL_MM = 0.25      # ≈ 10 mil: lo que leen bien hasta los lectores baratos
@@ -96,6 +103,73 @@ def _svg(patron, modulo, alto, total_modulos) -> str:
             f'style="display:block">{rects}</svg>')
 
 
+# ── QR ───────────────────────────────────────────────────────────────────────
+QR_SILENCIO = 4          # margen blanco recomendado, en cuadraditos
+QR_DPI_HOJA = 600        # documentos en hoja (A4): láser o chorro de tinta
+
+
+def codigo_qr(texto: str, dpi: int, max_mm: float, silencio: int = QR_SILENCIO) -> dict:
+    """QR de `texto` lo más grande posible dentro de `max_mm` (margen blanco incluido),
+    con cada cuadradito de un número entero de puntos de la impresora."""
+    q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=0)
+    q.add_data(texto)
+    q.make(fit=True)
+    matriz = q.get_matrix()
+    n = len(matriz)
+    total = n + 2 * silencio
+    mm_por_punto = MM_POR_PULGADA / dpi
+    puntos = max(1, math.floor(max_mm / (total * mm_por_punto) + 1e-9))
+    modulo = puntos * mm_por_punto
+    return {
+        "modulos": n, "puntos_por_modulo": puntos, "modulo_mm": round(modulo, 4),
+        "lado_mm": round(total * modulo, 4), "qr_mm": round(n * modulo, 4),
+        "tabla": _qr_tabla(matriz, modulo, silencio), "svg": _qr_svg(matriz, modulo, silencio),
+    }
+
+
+def _corridas_fila(fila, silencio):
+    corr, actual, n = [], False, silencio
+    for c in list(fila) + [False] * silencio:
+        if c == actual:
+            n += 1
+        else:
+            corr.append((actual, n))
+            actual, n = c, 1
+    corr.append((actual, n))
+    return corr
+
+
+def _qr_tabla(matriz, modulo, silencio) -> str:
+    """Una tabla de una fila por cada fila del QR: xhtml2pdf respeta así el alto exacto."""
+    n = len(matriz)
+    ancho = (n + 2 * silencio) * modulo
+    blanca = [False] * n
+    filas = [blanca] * silencio + matriz + [blanca] * silencio
+    out = []
+    for fila in filas:
+        celdas = "".join(f'<td style="width:{k * modulo:.4f}mm;height:{modulo:.4f}mm;padding:0;'
+                         f'background-color:{"#000" if negro else "#fff"};"></td>'
+                         for negro, k in _corridas_fila(fila, silencio))
+        out.append(f'<table style="width:{ancho:.4f}mm;font-size:1pt;line-height:1pt;" '
+                   f'cellpadding="0" cellspacing="0"><tr>{celdas}</tr></table>')
+    return "".join(out)
+
+
+def _qr_svg(matriz, modulo, silencio) -> str:
+    total = len(matriz) + 2 * silencio
+    rects = []
+    for y, fila in enumerate(matriz):
+        x = 0
+        for negro, k in _corridas_fila(fila, silencio):
+            if negro:
+                rects.append(f'<rect x="{x}" y="{y + silencio}" width="{k}" height="1"/>')
+            x += k
+    lado = total * modulo
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{lado:.4f}mm" height="{lado:.4f}mm" '
+            f'viewBox="0 0 {total} {total}" shape-rendering="crispEdges" style="display:block;margin:0 auto">'
+            f'<rect width="{total}" height="{total}" fill="#fff"/>{"".join(rects)}</svg>')
+
+
 # ── Etiqueta ─────────────────────────────────────────────────────────────────
 def _pt_a_mm(pt):
     return pt * MM_POR_PULGADA / 72
@@ -106,7 +180,7 @@ def _recortar(texto: str, max_chars: int) -> str:
     return texto if len(texto) <= max_chars else texto[:max(1, max_chars - 1)] + "…"
 
 
-def disenio_etiqueta(tamano: str, dpi: int, rma: str, lineas: list) -> dict:
+def disenio_etiqueta(tamano: str, dpi: int, rma: str, lineas: list, qr_texto: str = None) -> dict:
     """Medidas de la etiqueta: QR, texto y código de barras según tamaño y dpi.
 
     `lineas` son las líneas de texto (además del RMA), en orden de importancia:
@@ -144,6 +218,9 @@ def disenio_etiqueta(tamano: str, dpi: int, rma: str, lineas: list) -> dict:
         "rma_abajo": rma_abajo,
         "lineas": [_recortar(l, chars) for l in lineas if l][:max_lineas],
         "barras": bc,
+        # En la etiqueta el QR ya tiene papel blanco alrededor (el borde de la etiqueta, 1,2–1,5 mm,
+        # y el espacio hasta el texto): con 1 cuadradito propio el margen total pasa los 3
+        "qr": codigo_qr(qr_texto, dpi, qr, silencio=1) if qr_texto else None,
     }
 
 
@@ -158,13 +235,17 @@ def lineas_de(texto: str, ancho_mm: float, fuente_pt: float) -> int:
     return total
 
 
-def disenio_ticket(ancho_rollo: str, dpi: int, rma: str) -> dict:
+QR_TICKET_MAX_MM = 52    # en el rollo de 80 mm no hace falta que ocupe todo el ancho
+
+
+def disenio_ticket(ancho_rollo: str, dpi: int, rma: str, qr_texto: str = "") -> dict:
     imprimible = TICKETERA_IMPRIMIBLE_MM[ancho_rollo]
     fuente = 8.0 if ancho_rollo == "58" else 9.0
+    qr = codigo_qr(qr_texto or rma, dpi, min(imprimible, QR_TICKET_MAX_MM))
     return {
         "ancho_mm": int(ancho_rollo), "imprimible_mm": imprimible,
         "margen_h": (int(ancho_rollo) - imprimible) / 2,
-        "fuente_pt": fuente, "qr_mm": 30 if ancho_rollo == "58" else 36,
+        "fuente_pt": fuente, "qr": qr, "qr_mm": qr["lado_mm"],
         "barras": codigo_barras(rma, dpi, imprimible, 9.0),
     }
 
@@ -188,7 +269,7 @@ def largo_ticket(d: dict, bloques: list) -> float:
         elif t == "separador":
             mm += 2.4 + 0.5
         elif t == "qr":
-            mm += d["qr_mm"] + 1.5
+            mm += d["qr_mm"] + 1.0
         elif t == "barras" and d["barras"]:
             mm += d["barras"]["alto_mm"] + 3.0
         elif t == "firma":

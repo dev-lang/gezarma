@@ -25,10 +25,10 @@
   {% elif b.tipo == "texto" %}<div class="{% if b.centro %}c {% endif %}{% if b.negrita %}b{% endif %}">{{ b.texto }}</div>
   {% elif b.tipo == "par" %}<div><b>{{ b.etiqueta }}:</b> {{ b.texto }}</div>
   {% elif b.tipo == "separador" %}<div class="sep"></div>
-  {% elif b.tipo == "qr" %}<div class="c"><img src="{{ qr_seguimiento }}" width="{{ k.qr_mm }}mm" height="{{ k.qr_mm }}mm"></div>
+  {% elif b.tipo == "qr" %}<div align="center">{% if imprimir %}{{ k.qr.svg|safe }}{% else %}{{ k.qr.tabla|safe }}{% endif %}</div>
   {% elif b.tipo == "barras" and k.barras %}<div align="center" style="margin: 1.5mm 0;">{% if imprimir %}{{ k.barras.svg|safe }}{% else %}{{ k.barras.tabla|safe }}{% endif %}</div>
   {% elif b.tipo == "firma" %}<div class="firma">{{ b.texto }}</div>
-  {% elif b.tipo == "firma_img" %}<div class="c" style="margin-top: 2mm;"><img src="{{ b.firma.src }}" width="{{ b.firma.ancho_mm }}mm" height="{{ b.firma.alto_mm }}mm"></div>
+  {% elif b.tipo == "firma_img" %}<div class="c" style="margin-top: 2mm;"><img src="{{ b.firma.src }}" style="width: {{ b.firma.ancho_mm }}mm; height: {{ b.firma.alto_mm }}mm;"></div>
   <div class="firma" style="margin-top: 0;">{{ b.texto }}{% if b.firma.aclaracion %}<br>{{ b.firma.aclaracion }}{% endif %}</div>
   {% endif %}
 {% endfor %}

@@ -158,8 +158,8 @@ def escaneo(codigo: str = Query(..., min_length=1, max_length=80), db: Session =
 
 def _etiqueta(db: Session, request: Request, codigo: str, titulo: str, lineas: list, formato: Optional[str]):
     dpi = int(ajustes.get(db, "etiqueta_dpi"))
-    ctx = {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, codigo, lineas), "dpi": dpi,
-           "codigo": codigo, "titulo": titulo, "qr": documentos.qr_png(codigo)}
+    ctx = {"e": impresion.disenio_etiqueta(ajustes.get(db, "etiqueta_tamano"), dpi, codigo, lineas, qr_texto=codigo),
+           "dpi": dpi, "codigo": codigo, "titulo": titulo}
     if formato is None:
         formato = "pdf" if ajustes.get(db, "pdf_modo") == "servidor" else "html"
     plantilla = documentos._env.get_template("etiqueta_codigo.html")

@@ -1,7 +1,7 @@
 {# Firma del cliente: la de pantalla si la hay; si no, línea para firmar en papel. #}
 {% macro firma_cliente(f, texto) -%}
 {% if f %}
-<div style="text-align: center; height: 20mm;"><img src="{{ f.src }}" width="{{ f.ancho_mm }}mm" height="{{ f.alto_mm }}mm"></div>
+<div style="text-align: center; height: 20mm;"><img src="{{ f.src }}" style="width: {{ f.ancho_mm }}mm; height: {{ f.alto_mm }}mm;"></div>
 <div class="firma">{{ texto }}{% if f.aclaracion %} · {{ f.aclaracion }}{% endif %}<br>Firmado en pantalla el {{ f.fecha }}</div>
 {% else %}
 <div class="firma">{{ texto }}</div>
